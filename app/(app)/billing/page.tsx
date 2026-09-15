@@ -15,11 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/auth-context'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import type { Patient, Service, Centre, Doctor, DiscountPreset, PatientPackageCredit } from '@/lib/supabase/types'
+import type { Patient, Service, Centre, Doctor, DiscountPreset } from '@/lib/supabase/types'
 import {
   getCentres, getDoctors, getPatients, getServices,
   getVisits, saveVisit, exportBillsToExcel, exportSingleBillToExcel,
-  getPatientCredits, redeemPackageSession,
   StoredVisit, BillLineItem
 } from '@/lib/data-store'
 import { openWhatsAppInvoice } from '@/lib/whatsapp'
@@ -46,8 +45,6 @@ export default function BillingPage() {
   const [patientQuery, setPatientQuery] = useState('')
   const [searchedPatients, setSearchedPatients] = useState<Patient[]>([])
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
-  const [patientCredits, setPatientCredits] = useState<PatientPackageCredit[]>([])
-  const [activeRedemptionCreditId, setActiveRedemptionCreditId] = useState<string | null>(null)
   const [selectedCentreId, setSelectedCentreId] = useState('')
   const [selectedDoctorId, setSelectedDoctorId] = useState('')
   const [billItems, setBillItems] = useState<BillLineItem[]>([])
@@ -117,18 +114,6 @@ export default function BillingPage() {
     }
   }, [preselectedId, patients])
 
-  useEffect(() => {
-    if (selectedPatient) {
-      getPatientCredits(selectedPatient.id).then(creds => {
-        const active = creds.filter(c => c.status === 'Active' && c.remaining_sessions > 0)
-        setPatientCredits(active)
-      })
-    } else {
-      setPatientCredits([])
-      setActiveRedemptionCreditId(null)
-    }
-  }, [selectedPatient])
-
   // Patient search handler
   const handleSearchPatient = (q: string) => {
     setPatientQuery(q)
@@ -195,22 +180,11 @@ export default function BillingPage() {
     setBillItems(prev => prev.filter((_, idx) => idx !== index))
   }
 
-  // Handle Package Redemption
-  const handleApplyPackageRedemption = (credit: PatientPackageCredit) => {
-    setActiveRedemptionCreditId(credit.id)
-    setDiscountPresetId('')
-    setNotes(`1 Session redeemed from package: ${credit.package_name}`)
-  }
-
   // Calculate totals
   const subtotal = billItems.reduce((s, i) => s + i.price * i.quantity, 0)
   const selectedPreset = discountPresets.find(d => d.id === discountPresetId)
 
   const getDiscount = () => {
-    if (activeRedemptionCreditId) {
-      // 100% discount for package redemption
-      return subtotal
-    }
     if (selectedPreset) {
       return selectedPreset.type === 'percentage'
         ? (subtotal * Math.min(selectedPreset.value, 100)) / 100
@@ -237,16 +211,11 @@ export default function BillingPage() {
         items: billItems,
         subtotal,
         discount,
-        discountPresetName: activeRedemptionCreditId ? 'Package Session Credit (100% Paid)' : selectedPreset?.label,
+        discountPresetName: selectedPreset?.label,
         total,
-        paymentMode: activeRedemptionCreditId ? 'UPI' : paymentMode,
+        paymentMode,
         notes: notes.trim() || undefined,
       })
-
-      // If package credit was redeemed, decrement session
-      if (activeRedemptionCreditId) {
-        await redeemPackageSession(activeRedemptionCreditId)
-      }
 
       setRecentSavedVisit(saved)
       const freshVisits = await getVisits()
@@ -261,8 +230,6 @@ export default function BillingPage() {
   const resetForm = () => {
     setRecentSavedVisit(null)
     setSelectedPatient(null)
-    setPatientCredits([])
-    setActiveRedemptionCreditId(null)
     setBillItems([])
     setDiscountPresetId('')
     setCustomDiscount('')
@@ -452,38 +419,6 @@ export default function BillingPage() {
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
-
-                        {/* Patient Package Credit Banner */}
-                        {patientCredits.length > 0 && (
-                          <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
-                                <Ticket className="h-4 w-4 text-purple-700" /> Active Session Wallet
-                              </span>
-                              <Badge className="bg-purple-600 text-white text-[10px]">
-                                {patientCredits.reduce((a, b) => a + b.remaining_sessions, 0)} Sessions Total
-                              </Badge>
-                            </div>
-                            {patientCredits.map(credit => (
-                              <div key={credit.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-white rounded-lg border border-purple-100 text-xs">
-                                <div>
-                                  <p className="font-semibold text-gray-900">{credit.package_name}</p>
-                                  <p className="text-[11px] text-purple-700 font-medium">
-                                    {credit.remaining_sessions} of {credit.total_sessions} sessions remaining
-                                  </p>
-                                </div>
-                                <Button
-                                  size="xs"
-                                  variant={activeRedemptionCreditId === credit.id ? 'default' : 'outline'}
-                                  className={activeRedemptionCreditId === credit.id ? 'bg-purple-600 text-white' : 'border-purple-300 text-purple-800 hover:bg-purple-50'}
-                                  onClick={() => handleApplyPackageRedemption(credit)}
-                                >
-                                  {activeRedemptionCreditId === credit.id ? '✓ 1 Session Applied (₹0 Due)' : '🎟️ Redeem 1 Session'}
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <div className="space-y-2">

@@ -13,8 +13,8 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
-import { getVisits, getCentres, getPatientCredits, getPatientFeedback, exportBillsToExcel, type StoredVisit } from '@/lib/data-store'
-import type { Centre, PatientFeedback, PatientPackageCredit } from '@/lib/supabase/types'
+import { getVisits, getCentres, getPatientFeedback, exportBillsToExcel, type StoredVisit } from '@/lib/data-store'
+import type { Centre, PatientFeedback } from '@/lib/supabase/types'
 
 export default function DashboardPage() {
   const { profile } = useAuth()
@@ -23,7 +23,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [allVisits, setAllVisits] = useState<StoredVisit[]>([])
   const [centres, setCentres] = useState<Centre[]>([])
-  const [patientCredits, setPatientCredits] = useState<PatientPackageCredit[]>([])
   const [feedbacks, setFeedbacks] = useState<PatientFeedback[]>([])
   
   // Filters
@@ -33,15 +32,13 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [vData, cData, credData, fbData] = await Promise.all([
+        const [vData, cData, fbData] = await Promise.all([
           getVisits(),
           getCentres(),
-          getPatientCredits(),
           getPatientFeedback(),
         ])
         setAllVisits(vData)
         setCentres(cData)
-        setPatientCredits(credData)
         setFeedbacks(fbData)
       } catch (err) {
         console.error('Failed to load dashboard data:', err)
@@ -91,10 +88,6 @@ export default function DashboardPage() {
   const totalDiscounts = filteredVisits.reduce((sum, v) => sum + (Number(v.discount) || 0), 0)
   const avgBillSize = filteredVisits.length > 0 ? Math.round(filteredRevenue / filteredVisits.length) : 0
   const uniquePatientsCount = new Set(allVisits.map(v => v.patient_uid)).size
-
-  // Active Package Credits Value
-  const totalActivePackages = patientCredits.filter(c => c.status === 'Active').length
-  const totalRemainingSessions = patientCredits.reduce((sum, c) => sum + c.remaining_sessions, 0)
 
   // Payment Breakdown
   const paymentBreakdown = useMemo(() => {
@@ -312,14 +305,14 @@ export default function DashboardPage() {
         <Card className="border shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-purple-50/40">
           <CardContent className="p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Package Credits Wallet</p>
-              <p className="text-2xl font-extrabold text-purple-950">{totalRemainingSessions} <span className="text-sm font-semibold text-purple-700">sessions</span></p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avg Bill Value</p>
+              <p className="text-2xl font-extrabold text-purple-950">{formatCurrency(avgBillSize)}</p>
               <p className="text-[11px] text-purple-700 font-medium flex items-center gap-1">
-                <Ticket className="h-3 w-3" /> {totalActivePackages} active patient bundles
+                <Receipt className="h-3 w-3" /> Across {filteredVisits.length} invoices
               </p>
             </div>
             <div className="p-3 bg-purple-600 text-white rounded-2xl shadow-sm">
-              <Ticket className="h-6 w-6" />
+              <Receipt className="h-6 w-6" />
             </div>
           </CardContent>
         </Card>

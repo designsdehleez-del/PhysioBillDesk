@@ -18,7 +18,6 @@ export function MobileHeader() {
   const adminNav = [
     { label: 'Financials & KPIs', href: '/dashboard', icon: DollarSign },
     { label: 'Billing & Invoices', href: '/billing', icon: Receipt },
-    { label: 'Packages & Wallet', href: '/packages', icon: Ticket },
     { label: 'Patients Directory', href: '/patients', icon: Users },
     { label: 'Doctors & Tagging', href: '/doctors', icon: UserCog },
     { label: 'Centres Management', href: '/centres', icon: Building2 },
@@ -32,7 +31,6 @@ export function MobileHeader() {
     { label: 'Register Patient', href: '/patients/register', icon: UserPlus },
     { label: 'Patient Directory', href: '/patients', icon: Users },
     { label: 'Generate Bill', href: '/billing', icon: Receipt },
-    { label: 'Packages & Wallet', href: '/packages', icon: Ticket },
     { label: 'Centre Doctors', href: '/doctors', icon: UserCog },
   ]
 

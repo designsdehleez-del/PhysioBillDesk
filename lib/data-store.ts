@@ -123,6 +123,9 @@ export const DEFAULT_SERVICES: Service[] = [
   { id: 'svc-16', name: 'Chest Physiotherapy & Postural Drainage', price: 750, created_at: '', updated_at: '' },
   { id: 'svc-17', name: 'Pediatric Physiotherapy & Motor Skills', price: 1000, created_at: '', updated_at: '' },
   { id: 'svc-18', name: 'Full Body Wellness & Recovery Package', price: 2500, created_at: '', updated_at: '' },
+  { id: 'svc-19', name: '5-Session Pain Relief & Recovery Bundle', price: 3600, created_at: '', updated_at: '' },
+  { id: 'svc-20', name: '10-Session Comprehensive Rehab Bundle', price: 6800, created_at: '', updated_at: '' },
+  { id: 'svc-21', name: '20-Session Spine & Neuro Extended Rehab', price: 12500, created_at: '', updated_at: '' },
 ]
 
 // ================= SERVICES =================

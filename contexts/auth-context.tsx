@@ -135,8 +135,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password?: string) => {
     const lower = email.toLowerCase().trim()
+    const enteredPassword = password?.trim() || ''
 
-    // Check custom staff users for active status and password match
+    if (!enteredPassword) {
+      return { error: { message: 'Password is required to sign in.' } as AuthError }
+    }
+
+    // 1. Check custom staff users list first (includes edited default accounts)
     try {
       const localCustom = localStorage.getItem('physio_custom_staff_users')
       if (localCustom) {
@@ -144,29 +149,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const found = staffList.find(s => s.email.toLowerCase() === lower)
         if (found) {
           if (!found.is_active) {
-            return { error: { message: 'This clinic staff account has been deactivated by the Administrator.' } as AuthError }
+            return { error: { message: 'This account has been deactivated by the Administrator.' } as AuthError }
           }
-          if (password && found.password && found.password !== password) {
-            return { error: { message: 'Invalid login credentials or password.' } as AuthError }
+          if (found.password && found.password !== enteredPassword) {
+            return { error: { message: 'Incorrect password. Please verify and try again.' } as AuthError }
           }
+          const p: UserProfile = {
+            id: found.id,
+            email: found.email,
+            name: found.full_name,
+            role: found.role,
+            centreId: found.centre_id,
+            centreName: found.centre_name || 'Clinic Branch',
+          }
+          setProfile(p)
+          setUser({ id: p.id, email: p.email } as unknown as User)
+          localStorage.setItem('physio_active_profile', JSON.stringify(p))
+          return { error: null }
         }
       }
     } catch (_) {}
 
-    const p = resolveProfile(lower)
-    setProfile(p)
-    const mockUser = { id: p.id, email: p.email } as unknown as User
-    setUser(mockUser)
-    localStorage.setItem('physio_active_profile', JSON.stringify(p))
+    // 2. Check default system credentials
+    const defaultPasswords: Record<string, string> = {
+      'admin@physionautics.com': 'admin123',
+      'centre1@physionautics.com': 'centre123',
+      'centre2@physionautics.com': 'centre123',
+      'centre3@physionautics.com': 'centre123',
+    }
 
-    // Also attempt real Supabase sign-in if configured
+    if (defaultPasswords[lower]) {
+      if (enteredPassword !== defaultPasswords[lower]) {
+        return { error: { message: 'Incorrect password. Please try again.' } as AuthError }
+      }
+      const p = resolveProfile(lower)
+      setProfile(p)
+      setUser({ id: p.id, email: p.email } as unknown as User)
+      localStorage.setItem('physio_active_profile', JSON.stringify(p))
+      return { error: null }
+    }
+
+    // 3. Attempt Supabase real authentication if configured
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') && process.env.NEXT_PUBLIC_SUPABASE_URL !== 'your_supabase_project_url') {
       try {
         const supabase = createClient()
-        if (password) await supabase.auth.signInWithPassword({ email, password })
-      } catch (_) {}
+        const { error, data } = await supabase.auth.signInWithPassword({ email: lower, password: enteredPassword })
+        if (error) return { error }
+        const p = resolveProfile(lower)
+        setProfile(p)
+        setUser(data.user)
+        localStorage.setItem('physio_active_profile', JSON.stringify(p))
+        return { error: null }
+      } catch (err: any) {
+        return { error: { message: err.message || 'Authentication failed' } as AuthError }
+      }
     }
-    return { error: null }
+
+    return { error: { message: 'User account not found. Please contact the administrator.' } as AuthError }
   }
 
   const signUp = async (email: string, password?: string) => {

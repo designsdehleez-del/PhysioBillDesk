@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/auth-context'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Patient, Service, Centre, Doctor, DiscountPreset } from '@/lib/supabase/types'
 
@@ -19,6 +20,7 @@ export default function BillingPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const preselectedId = searchParams.get('patientId')
+  const { profile } = useAuth()
 
   const [patients, setPatients] = useState<Patient[]>([])
   const [services, setServices] = useState<Service[]>([])
@@ -46,15 +48,26 @@ export default function BillingPage() {
         supabase.from('doctors').select('*').eq('is_active', true).order('name'),
         supabase.from('discount_presets').select('*').eq('is_active', true).order('label'),
       ])
-      setServices(sv ?? []); setCentres(cn ?? []); setDoctors(dc ?? []); setDiscountPresets(dp ?? [])
+      const cList = (cn as unknown as Centre[]) ?? []
+      setServices((sv as unknown as Service[]) ?? [])
+      setCentres(cList)
+      setDoctors((dc as unknown as Doctor[]) ?? [])
+      setDiscountPresets((dp as unknown as DiscountPreset[]) ?? [])
+
+      // If user is a centre staff, lock or match their centre
+      if (profile?.role === 'centre_staff') {
+        const matched = cList.find(c => c.name.toLowerCase().includes(profile.name.toLowerCase().split(' ')[0]) || (profile.centreName && c.name.includes(profile.centreName)))
+        if (matched) setSelectedCentreId(matched.id)
+        else if (profile.centreId) setSelectedCentreId(profile.centreId)
+      }
     }
     load()
-  }, [])
+  }, [profile])
 
   useEffect(() => {
     if (preselectedId) {
       createClient().from('patients').select('*').eq('id', preselectedId).single()
-        .then(({ data }) => { if (data) setSelectedPatient(data) })
+        .then(({ data }) => { if (data) setSelectedPatient(data as unknown as Patient) })
     }
   }, [preselectedId])
 

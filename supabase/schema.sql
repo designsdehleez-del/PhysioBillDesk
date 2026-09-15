@@ -1,4 +1,4 @@
-﻿-- ============================================================
+-- ============================================================
 -- Physionautics Clinic Management System - Supabase Schema
 -- Run this entire file in your Supabase SQL editor
 -- ============================================================
@@ -180,3 +180,32 @@ BEGIN
   RETURN 'INV-' || v_month || '-' || lpad(v_counter::text, 4, '0');
 END; $$;
 GRANT EXECUTE ON FUNCTION public.generate_bill_number() TO authenticated;
+
+-- Seed 3 Clinic Centres
+INSERT INTO public.centres (id, name, address, phone, email, is_active)
+VALUES 
+  ('c1111111-1111-1111-1111-111111111111', 'Downtown Clinic (Centre 1)', '101 Central Ave, Suite 4', '+91 98765 43210', 'centre1@physionautics.com', true),
+  ('c2222222-2222-2222-2222-222222222222', 'Westside Rehab (Centre 2)', '45 West Park Blvd', '+91 98765 43211', 'centre2@physionautics.com', true),
+  ('c3333333-3333-3333-3333-333333333333', 'East Care Centre (Centre 3)', '88 East Ring Road', '+91 98765 43212', 'centre3@physionautics.com', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Seed Sample Doctors per Centre
+INSERT INTO public.doctors (name, specialization, phone, email, centre_id, is_active)
+VALUES
+  ('Dr. Sarah Jenkins', 'Orthopedic Physiotherapy', '+91 98111 00001', 'sarah@physionautics.com', 'c1111111-1111-1111-1111-111111111111', true),
+  ('Dr. Rajesh Sharma', 'Sports Rehabilitation', '+91 98111 00002', 'rajesh@physionautics.com', 'c1111111-1111-1111-1111-111111111111', true),
+  ('Dr. Emily Watson', 'Neuro Physiotherapy', '+91 98111 00003', 'emily@physionautics.com', 'c2222222-2222-2222-2222-222222222222', true),
+  ('Dr. Michael Chang', 'Spine & Posture Specialist', '+91 98111 00004', 'michael@physionautics.com', 'c2222222-2222-2222-2222-222222222222', true),
+  ('Dr. Priya Nair', 'Cardiorespiratory Rehab', '+91 98111 00005', 'priya@physionautics.com', 'c3333333-3333-3333-3333-333333333333', true),
+  ('Dr. David Kim', 'Pediatric Physiotherapy', '+91 98111 00006', 'david@physionautics.com', 'c3333333-3333-3333-3333-333333333333', true)
+ON CONFLICT DO NOTHING;
+
+-- Seed Sample Discount Presets
+INSERT INTO public.discount_presets (label, type, value, is_active)
+VALUES
+  ('Senior Citizen (15%)', 'percentage', 15, true),
+  ('Staff / Referral (20%)', 'percentage', 20, true),
+  ('Special Privilege (₹200 OFF)', 'fixed', 200, true),
+  ('First Visit Complimentary (₹500 OFF)', 'fixed', 500, true)
+ON CONFLICT DO NOTHING;
+

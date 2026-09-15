@@ -1,32 +1,38 @@
-﻿'use client'
+'use client'
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut } from 'lucide-react'
+import { Menu, LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-const mainNav = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Register Patient', href: '/patients/register', icon: UserPlus },
-  { label: 'Patient List', href: '/patients', icon: Users },
-  { label: 'New Bill', href: '/billing', icon: Receipt },
-]
-const backendNav = [
-  { label: 'Services', href: '/services', icon: Stethoscope },
-  { label: 'Centres', href: '/centres', icon: Building2 },
-  { label: 'Doctors', href: '/doctors', icon: UserCog },
-  { label: 'Discount Presets', href: '/discounts', icon: Tag },
-]
-
 export function MobileHeader() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
-  const { user, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth()
 
-  const renderItems = (items: typeof mainNav) => items.map(item => {
+  const isAdmin = profile?.role === 'admin'
+
+  const adminNav = [
+    { label: 'Financials & KPIs', href: '/dashboard', icon: DollarSign },
+    { label: 'Centres Management', href: '/centres', icon: Building2 },
+    { label: 'Services & Pricing', href: '/services', icon: Stethoscope },
+    { label: 'Discount Rules', href: '/discounts', icon: Tag },
+  ]
+
+  const clinicNav = [
+    { label: 'Clinic Overview', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Register Patient', href: '/patients/register', icon: UserPlus },
+    { label: 'Patient Directory', href: '/patients', icon: Users },
+    { label: 'Generate Bill', href: '/billing', icon: Receipt },
+    { label: 'Centre Doctors', href: '/doctors', icon: UserCog },
+  ]
+
+  const activeNav = isAdmin ? adminNav : clinicNav
+
+  const renderItems = (items: typeof adminNav) => items.map(item => {
     const Icon = item.icon
     const isActive = item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href)
     return (
@@ -47,20 +53,32 @@ export function MobileHeader() {
           </Button>
         } />
         <SheetContent side="left" className="w-64 p-0 flex flex-col" showCloseButton={false}>
-          <div className="flex items-center gap-3 px-4 py-5 border-b">
+          <div className="flex items-center gap-3 px-4 py-4 border-b">
             <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center">
               <Stethoscope className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-bold">Physionautics</span>
-          </div>
-          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-            <div className="space-y-1">
-              <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Main</p>
-              {renderItems(mainNav)}
+            <div>
+              <span className="text-base font-bold leading-tight block">Physionautics</span>
+              <span className="text-[11px] text-muted-foreground">{isAdmin ? 'Admin' : (profile?.centreName || 'Staff')}</span>
             </div>
+          </div>
+
+          <div className="p-3 border-b bg-gray-50">
+            <div className="flex items-center gap-2">
+              {isAdmin ? <ShieldAlert className="h-4 w-4 text-purple-700" /> : <Building2 className="h-4 w-4 text-blue-700" />}
+              <div className="min-w-0 flex-1 text-xs">
+                <p className="font-bold truncate text-gray-900">{profile?.name || (isAdmin ? 'Admin' : 'Staff')}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{isAdmin ? 'Financial Access' : (profile?.centreName || 'Clinic Desk')}</p>
+              </div>
+            </div>
+          </div>
+
+          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
             <div className="space-y-1">
-              <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Backend</p>
-              {renderItems(backendNav)}
+              <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                {isAdmin ? 'Financial Governance' : 'Clinical Operations'}
+              </p>
+              {renderItems(activeNav)}
             </div>
           </nav>
           <div className="px-4 py-4 border-t space-y-2">

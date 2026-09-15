@@ -65,25 +65,73 @@ export default function AuthPage() {
               <Input id="password" type="password" placeholder="••••••••" value={password}
                 onChange={e => setPassword(e.target.value)} required disabled={loading} minLength={6} />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
               {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{isSignUp ? 'Creating…' : 'Signing in…'}</> : isSignUp ? 'Sign Up' : 'Sign In'}
             </Button>
-            <Button
+          </form>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-muted-foreground font-semibold">Select Account Role</span></div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
               type="button"
-              variant="outline"
-              className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
+              className="flex flex-col text-left p-2.5 rounded-lg border border-purple-200 bg-purple-50/60 hover:bg-purple-100 transition-colors"
               onClick={async () => {
                 setLoading(true)
-                await signIn('admin@physionautics.com', 'demo123')
+                await signIn('admin@physionautics.com', 'admin123')
                 router.push('/dashboard')
               }}
             >
-              ⚡ Quick Demo Login (Instant Access)
-            </Button>
-          </form>
+              <span className="text-xs font-bold text-purple-900 flex items-center gap-1">👑 Admin Login</span>
+              <span className="text-[11px] text-purple-700">Financials & Revenue Analytics</span>
+            </button>
+
+            <button
+              type="button"
+              className="flex flex-col text-left p-2.5 rounded-lg border border-blue-200 bg-blue-50/60 hover:bg-blue-100 transition-colors"
+              onClick={async () => {
+                setLoading(true)
+                await signIn('centre1@physionautics.com', 'centre123')
+                router.push('/dashboard')
+              }}
+            >
+              <span className="text-xs font-bold text-blue-900 flex items-center gap-1">🏥 Downtown Clinic</span>
+              <span className="text-[11px] text-blue-700">Centre 1 Staff & Billing</span>
+            </button>
+
+            <button
+              type="button"
+              className="flex flex-col text-left p-2.5 rounded-lg border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100 transition-colors"
+              onClick={async () => {
+                setLoading(true)
+                await signIn('centre2@physionautics.com', 'centre123')
+                router.push('/dashboard')
+              }}
+            >
+              <span className="text-xs font-bold text-emerald-900 flex items-center gap-1">🏥 Westside Rehab</span>
+              <span className="text-[11px] text-emerald-700">Centre 2 Staff & Billing</span>
+            </button>
+
+            <button
+              type="button"
+              className="flex flex-col text-left p-2.5 rounded-lg border border-orange-200 bg-orange-50/60 hover:bg-orange-100 transition-colors"
+              onClick={async () => {
+                setLoading(true)
+                await signIn('centre3@physionautics.com', 'centre123')
+                router.push('/dashboard')
+              }}
+            >
+              <span className="text-xs font-bold text-orange-900 flex items-center gap-1">🏥 East Care Centre</span>
+              <span className="text-[11px] text-orange-700">Centre 3 Staff & Billing</span>
+            </button>
+          </div>
+
           {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
           {successMsg && <div className="rounded-md bg-green-50 p-3 text-sm text-green-700">{successMsg}</div>}
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-sm text-muted-foreground pt-2">
             {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
             <button type="button" onClick={() => { setIsSignUp(p => !p); setError(null); setSuccessMsg(null) }}
               className="text-blue-600 hover:underline font-medium">

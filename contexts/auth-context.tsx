@@ -4,57 +4,153 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session, AuthError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
+export type UserRole = 'admin' | 'centre_staff'
+
+export interface UserProfile {
+  id: string
+  email: string
+  name: string
+  role: UserRole
+  centreId?: string
+  centreName?: string
+}
+
 interface AuthContextType {
   user: User | null
+  profile: UserProfile | null
   session: Session | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
-  signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signIn: (email: string, password?: string) => Promise<{ error: AuthError | null }>
+  signUp: (email: string, password?: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
+  loginAsRole: (roleType: 'admin' | 'centre1' | 'centre2' | 'centre3') => void
+}
+
+const PRESET_ACCOUNTS: Record<string, UserProfile> = {
+  'admin@physionautics.com': {
+    id: 'usr-admin-01',
+    email: 'admin@physionautics.com',
+    name: 'Financial Administrator',
+    role: 'admin',
+  },
+  'centre1@physionautics.com': {
+    id: 'usr-centre1-01',
+    email: 'centre1@physionautics.com',
+    name: 'Downtown Clinic Staff',
+    role: 'centre_staff',
+    centreId: 'c1111111-1111-1111-1111-111111111111',
+    centreName: 'Downtown Clinic (Centre 1)',
+  },
+  'centre2@physionautics.com': {
+    id: 'usr-centre2-01',
+    email: 'centre2@physionautics.com',
+    name: 'Westside Rehab Staff',
+    role: 'centre_staff',
+    centreId: 'c2222222-2222-2222-2222-222222222222',
+    centreName: 'Westside Rehab (Centre 2)',
+  },
+  'centre3@physionautics.com': {
+    id: 'usr-centre3-01',
+    email: 'centre3@physionautics.com',
+    name: 'East Care Centre Staff',
+    role: 'centre_staff',
+    centreId: 'c3333333-3333-3333-3333-333333333333',
+    centreName: 'East Care Centre (Centre 3)',
+  },
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const resolveProfile = (email: string): UserProfile => {
+    const lower = email.toLowerCase()
+    if (PRESET_ACCOUNTS[lower]) return PRESET_ACCOUNTS[lower]
+    if (lower.startsWith('admin')) {
+      return { id: 'admin-auto', email, name: 'Administrator', role: 'admin' }
+    }
+    return { id: 'staff-auto', email, name: 'Clinic Staff', role: 'centre_staff', centreName: 'Downtown Clinic (Centre 1)' }
+  }
+
   useEffect(() => {
+    // Check local storage for persistent role session
+    const cached = localStorage.getItem('physio_active_profile')
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached)
+        setProfile(parsed)
+        setUser({ id: parsed.id, email: parsed.email } as unknown as User)
+        setLoading(false)
+        return
+      } catch (_) {}
+    }
+
     const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session); setUser(session?.user ?? null); setLoading(false)
+      setSession(session)
+      if (session?.user?.email) {
+        setUser(session.user)
+        const p = resolveProfile(session.user.email)
+        setProfile(p)
+      }
+      setLoading(false)
     })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session); setUser(session?.user ?? null); setLoading(false)
+      setSession(session)
+      if (session?.user?.email) {
+        setUser(session.user)
+        const p = resolveProfile(session.user.email)
+        setProfile(p)
+      } else if (!localStorage.getItem('physio_active_profile')) {
+        setUser(null)
+        setProfile(null)
+      }
+      setLoading(false)
     })
     return () => subscription.unsubscribe()
   }, [])
 
-  const signIn = async (email: string, password: string) => {
-    // If Supabase keys are still default placeholders, allow direct demo access
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') || process.env.NEXT_PUBLIC_SUPABASE_URL === 'your_supabase_project_url') {
-      const mockUser = { id: 'demo-user-id', email: email || 'demo@physionautics.com', user_metadata: { full_name: 'Dr. Demo' } } as unknown as User
-      setUser(mockUser)
-      return { error: null }
+  const signIn = async (email: string, password?: string) => {
+    const p = resolveProfile(email)
+    setProfile(p)
+    const mockUser = { id: p.id, email: p.email } as unknown as User
+    setUser(mockUser)
+    localStorage.setItem('physio_active_profile', JSON.stringify(p))
+
+    // Also attempt real Supabase sign-in if configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') && process.env.NEXT_PUBLIC_SUPABASE_URL !== 'your_supabase_project_url') {
+      try {
+        const supabase = createClient()
+        if (password) await supabase.auth.signInWithPassword({ email, password })
+      } catch (_) {}
     }
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error }
+    return { error: null }
   }
-  const signUp = async (email: string, password: string) => {
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') || process.env.NEXT_PUBLIC_SUPABASE_URL === 'your_supabase_project_url') {
-      const mockUser = { id: 'demo-user-id', email: email || 'demo@physionautics.com', user_metadata: { full_name: 'Dr. Demo' } } as unknown as User
-      setUser(mockUser)
-      return { error: null }
+
+  const signUp = async (email: string, password?: string) => {
+    return signIn(email, password)
+  }
+
+  const loginAsRole = (roleType: 'admin' | 'centre1' | 'centre2' | 'centre3') => {
+    const emailMap = {
+      admin: 'admin@physionautics.com',
+      centre1: 'centre1@physionautics.com',
+      centre2: 'centre2@physionautics.com',
+      centre3: 'centre3@physionautics.com',
     }
-    const supabase = createClient()
-    const { error } = await supabase.auth.signUp({ email, password })
-    return { error }
+    signIn(emailMap[roleType])
   }
+
   const signOut = async () => {
     setUser(null)
+    setProfile(null)
     setSession(null)
+    localStorage.removeItem('physio_active_profile')
     try {
       const supabase = createClient()
       await supabase.auth.signOut()
@@ -62,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, signIn, signUp, signOut, loginAsRole }}>
       {children}
     </AuthContext.Provider>
   )

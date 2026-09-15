@@ -204,23 +204,26 @@ export async function resetDefaultServices(): Promise<Service[]> {
 
 // ================= CENTRES =================
 export async function getCentres(): Promise<Centre[]> {
+  const CACHE_KEY = 'physio_centres_cache_v5'
   try {
     const supabase = createClient()
     const { data } = await supabase.from('centres').select('*').order('name')
     if (data && data.length > 0) {
-      localStorage.setItem('physio_centres_cache_v2', JSON.stringify(data))
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data))
       return data as unknown as Centre[]
     }
   } catch (_) {}
 
-  const cached = localStorage.getItem('physio_centres_cache_v2')
+  const cached = localStorage.getItem(CACHE_KEY)
   if (cached) {
     try {
       const parsed: Centre[] = JSON.parse(cached)
-      if (parsed.length > 0) return parsed
+      if (parsed.length >= 3 && parsed.some(c => c.name.includes('Friends') || c.name.includes('Vasant') || c.name.includes('Gurugram'))) {
+        return parsed
+      }
     } catch (_) {}
   }
-  localStorage.setItem('physio_centres_cache_v2', JSON.stringify(DEFAULT_CENTRES))
+  localStorage.setItem(CACHE_KEY, JSON.stringify(DEFAULT_CENTRES))
   return DEFAULT_CENTRES
 }
 
@@ -299,6 +302,7 @@ export async function deleteCentre(id: string): Promise<void> {
 
 // ================= DOCTORS =================
 export async function getDoctors(centreId?: string): Promise<Doctor[]> {
+  const CACHE_KEY = 'physio_doctors_cache_v5'
   let list: Doctor[] = DEFAULT_DOCTORS
   try {
     const supabase = createClient()
@@ -306,16 +310,21 @@ export async function getDoctors(centreId?: string): Promise<Doctor[]> {
     if (centreId && centreId !== 'all') q = q.eq('centre_id', centreId)
     const { data } = await q
     if (data && data.length > 0) {
-      localStorage.setItem('physio_doctors_cache', JSON.stringify(data))
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data))
       return data as unknown as Doctor[]
     }
   } catch (_) {}
 
-  const cached = localStorage.getItem('physio_doctors_cache')
+  const cached = localStorage.getItem(CACHE_KEY)
   if (cached) {
-    try { list = JSON.parse(cached) } catch (_) {}
-  } else {
-    localStorage.setItem('physio_doctors_cache', JSON.stringify(DEFAULT_DOCTORS))
+    try {
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length >= 6) list = parsed
+    } catch (_) {}
+  }
+  if (list.length < 6) {
+    list = DEFAULT_DOCTORS
+    localStorage.setItem(CACHE_KEY, JSON.stringify(DEFAULT_DOCTORS))
   }
 
   if (centreId && centreId !== 'all') {
@@ -433,6 +442,7 @@ export async function toggleDoctorActive(id: string): Promise<void> {
 
 // ================= PATIENTS =================
 export async function getPatients(query?: string): Promise<Patient[]> {
+  const CACHE_KEY = 'physio_patients_cache_v5'
   let list: Patient[] = []
   try {
     const supabase = createClient()
@@ -442,16 +452,16 @@ export async function getPatients(query?: string): Promise<Patient[]> {
     }
     const { data } = await q.limit(200)
     if (data && data.length > 0) {
-      localStorage.setItem('physio_patients_cache', JSON.stringify(data))
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data))
       return data as unknown as Patient[]
     }
   } catch (_) {}
 
-  const cached = localStorage.getItem('physio_patients_cache')
+  const cached = localStorage.getItem(CACHE_KEY)
   if (cached) {
     try {
       const parsed = JSON.parse(cached)
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed) && parsed.length >= 8) {
         list = parsed
       }
     } catch (_) {}
@@ -459,7 +469,7 @@ export async function getPatients(query?: string): Promise<Patient[]> {
 
   if (list.length === 0) {
     list = DEMO_PATIENTS
-    localStorage.setItem('physio_patients_cache', JSON.stringify(DEMO_PATIENTS))
+    localStorage.setItem(CACHE_KEY, JSON.stringify(DEMO_PATIENTS))
   }
 
   if (query?.trim()) {
@@ -640,6 +650,7 @@ const DEFAULT_VISITS: StoredVisit[] = [
 ]
 
 export async function getVisits(centreId?: string, query?: string): Promise<StoredVisit[]> {
+  const CACHE_KEY = 'physio_visits_cache_v5'
   let list: StoredVisit[] = []
   try {
     const supabase = createClient()
@@ -683,16 +694,16 @@ export async function getVisits(centreId?: string, query?: string): Promise<Stor
         created_at: v.created_at,
       }))
 
-      localStorage.setItem('physio_visits_cache', JSON.stringify(mapped))
+      localStorage.setItem(CACHE_KEY, JSON.stringify(mapped))
       return filterVisits(mapped, centreId, query)
     }
   } catch (_) {}
 
-  const cached = localStorage.getItem('physio_visits_cache')
+  const cached = localStorage.getItem(CACHE_KEY)
   if (cached) {
     try {
       const parsed = JSON.parse(cached)
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed) && parsed.length >= 10) {
         list = parsed
       }
     } catch (_) {}
@@ -700,7 +711,7 @@ export async function getVisits(centreId?: string, query?: string): Promise<Stor
   
   if (list.length === 0) {
     list = generateDemoVisits()
-    localStorage.setItem('physio_visits_cache', JSON.stringify(list))
+    localStorage.setItem(CACHE_KEY, JSON.stringify(list))
   }
 
   return filterVisits(list, centreId, query)
@@ -1095,14 +1106,15 @@ export const DEFAULT_FEEDBACK: PatientFeedback[] = [
 ]
 
 export async function getPatientFeedback(): Promise<PatientFeedback[]> {
-  const cached = localStorage.getItem('physio_feedback_cache')
+  const CACHE_KEY = 'physio_feedback_cache_v5'
+  const cached = localStorage.getItem(CACHE_KEY)
   if (cached) {
     try {
       const parsed = JSON.parse(cached)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      if (Array.isArray(parsed) && parsed.length >= 6) return parsed
     } catch (_) {}
   }
-  localStorage.setItem('physio_feedback_cache', JSON.stringify(DEMO_FEEDBACK))
+  localStorage.setItem(CACHE_KEY, JSON.stringify(DEMO_FEEDBACK))
   return DEMO_FEEDBACK
 }
 

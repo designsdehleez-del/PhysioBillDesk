@@ -100,10 +100,68 @@ export default function AuthPage() {
             </div>
           )}
 
-          <div className="pt-2 text-center">
-            <p className="text-[11px] text-muted-foreground">
-              Clinic & Staff accounts are provisioned by the System Administrator.
+          {/* Presentation & Demo 1-Click Role Switcher */}
+          <div className="pt-2 border-t space-y-2">
+            <p className="text-[11px] font-bold text-gray-700 uppercase tracking-wider text-center">
+              ⚡ Quick 1-Click Demo Logins
             </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  setEmail('admin@physionautics.com')
+                  setPassword('admin123')
+                  await signIn('admin@physionautics.com', 'admin123')
+                  router.push('/dashboard')
+                }}
+                className="p-2 text-left rounded-lg border border-purple-200 bg-purple-50 hover:bg-purple-100 transition-colors text-xs space-y-0.5"
+              >
+                <div className="font-bold text-purple-950 flex items-center gap-1">👑 Master Admin</div>
+                <div className="text-[10px] text-purple-700">Financials & Doctor Earnings</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  setEmail('nfc@physionautics.com')
+                  setPassword('centre123')
+                  await signIn('nfc@physionautics.com', 'centre123')
+                  router.push('/dashboard')
+                }}
+                className="p-2 text-left rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors text-xs space-y-0.5"
+              >
+                <div className="font-bold text-blue-950">🏥 New Friends Colony</div>
+                <div className="text-[10px] text-blue-700">Clinical Desk (No Financials)</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  setEmail('vasantvihar@physionautics.com')
+                  setPassword('centre123')
+                  await signIn('vasantvihar@physionautics.com', 'centre123')
+                  router.push('/dashboard')
+                }}
+                className="p-2 text-left rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-colors text-xs space-y-0.5"
+              >
+                <div className="font-bold text-emerald-950">🏥 Vasant Vihar</div>
+                <div className="text-[10px] text-emerald-700">Clinical Desk (No Financials)</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  setEmail('gurugram@physionautics.com')
+                  setPassword('centre123')
+                  await signIn('gurugram@physionautics.com', 'centre123')
+                  router.push('/dashboard')
+                }}
+                className="p-2 text-left rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors text-xs space-y-0.5"
+              >
+                <div className="font-bold text-amber-950">🏥 Gurugram DLF Ph-1</div>
+                <div className="text-[10px] text-amber-700">Clinical Desk (No Financials)</div>
+              </button>
+            </div>
           </div>
         </CardContent>
       </Card>

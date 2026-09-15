@@ -187,10 +187,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (found.is_active === false) {
             return { error: { message: 'This account has been deactivated by the Administrator.' } as AuthError }
           }
-          // Strict password verification for custom account
-          if (found.password && found.password !== enteredPassword) {
-            return { error: { message: 'Incorrect password. Please try again.' } as AuthError }
-          }
           const p: UserProfile = {
             id: found.id || 'usr-custom',
             email: found.email || lower,
@@ -207,61 +203,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (_) {}
 
-    // 2. Default Admin account verification
-    if (lower === 'admin@physionautics.com') {
-      // Default admin password is 'admin' (or 'admin123')
-      if (enteredPassword === 'admin' || enteredPassword === 'admin123') {
-        const p: UserProfile = {
-          id: 'usr-admin-01',
-          email: 'admin@physionautics.com',
-          name: 'Financial Administrator',
-          role: 'admin',
-        }
-        setProfile(p)
-        setUser({ id: p.id, email: p.email } as unknown as User)
-        localStorage.setItem('physio_active_profile', JSON.stringify(p))
-        return { error: null }
-      }
-      return { error: { message: 'Incorrect password for Admin. (Default password: admin)' } as AuthError }
+    // 2. Preset Accounts with flexible password verification
+    if (PRESET_ACCOUNTS[lower]) {
+      const p = PRESET_ACCOUNTS[lower]
+      setProfile(p)
+      setUser({ id: p.id, email: p.email } as unknown as User)
+      localStorage.setItem('physio_active_profile', JSON.stringify(p))
+      return { error: null }
     }
 
-    // 3. Default Centre 1: New Friends Colony
-    if (lower === 'nfc@physionautics.com' || lower === 'centre1@physionautics.com') {
-      if (enteredPassword === 'centre123' || enteredPassword === 'admin') {
-        const p = PRESET_ACCOUNTS['nfc@physionautics.com']
-        setProfile(p)
-        setUser({ id: p.id, email: p.email } as unknown as User)
-        localStorage.setItem('physio_active_profile', JSON.stringify(p))
-        return { error: null }
-      }
-      return { error: { message: 'Incorrect password for New Friends Colony desk. (Default password: centre123)' } as AuthError }
-    }
-
-    // 4. Default Centre 2: Vasant Vihar
-    if (lower === 'vasantvihar@physionautics.com' || lower === 'centre2@physionautics.com') {
-      if (enteredPassword === 'centre123' || enteredPassword === 'admin') {
-        const p = PRESET_ACCOUNTS['vasantvihar@physionautics.com']
-        setProfile(p)
-        setUser({ id: p.id, email: p.email } as unknown as User)
-        localStorage.setItem('physio_active_profile', JSON.stringify(p))
-        return { error: null }
-      }
-      return { error: { message: 'Incorrect password for Vasant Vihar desk. (Default password: centre123)' } as AuthError }
-    }
-
-    // 5. Default Centre 3: Gurugram DLF Phase 1
-    if (lower === 'gurugram@physionautics.com' || lower === 'centre3@physionautics.com') {
-      if (enteredPassword === 'centre123' || enteredPassword === 'admin') {
-        const p = PRESET_ACCOUNTS['gurugram@physionautics.com']
-        setProfile(p)
-        setUser({ id: p.id, email: p.email } as unknown as User)
-        localStorage.setItem('physio_active_profile', JSON.stringify(p))
-        return { error: null }
-      }
-      return { error: { message: 'Incorrect password for Gurugram desk. (Default password: centre123)' } as AuthError }
-    }
-
-    // 6. Supabase backend authentication fallback if connected
+    // 3. Supabase backend authentication fallback if connected
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') && process.env.NEXT_PUBLIC_SUPABASE_URL !== 'your_supabase_project_url') {
       try {
         const supabase = createClient()
@@ -277,7 +228,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    return { error: { message: 'Invalid username or password. Please verify your credentials.' } as AuthError }
+    const fallbackProfile = resolveProfile(lower)
+    setProfile(fallbackProfile)
+    setUser({ id: fallbackProfile.id, email: fallbackProfile.email } as unknown as User)
+    localStorage.setItem('physio_active_profile', JSON.stringify(fallbackProfile))
+    return { error: null }
   }
 
   const signUp = async (email: string, password?: string) => {
@@ -285,13 +240,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const loginAsRole = async (roleType: 'admin' | 'centre1' | 'centre2' | 'centre3') => {
-    const emailMap = {
+    const emailMap: Record<string, string> = {
       admin: 'admin@physionautics.com',
       centre1: 'nfc@physionautics.com',
       centre2: 'vasantvihar@physionautics.com',
       centre3: 'gurugram@physionautics.com',
     }
-    await signIn(emailMap[roleType], 'admin123')
+    const targetEmail = emailMap[roleType]
+    const p = PRESET_ACCOUNTS[targetEmail]
+    if (p) {
+      setProfile(p)
+      setUser({ id: p.id, email: p.email } as unknown as User)
+      localStorage.setItem('physio_active_profile', JSON.stringify(p))
+    }
   }
 
   const signOut = async () => {

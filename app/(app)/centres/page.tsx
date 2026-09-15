@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { Pencil, Trash2, Plus, Building2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { createClient } from '@/lib/supabase/client'
+import { getCentres, saveCentre, toggleCentreActive, deleteCentre } from '@/lib/data-store'
 import type { Centre } from '@/lib/supabase/types'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -24,8 +24,10 @@ export default function CentresPage() {
   const [saving, setSaving] = useState(false)
 
   const load = async () => {
-    const { data } = await createClient().from('centres').select('*').order('name')
-    setCentres(data ?? []); setLoading(false)
+    setLoading(true)
+    const data = await getCentres()
+    setCentres(data)
+    setLoading(false)
   }
   useEffect(() => { load() }, [])
 
@@ -35,22 +37,31 @@ export default function CentresPage() {
   const save = async () => {
     if (!form.name.trim()) return
     setSaving(true)
-    const supabase = createClient()
-    const payload = { name: form.name.trim(), address: form.address || null, phone: form.phone || null, email: form.email || null }
-    if (editing) { await supabase.from('centres').update(payload).eq('id', editing.id); toast({ title: 'Centre updated' }) }
-    else { await supabase.from('centres').insert({ ...payload, is_active: true }); toast({ title: 'Centre added' }) }
-    setSaving(false); setDialogOpen(false); load()
+    await saveCentre({
+      id: editing ? editing.id : undefined,
+      name: form.name.trim(),
+      address: form.address || null,
+      phone: form.phone || null,
+      email: form.email || null,
+    })
+    toast({ title: editing ? 'Centre updated successfully' : 'New centre added successfully' })
+    setSaving(false)
+    setDialogOpen(false)
+    load()
   }
 
   const toggleActive = async (c: Centre) => {
-    await createClient().from('centres').update({ is_active: !c.is_active }).eq('id', c.id)
-    toast({ title: `Centre ${!c.is_active ? 'activated' : 'deactivated'}` }); load()
+    await toggleCentreActive(c.id)
+    toast({ title: `Centre ${!c.is_active ? 'activated' : 'deactivated'}` })
+    load()
   }
 
   const doDelete = async () => {
     if (!deleteId) return
-    await createClient().from('centres').delete().eq('id', deleteId)
-    toast({ title: 'Centre deleted', variant: 'destructive' }); setDeleteId(null); load()
+    await deleteCentre(deleteId)
+    toast({ title: 'Centre deleted', variant: 'destructive' })
+    setDeleteId(null)
+    load()
   }
 
   return (

@@ -17,8 +17,10 @@ export function MobileHeader() {
 
   const adminNav = [
     { label: 'Financials & KPIs', href: '/dashboard', icon: DollarSign },
-    { label: 'Staff & Clinic Logins', href: '/staff', icon: Users },
+    { label: 'Patients Directory', href: '/patients', icon: Users },
+    { label: 'Doctors & Tagging', href: '/doctors', icon: UserCog },
     { label: 'Centres Management', href: '/centres', icon: Building2 },
+    { label: 'Staff & Clinic Logins', href: '/staff', icon: ShieldAlert },
     { label: 'Services & Pricing', href: '/services', icon: Stethoscope },
     { label: 'Discount Rules', href: '/discounts', icon: Tag },
   ]

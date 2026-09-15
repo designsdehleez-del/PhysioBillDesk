@@ -23,6 +23,7 @@ import {
 } from '@/lib/data-store'
 import { openWhatsAppInvoice } from '@/lib/whatsapp'
 import { PrintableInvoiceModal } from '@/components/billing/printable-invoice-modal'
+import { WhatsAppShareModal } from '@/components/billing/whatsapp-share-modal'
 
 export default function BillingPage() {
   const router = useRouter()
@@ -66,6 +67,10 @@ export default function BillingPage() {
   // Printable modal state
   const [printModalVisit, setPrintModalVisit] = useState<StoredVisit | null>(null)
   const [printModalOpen, setPrintModalOpen] = useState(false)
+
+  // WhatsApp share modal state
+  const [whatsAppModalVisit, setWhatsAppModalVisit] = useState<StoredVisit | null>(null)
+  const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false)
 
   const loadData = useCallback(async () => {
     const [cList, dList, pList, vList, sList] = await Promise.all([
@@ -349,7 +354,10 @@ export default function BillingPage() {
                 <div className="flex flex-wrap gap-2 justify-center pt-2">
                   <Button
                     className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
-                    onClick={() => openWhatsAppInvoice(recentSavedVisit)}
+                    onClick={() => {
+                      setWhatsAppModalVisit(recentSavedVisit)
+                      setWhatsAppModalOpen(true)
+                    }}
                   >
                     <MessageCircle className="h-4 w-4" /> Share on WhatsApp
                   </Button>
@@ -902,8 +910,11 @@ export default function BillingPage() {
                                 size="xs"
                                 variant="outline"
                                 className="h-7 px-2 text-[11px] gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                                onClick={() => openWhatsAppInvoice(v)}
-                                title="Share Invoice & Feedback link on WhatsApp"
+                                onClick={() => {
+                                  setWhatsAppModalVisit(v)
+                                  setWhatsAppModalOpen(true)
+                                }}
+                                title="Preview & Share Invoice on WhatsApp"
                               >
                                 <MessageCircle className="h-3 w-3" /> WhatsApp
                               </Button>
@@ -945,6 +956,13 @@ export default function BillingPage() {
         visit={printModalVisit}
         open={printModalOpen}
         onOpenChange={setPrintModalOpen}
+      />
+
+      {/* WhatsApp Share & Prewritten Message Modal */}
+      <WhatsAppShareModal
+        visit={whatsAppModalVisit}
+        open={whatsAppModalOpen}
+        onOpenChange={setWhatsAppModalOpen}
       />
     </div>
   )

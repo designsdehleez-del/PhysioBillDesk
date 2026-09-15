@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert, MessageCircle, Database } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +23,7 @@ export function Sidebar() {
     { label: 'Services & Pricing', href: '/services', icon: Stethoscope },
     { label: 'Discount Rules', href: '/discounts', icon: Tag },
     { label: 'WhatsApp Settings', href: '/settings/whatsapp', icon: MessageCircle },
+    { label: 'Data & Demo Tools', href: '/settings/data', icon: Database },
   ]
 
   const clinicNav = [
@@ -32,6 +33,7 @@ export function Sidebar() {
     { label: 'Generate Bill', href: '/billing', icon: Receipt },
     { label: 'Centre Doctors', href: '/doctors', icon: UserCog },
     { label: 'WhatsApp Settings', href: '/settings/whatsapp', icon: MessageCircle },
+    { label: 'Data & Demo Tools', href: '/settings/data', icon: Database },
   ]
 
   const activeNav = isAdmin ? adminNav : clinicNav

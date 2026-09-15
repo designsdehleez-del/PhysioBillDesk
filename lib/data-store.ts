@@ -449,7 +449,17 @@ export async function getPatients(query?: string): Promise<Patient[]> {
 
   const cached = localStorage.getItem('physio_patients_cache')
   if (cached) {
-    try { list = JSON.parse(cached) } catch (_) {}
+    try {
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        list = parsed
+      }
+    } catch (_) {}
+  }
+
+  if (list.length === 0) {
+    list = DEMO_PATIENTS
+    localStorage.setItem('physio_patients_cache', JSON.stringify(DEMO_PATIENTS))
   }
 
   if (query?.trim()) {
@@ -681,11 +691,16 @@ export async function getVisits(centreId?: string, query?: string): Promise<Stor
   const cached = localStorage.getItem('physio_visits_cache')
   if (cached) {
     try {
-      list = JSON.parse(cached)
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        list = parsed
+      }
     } catch (_) {}
-  } else {
-    list = DEFAULT_VISITS
-    localStorage.setItem('physio_visits_cache', JSON.stringify(DEFAULT_VISITS))
+  }
+  
+  if (list.length === 0) {
+    list = generateDemoVisits()
+    localStorage.setItem('physio_visits_cache', JSON.stringify(list))
   }
 
   return filterVisits(list, centreId, query)
@@ -1084,11 +1099,11 @@ export async function getPatientFeedback(): Promise<PatientFeedback[]> {
   if (cached) {
     try {
       const parsed = JSON.parse(cached)
-      if (parsed.length > 0) return parsed
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
     } catch (_) {}
   }
-  localStorage.setItem('physio_feedback_cache', JSON.stringify(DEFAULT_FEEDBACK))
-  return DEFAULT_FEEDBACK
+  localStorage.setItem('physio_feedback_cache', JSON.stringify(DEMO_FEEDBACK))
+  return DEMO_FEEDBACK
 }
 
 export async function savePatientFeedback(fb: Omit<PatientFeedback, 'id' | 'created_at'>): Promise<PatientFeedback> {
@@ -1101,4 +1116,719 @@ export async function savePatientFeedback(fb: Omit<PatientFeedback, 'id' | 'crea
   const updated = [newFb, ...current]
   localStorage.setItem('physio_feedback_cache', JSON.stringify(updated))
   return newFb
+}
+
+// ================= RICH DEMO DATASETS & DATA MANAGEMENT =================
+
+export const DEMO_PATIENTS: Patient[] = [
+  {
+    id: 'pat-101',
+    uid: 'CLN-202609-0001',
+    full_name: 'Rahul Verma',
+    age: 38,
+    gender: 'Male',
+    phone: '9876511111',
+    email: 'rahul.verma@example.com',
+    address: 'D-42, South Extension Part 2, New Delhi',
+    blood_group: 'B+',
+    medical_notes: 'L4-L5 Lumbar Disc Bulge with Sciatica. Radiating pain to left leg.',
+    created_at: new Date(Date.now() - 86400000 * 14).toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'pat-102',
+    uid: 'CLN-202609-0002',
+    full_name: 'Ananya Sharma',
+    age: 29,
+    gender: 'Female',
+    phone: '9876522222',
+    email: 'ananya.s@example.com',
+    address: 'Flat 304, Poorvi Enclave, Vasant Vihar, New Delhi',
+    blood_group: 'O+',
+    medical_notes: 'Cervical Spondylosis & Postural Tech Neck. Severe upper trapezius spasms.',
+    created_at: new Date(Date.now() - 86400000 * 12).toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'pat-103',
+    uid: 'CLN-202609-0003',
+    full_name: 'Rajesh Singhania',
+    age: 54,
+    gender: 'Male',
+    phone: '9876533333',
+    email: 'rajesh.singhania@example.com',
+    address: 'Villa 18, Arjun Marg, DLF Phase 1, Gurugram',
+    blood_group: 'A+',
+    medical_notes: 'Post-operative Total Knee Arthroplasty (Right Knee). Week 4 rehabilitation.',
+    created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'pat-104',
+    uid: 'CLN-202609-0004',
+    full_name: 'Meera Krishnan',
+    age: 46,
+    gender: 'Female',
+    phone: '9876544444',
+    email: 'meera.k@example.com',
+    address: 'A-12, Friends Colony West, New Delhi',
+    blood_group: 'AB+',
+    medical_notes: 'Adhesive Capsulitis (Frozen Shoulder Left). Limited abduction & external rotation.',
+    created_at: new Date(Date.now() - 86400000 * 9).toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'pat-105',
+    uid: 'CLN-202609-0005',
+    full_name: 'Kabir Oberoi',
+    age: 24,
+    gender: 'Male',
+    phone: '9876555555',
+    email: 'kabir.oberoi@example.com',
+    address: 'Tower 4, Golf Course Road, DLF Phase 5, Gurugram',
+    blood_group: 'O-',
+    medical_notes: 'Sports Injury: Left ACL Reconstruction + Meniscal Repair (Football injury).',
+    created_at: new Date(Date.now() - 86400000 * 8).toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'pat-106',
+    uid: 'CLN-202609-0006',
+    full_name: 'Sunita Agarwal',
+    age: 63,
+    gender: 'Female',
+    phone: '9876566666',
+    email: 'sunita.agarwal@example.com',
+    address: '88 Basement, Poorvi Marg, Vasant Vihar, New Delhi',
+    blood_group: 'B+',
+    medical_notes: 'Bilateral Knee Osteoarthritis (Grade 3). Requires quadriceps strengthening & balance drills.',
+    created_at: new Date(Date.now() - 86400000 * 7).toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'pat-107',
+    uid: 'CLN-202609-0007',
+    full_name: 'Siddharth Roy',
+    age: 34,
+    gender: 'Male',
+    phone: '9876577777',
+    email: 'siddharth.roy@example.com',
+    address: 'C-55, Nizamuddin East, New Delhi',
+    blood_group: 'A-',
+    medical_notes: 'Chronic Sacroiliac Joint Dysfunction and piriformis tightness.',
+    created_at: new Date(Date.now() - 86400000 * 6).toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'pat-108',
+    uid: 'CLN-202609-0008',
+    full_name: 'Pooja Mehta',
+    age: 31,
+    gender: 'Female',
+    phone: '9876588888',
+    email: 'pooja.mehta@example.com',
+    address: 'House 71, Sector 28, Gurugram',
+    blood_group: 'O+',
+    medical_notes: 'Lateral Epicondylitis (Tennis Elbow Right). High-power laser therapy recommended.',
+    created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'pat-109',
+    uid: 'CLN-202609-0009',
+    full_name: 'Amitav Sen',
+    age: 72,
+    gender: 'Male',
+    phone: '9876599999',
+    email: 'amitav.sen@example.com',
+    address: 'C-22, Vasant Marg, Vasant Vihar, New Delhi',
+    blood_group: 'B+',
+    medical_notes: 'Post-Ischemic Stroke Left Hemiparesis. Gait re-education & upper limb neuromuscular facilitation.',
+    created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'pat-110',
+    uid: 'CLN-202609-0010',
+    full_name: 'Divya Saxena',
+    age: 37,
+    gender: 'Female',
+    phone: '9871112345',
+    email: 'divya.saxena@example.com',
+    address: 'E-14, CV Raman Marg, New Friends Colony, New Delhi',
+    blood_group: 'AB-',
+    medical_notes: 'Thoracic Kyphoscoliosis & chronic upper back pain due to desk work posture.',
+    created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+]
+
+export function generateDemoVisits(): StoredVisit[] {
+  const now = new Date()
+  const todayStr = now.toISOString().split('T')[0]
+  const d1 = new Date(now.getTime() - 86400000 * 1).toISOString().split('T')[0]
+  const d2 = new Date(now.getTime() - 86400000 * 2).toISOString().split('T')[0]
+  const d3 = new Date(now.getTime() - 86400000 * 3).toISOString().split('T')[0]
+  const d4 = new Date(now.getTime() - 86400000 * 4).toISOString().split('T')[0]
+  const d5 = new Date(now.getTime() - 86400000 * 5).toISOString().split('T')[0]
+  const d6 = new Date(now.getTime() - 86400000 * 6).toISOString().split('T')[0]
+  const d7 = new Date(now.getTime() - 86400000 * 7).toISOString().split('T')[0]
+
+  return [
+    // Today's Visits
+    {
+      id: 'vis-demo-1',
+      bill_number: 'INV-202609-0001',
+      patient_id: 'pat-101',
+      patient_uid: 'CLN-202609-0001',
+      patient_name: 'Rahul Verma',
+      patient_phone: '9876511111',
+      patient_age: 38,
+      patient_gender: 'Male',
+      doctor_name: 'Sarah Jenkins',
+      doctor_specialization: 'Orthopedic Physiotherapy',
+      centre_id: 'c1111111-1111-1111-1111-111111111111',
+      centre_name: 'New Friends Colony, New Delhi',
+      centre_address: 'D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025',
+      centre_phone: '08383936905',
+      items: [
+        { service_name: 'Initial Consultation & Assessment', price: 600, quantity: 1, total: 600 },
+        { service_name: 'Dry Needling Therapy (Trigger Point Release)', price: 750, quantity: 1, total: 750 },
+        { service_name: 'Spine Decompression & Mechanical Traction', price: 950, quantity: 1, total: 950 },
+      ],
+      subtotal: 2300,
+      discount: 200,
+      total: 2100,
+      payment_mode: 'UPI',
+      payment_status: 'Paid',
+      notes: 'Significant spasm reduction after lumbar dry needling. Ice pack applied post-session.',
+      visit_date: todayStr,
+      created_at: new Date(now.getTime() - 3600000 * 5).toISOString(),
+    },
+    {
+      id: 'vis-demo-2',
+      bill_number: 'INV-202609-0002',
+      patient_id: 'pat-102',
+      patient_uid: 'CLN-202609-0002',
+      patient_name: 'Ananya Sharma',
+      patient_phone: '9876522222',
+      patient_age: 29,
+      patient_gender: 'Female',
+      doctor_name: 'Emily Watson',
+      doctor_specialization: 'Neuro Physiotherapy',
+      centre_id: 'c2222222-2222-2222-2222-222222222222',
+      centre_name: 'Vasant Vihar, New Delhi',
+      centre_address: '86 Basement, Poorvi Marg, Vasant Vihar, New Delhi – 110057',
+      centre_phone: '08700264533',
+      items: [
+        { service_name: 'Manual Therapy & Joint Mobilization', price: 900, quantity: 1, total: 900 },
+        { service_name: 'Cupping & Myofascial Release Therapy', price: 700, quantity: 1, total: 700 },
+      ],
+      subtotal: 1600,
+      discount: 160,
+      total: 1440,
+      payment_mode: 'Card',
+      payment_status: 'Paid',
+      notes: 'Suboccipital release and cervical postural alignment exercises demonstrated.',
+      visit_date: todayStr,
+      created_at: new Date(now.getTime() - 3600000 * 3).toISOString(),
+    },
+    {
+      id: 'vis-demo-3',
+      bill_number: 'INV-202609-0003',
+      patient_id: 'pat-103',
+      patient_uid: 'CLN-202609-0003',
+      patient_name: 'Rajesh Singhania',
+      patient_phone: '9876533333',
+      patient_age: 54,
+      patient_gender: 'Male',
+      doctor_name: 'Priya Nair',
+      doctor_specialization: 'Cardiorespiratory & Ortho Rehab',
+      centre_id: 'c3333333-3333-3333-3333-333333333333',
+      centre_name: 'Gurugram – DLF Phase 1',
+      centre_address: 'C2/17, Arjun Marg, DLF Phase 1, Gurugram, Haryana – 122002',
+      centre_phone: '+91 92171 83736',
+      items: [
+        { service_name: '10-Session Comprehensive Rehab Bundle', price: 6800, quantity: 1, total: 6800 },
+      ],
+      subtotal: 6800,
+      discount: 300,
+      total: 6500,
+      payment_mode: 'UPI',
+      payment_status: 'Paid',
+      notes: 'Enrolled in 10-session knee arthroplasty recovery protocol. Session 1 completed.',
+      visit_date: todayStr,
+      created_at: new Date(now.getTime() - 3600000 * 2).toISOString(),
+    },
+    {
+      id: 'vis-demo-4',
+      bill_number: 'INV-202609-0004',
+      patient_id: 'pat-105',
+      patient_uid: 'CLN-202609-0005',
+      patient_name: 'Kabir Oberoi',
+      patient_phone: '9876555555',
+      patient_age: 24,
+      patient_gender: 'Male',
+      doctor_name: 'Rajesh Sharma',
+      doctor_specialization: 'Sports Rehabilitation',
+      centre_id: 'c3333333-3333-3333-3333-333333333333',
+      centre_name: 'Gurugram – DLF Phase 1',
+      centre_address: 'C2/17, Arjun Marg, DLF Phase 1, Gurugram, Haryana – 122002',
+      centre_phone: '+91 92171 83736',
+      items: [
+        { service_name: 'Sports Injury Rehabilitation & Conditioning', price: 1200, quantity: 1, total: 1200 },
+        { service_name: 'High-Power Laser Therapy (Class 4)', price: 1000, quantity: 1, total: 1000 },
+      ],
+      subtotal: 2200,
+      discount: 0,
+      total: 2200,
+      payment_mode: 'Card',
+      payment_status: 'Paid',
+      notes: 'Proprioceptive single-leg balance and laser therapy on patellar tendon.',
+      visit_date: todayStr,
+      created_at: new Date(now.getTime() - 3600000 * 1).toISOString(),
+    },
+
+    // Past 7 Days Distributed Encounters
+    {
+      id: 'vis-demo-5',
+      bill_number: 'INV-202609-0005',
+      patient_id: 'pat-104',
+      patient_uid: 'CLN-202609-0004',
+      patient_name: 'Meera Krishnan',
+      patient_phone: '9876544444',
+      patient_age: 46,
+      patient_gender: 'Female',
+      doctor_name: 'Sarah Jenkins',
+      centre_id: 'c1111111-1111-1111-1111-111111111111',
+      centre_name: 'New Friends Colony, New Delhi',
+      items: [
+        { service_name: '5-Session Pain Relief & Recovery Bundle', price: 3600, quantity: 1, total: 3600 },
+      ],
+      subtotal: 3600,
+      discount: 200,
+      total: 3400,
+      payment_mode: 'UPI',
+      payment_status: 'Paid',
+      notes: 'Frozen shoulder mobilization package booked.',
+      visit_date: d1,
+      created_at: new Date(now.getTime() - 86400000 * 1).toISOString(),
+    },
+    {
+      id: 'vis-demo-6',
+      bill_number: 'INV-202609-0006',
+      patient_id: 'pat-106',
+      patient_uid: 'CLN-202609-0006',
+      patient_name: 'Sunita Agarwal',
+      patient_phone: '9876566666',
+      patient_age: 63,
+      patient_gender: 'Female',
+      doctor_name: 'Emily Watson',
+      centre_id: 'c2222222-2222-2222-2222-222222222222',
+      centre_name: 'Vasant Vihar, New Delhi',
+      items: [
+        { service_name: 'Standard Physiotherapy Session (45 min)', price: 800, quantity: 1, total: 800 },
+        { service_name: 'Electrotherapy (IFT / TENS / Ultrasound)', price: 500, quantity: 1, total: 500 },
+      ],
+      subtotal: 1300,
+      discount: 100,
+      total: 1200,
+      payment_mode: 'Cash',
+      payment_status: 'Paid',
+      notes: 'Knee joint IFT therapy & isometric quadriceps strengthening.',
+      visit_date: d1,
+      created_at: new Date(now.getTime() - 86400000 * 1 - 3600000 * 2).toISOString(),
+    },
+    {
+      id: 'vis-demo-7',
+      bill_number: 'INV-202609-0007',
+      patient_id: 'pat-107',
+      patient_uid: 'CLN-202609-0007',
+      patient_name: 'Siddharth Roy',
+      patient_phone: '9876577777',
+      patient_age: 34,
+      patient_gender: 'Male',
+      doctor_name: 'Sarah Jenkins',
+      centre_id: 'c1111111-1111-1111-1111-111111111111',
+      centre_name: 'New Friends Colony, New Delhi',
+      items: [
+        { service_name: 'Dry Needling Therapy (Trigger Point Release)', price: 750, quantity: 1, total: 750 },
+        { service_name: 'Spine Decompression & Mechanical Traction', price: 950, quantity: 1, total: 950 },
+      ],
+      subtotal: 1700,
+      discount: 150,
+      total: 1550,
+      payment_mode: 'UPI',
+      payment_status: 'Paid',
+      notes: 'SI joint manipulation with decompression.',
+      visit_date: d2,
+      created_at: new Date(now.getTime() - 86400000 * 2).toISOString(),
+    },
+    {
+      id: 'vis-demo-8',
+      bill_number: 'INV-202609-0008',
+      patient_id: 'pat-108',
+      patient_uid: 'CLN-202609-0008',
+      patient_name: 'Pooja Mehta',
+      patient_phone: '9876588888',
+      patient_age: 31,
+      patient_gender: 'Female',
+      doctor_name: 'Priya Nair',
+      centre_id: 'c3333333-3333-3333-3333-333333333333',
+      centre_name: 'Gurugram – DLF Phase 1',
+      items: [
+        { service_name: 'High-Power Laser Therapy (Class 4)', price: 1000, quantity: 1, total: 1000 },
+        { service_name: 'Kinesiology Taping & Strapping', price: 450, quantity: 1, total: 450 },
+      ],
+      subtotal: 1450,
+      discount: 0,
+      total: 1450,
+      payment_mode: 'UPI',
+      payment_status: 'Paid',
+      notes: 'Laser therapy on extensor carpi radialis brevis tendon with inhibitory taping.',
+      visit_date: d2,
+      created_at: new Date(now.getTime() - 86400000 * 2 - 3600000 * 4).toISOString(),
+    },
+    {
+      id: 'vis-demo-9',
+      bill_number: 'INV-202609-0009',
+      patient_id: 'pat-109',
+      patient_uid: 'CLN-202609-0009',
+      patient_name: 'Amitav Sen',
+      patient_phone: '9876599999',
+      patient_age: 72,
+      patient_gender: 'Male',
+      doctor_name: 'Emily Watson',
+      centre_id: 'c2222222-2222-2222-2222-222222222222',
+      centre_name: 'Vasant Vihar, New Delhi',
+      items: [
+        { service_name: 'Stroke & Paralysis Functional Rehab', price: 1500, quantity: 1, total: 1500 },
+      ],
+      subtotal: 1500,
+      discount: 150,
+      total: 1350,
+      payment_mode: 'Insurance',
+      payment_status: 'Paid',
+      notes: 'Weight bearing transfer drills and upper extremity fine motor coordination.',
+      visit_date: d3,
+      created_at: new Date(now.getTime() - 86400000 * 3).toISOString(),
+    },
+    {
+      id: 'vis-demo-10',
+      bill_number: 'INV-202609-0010',
+      patient_id: 'pat-110',
+      patient_uid: 'CLN-202609-0010',
+      patient_name: 'Divya Saxena',
+      patient_phone: '9871112345',
+      patient_age: 37,
+      patient_gender: 'Female',
+      doctor_name: 'Sarah Jenkins',
+      centre_id: 'c1111111-1111-1111-1111-111111111111',
+      centre_name: 'New Friends Colony, New Delhi',
+      items: [
+        { service_name: 'Ergonomic Evaluation & Posture Correction', price: 850, quantity: 1, total: 850 },
+        { service_name: 'Manual Therapy & Joint Mobilization', price: 900, quantity: 1, total: 900 },
+      ],
+      subtotal: 1750,
+      discount: 200,
+      total: 1550,
+      payment_mode: 'Card',
+      payment_status: 'Paid',
+      notes: 'Thoracic mobilization and ergonomic chair lumbar support recommendation.',
+      visit_date: d3,
+      created_at: new Date(now.getTime() - 86400000 * 3 - 3600000 * 3).toISOString(),
+    },
+    {
+      id: 'vis-demo-11',
+      bill_number: 'INV-202609-0011',
+      patient_id: 'pat-101',
+      patient_uid: 'CLN-202609-0001',
+      patient_name: 'Rahul Verma',
+      patient_phone: '9876511111',
+      doctor_name: 'Sarah Jenkins',
+      centre_id: 'c1111111-1111-1111-1111-111111111111',
+      centre_name: 'New Friends Colony, New Delhi',
+      items: [
+        { service_name: 'Standard Physiotherapy Session (45 min)', price: 800, quantity: 1, total: 800 },
+        { service_name: 'Electrotherapy (IFT / TENS / Ultrasound)', price: 500, quantity: 1, total: 500 },
+      ],
+      subtotal: 1300,
+      discount: 100,
+      total: 1200,
+      payment_mode: 'UPI',
+      payment_status: 'Paid',
+      notes: 'Core stabilization and bridging exercises performed with good control.',
+      visit_date: d4,
+      created_at: new Date(now.getTime() - 86400000 * 4).toISOString(),
+    },
+    {
+      id: 'vis-demo-12',
+      bill_number: 'INV-202609-0012',
+      patient_id: 'pat-105',
+      patient_uid: 'CLN-202609-0005',
+      patient_name: 'Kabir Oberoi',
+      patient_phone: '9876555555',
+      doctor_name: 'Rajesh Sharma',
+      centre_id: 'c3333333-3333-3333-3333-333333333333',
+      centre_name: 'Gurugram – DLF Phase 1',
+      items: [
+        { service_name: '5-Session Pain Relief & Recovery Bundle', price: 3600, quantity: 1, total: 3600 },
+      ],
+      subtotal: 3600,
+      discount: 300,
+      total: 3300,
+      payment_mode: 'UPI',
+      payment_status: 'Paid',
+      notes: 'Sports rehab package renewal for phase 2 strength conditioning.',
+      visit_date: d5,
+      created_at: new Date(now.getTime() - 86400000 * 5).toISOString(),
+    },
+    {
+      id: 'vis-demo-13',
+      bill_number: 'INV-202609-0013',
+      patient_id: 'pat-102',
+      patient_uid: 'CLN-202609-0002',
+      patient_name: 'Ananya Sharma',
+      patient_phone: '9876522222',
+      doctor_name: 'Emily Watson',
+      centre_id: 'c2222222-2222-2222-2222-222222222222',
+      centre_name: 'Vasant Vihar, New Delhi',
+      items: [
+        { service_name: 'Initial Consultation & Assessment', price: 600, quantity: 1, total: 600 },
+        { service_name: 'High-Power Laser Therapy (Class 4)', price: 1000, quantity: 1, total: 1000 },
+      ],
+      subtotal: 1600,
+      discount: 100,
+      total: 1500,
+      payment_mode: 'Card',
+      payment_status: 'Paid',
+      notes: 'Initial cervical consultation with class 4 laser on trigger bands.',
+      visit_date: d6,
+      created_at: new Date(now.getTime() - 86400000 * 6).toISOString(),
+    },
+    {
+      id: 'vis-demo-14',
+      bill_number: 'INV-202609-0014',
+      patient_id: 'pat-104',
+      patient_uid: 'CLN-202609-0004',
+      patient_name: 'Meera Krishnan',
+      patient_phone: '9876544444',
+      doctor_name: 'Sarah Jenkins',
+      centre_id: 'c1111111-1111-1111-1111-111111111111',
+      centre_name: 'New Friends Colony, New Delhi',
+      items: [
+        { service_name: 'Manual Therapy & Joint Mobilization', price: 900, quantity: 1, total: 900 },
+        { service_name: 'Electrotherapy (IFT / TENS / Ultrasound)', price: 500, quantity: 1, total: 500 },
+      ],
+      subtotal: 1400,
+      discount: 100,
+      total: 1300,
+      payment_mode: 'UPI',
+      payment_status: 'Paid',
+      notes: 'Glenohumeral inferior glide mobilization with ultrasound therapy.',
+      visit_date: d7,
+      created_at: new Date(now.getTime() - 86400000 * 7).toISOString(),
+    },
+  ]
+}
+
+export const DEMO_FEEDBACK: PatientFeedback[] = [
+  {
+    id: 'fb-demo-1',
+    bill_number: 'INV-202609-0001',
+    patient_uid: 'CLN-202609-0001',
+    patient_name: 'Rahul Verma',
+    patient_phone: '9876511111',
+    doctor_name: 'Sarah Jenkins',
+    centre_name: 'New Friends Colony, New Delhi',
+    rating: 5,
+    hygiene_rating: 5,
+    treatment_rating: 5,
+    staff_rating: 5,
+    comments: 'Outstanding relief from lower back pain in just 3 sessions with Dr. Sarah Jenkins. Dry needling was super effective!',
+    created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
+  },
+  {
+    id: 'fb-demo-2',
+    bill_number: 'INV-202609-0002',
+    patient_uid: 'CLN-202609-0002',
+    patient_name: 'Ananya Sharma',
+    patient_phone: '9876522222',
+    doctor_name: 'Emily Watson',
+    centre_name: 'Vasant Vihar, New Delhi',
+    rating: 5,
+    hygiene_rating: 5,
+    treatment_rating: 5,
+    staff_rating: 5,
+    comments: 'Dr. Emily Watson helped me recover full neck flexibility. Very clean, tranquil clinic in Vasant Vihar!',
+    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+  {
+    id: 'fb-demo-3',
+    bill_number: 'INV-202609-0003',
+    patient_uid: 'CLN-202609-0003',
+    patient_name: 'Rajesh Singhania',
+    patient_phone: '9876533333',
+    doctor_name: 'Priya Nair',
+    centre_name: 'Gurugram – DLF Phase 1',
+    rating: 5,
+    hygiene_rating: 5,
+    treatment_rating: 5,
+    staff_rating: 5,
+    comments: 'World-class knee rehabilitation facility in DLF Phase 1. Dr. Priya is exceptionally caring, patient and knowledgeable.',
+    created_at: new Date(Date.now() - 3600000 * 1).toISOString(),
+  },
+  {
+    id: 'fb-demo-4',
+    bill_number: 'INV-202609-0004',
+    patient_uid: 'CLN-202609-0005',
+    patient_name: 'Kabir Oberoi',
+    patient_phone: '9876555555',
+    doctor_name: 'Rajesh Sharma',
+    centre_name: 'Gurugram – DLF Phase 1',
+    rating: 5,
+    hygiene_rating: 5,
+    treatment_rating: 5,
+    staff_rating: 5,
+    comments: 'Dr. Rajesh Sharma’s sports drills got me back on the football pitch after my ACL tear. 10/10 recommendation!',
+    created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
+  },
+  {
+    id: 'fb-demo-5',
+    bill_number: 'INV-202609-0006',
+    patient_uid: 'CLN-202609-0006',
+    patient_name: 'Sunita Agarwal',
+    patient_phone: '9876566666',
+    doctor_name: 'Emily Watson',
+    centre_name: 'Vasant Vihar, New Delhi',
+    rating: 5,
+    hygiene_rating: 5,
+    treatment_rating: 5,
+    staff_rating: 5,
+    comments: 'Very gentle and effective physiotherapy for my knee osteoarthritis. I can now climb stairs without hesitation.',
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+  },
+  {
+    id: 'fb-demo-6',
+    bill_number: 'INV-202609-0010',
+    patient_uid: 'CLN-202609-0010',
+    patient_name: 'Divya Saxena',
+    patient_phone: '9871112345',
+    doctor_name: 'Sarah Jenkins',
+    centre_name: 'New Friends Colony, New Delhi',
+    rating: 4,
+    hygiene_rating: 5,
+    treatment_rating: 4,
+    staff_rating: 5,
+    comments: 'Great ergonomic advice and posture release. Clinic ambience is very peaceful.',
+    created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+  },
+]
+
+export async function seedDemoData(): Promise<{ patients: number; visits: number; feedback: number }> {
+  const visits = generateDemoVisits()
+  localStorage.setItem('physio_patients_cache', JSON.stringify(DEMO_PATIENTS))
+  localStorage.setItem('physio_visits_cache', JSON.stringify(visits))
+  localStorage.setItem('physio_feedback_cache', JSON.stringify(DEMO_FEEDBACK))
+
+  return {
+    patients: DEMO_PATIENTS.length,
+    visits: visits.length,
+    feedback: DEMO_FEEDBACK.length,
+  }
+}
+
+export async function clearDemoData(): Promise<void> {
+  const currentPatients = await getPatients()
+  const currentVisits = await getVisits()
+  const currentFeedback = await getPatientFeedback()
+
+  const nonDemoPatients = currentPatients.filter(p => !p.id.startsWith('pat-10') && !p.id.startsWith('pat-demo'))
+  const nonDemoVisits = currentVisits.filter(v => !v.id.startsWith('vis-demo') && !v.id.startsWith('vis-10'))
+  const nonDemoFeedback = currentFeedback.filter(f => !f.id.startsWith('fb-demo') && !f.id.startsWith('fb-1') && !f.id.startsWith('fb-2'))
+
+  localStorage.setItem('physio_patients_cache', JSON.stringify(nonDemoPatients))
+  localStorage.setItem('physio_visits_cache', JSON.stringify(nonDemoVisits))
+  localStorage.setItem('physio_feedback_cache', JSON.stringify(nonDemoFeedback))
+}
+
+export async function resetToCleanSlate(): Promise<void> {
+  localStorage.setItem('physio_patients_cache', JSON.stringify([]))
+  localStorage.setItem('physio_visits_cache', JSON.stringify([]))
+  localStorage.setItem('physio_feedback_cache', JSON.stringify([]))
+}
+
+export async function exportFullDatabaseBackup() {
+  const [patients, visits, feedback, centres, doctors, services] = await Promise.all([
+    getPatients(),
+    getVisits(),
+    getPatientFeedback(),
+    getCentres(),
+    getDoctors(),
+    getServices(),
+  ])
+
+  const wb = XLSX.utils.book_new()
+
+  // Sheet 1: Patients
+  const wsPatients = XLSX.utils.json_to_sheet(patients.map(p => ({
+    'UID': p.uid,
+    'Name': p.full_name,
+    'Age': p.age,
+    'Gender': p.gender,
+    'Phone': p.phone,
+    'Email': p.email || '',
+    'Address': p.address || '',
+    'Blood Group': p.blood_group || '',
+    'Medical Notes': p.medical_notes || '',
+    'Registered Date': p.created_at,
+  })))
+  XLSX.utils.book_append_sheet(wb, wsPatients, 'Patients')
+
+  // Sheet 2: Billing Ledger
+  const wsVisits = XLSX.utils.json_to_sheet(visits.map(v => ({
+    'Bill Number': v.bill_number,
+    'Date': v.visit_date,
+    'Patient UID': v.patient_uid,
+    'Patient Name': v.patient_name,
+    'Phone': v.patient_phone,
+    'Centre': v.centre_name,
+    'Doctor': v.doctor_name ? `Dr. ${v.doctor_name}` : '',
+    'Services Breakdown': v.items?.map(i => `${i.service_name} (x${i.quantity} @ ₹${i.price})`).join('; '),
+    'Subtotal': v.subtotal,
+    'Discount': v.discount,
+    'Total Paid': v.total,
+    'Payment Mode': v.payment_mode,
+    'Notes': v.notes || '',
+  })))
+  XLSX.utils.book_append_sheet(wb, wsVisits, 'Billing_Ledger')
+
+  // Sheet 3: Feedback
+  const wsFeedback = XLSX.utils.json_to_sheet(feedback.map(f => ({
+    'Patient Name': f.patient_name,
+    'Patient UID': f.patient_uid,
+    'Overall Rating (1-5)': f.rating,
+    'Treatment Rating': f.treatment_rating,
+    'Hygiene Rating': f.hygiene_rating,
+    'Staff Rating': f.staff_rating,
+    'Comments / Review': f.comments || '',
+    'Doctor': f.doctor_name,
+    'Centre': f.centre_name,
+    'Date': f.created_at,
+  })))
+  XLSX.utils.book_append_sheet(wb, wsFeedback, 'Patient_Feedback')
+
+  // Sheet 4: Centres
+  const wsCentres = XLSX.utils.json_to_sheet(centres)
+  XLSX.utils.book_append_sheet(wb, wsCentres, 'Centres')
+
+  // Sheet 5: Doctors
+  const wsDoctors = XLSX.utils.json_to_sheet(doctors)
+  XLSX.utils.book_append_sheet(wb, wsDoctors, 'Doctors')
+
+  // Sheet 6: Services
+  const wsServices = XLSX.utils.json_to_sheet(services)
+  XLSX.utils.book_append_sheet(wb, wsServices, 'Services')
+
+  XLSX.writeFile(wb, `Physionautics_Complete_Backup_${new Date().toISOString().split('T')[0]}.xlsx`)
 }

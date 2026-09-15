@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Printer, Receipt, User } from 'lucide-react'
@@ -10,13 +10,17 @@ import { createClient } from '@/lib/supabase/client'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import type { Patient, VisitWithServices } from '@/lib/supabase/types'
 
+import { PrintableInvoiceModal } from '@/components/billing/printable-invoice-modal'
+import { StoredVisit } from '@/lib/data-store'
+
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [patient, setPatient] = useState<Patient | null>(null)
   const [visits, setVisits] = useState<VisitWithServices[]>([])
   const [loading, setLoading] = useState(true)
-  const [printVisit, setPrintVisit] = useState<VisitWithServices | null>(null)
+  const [modalVisit, setModalVisit] = useState<StoredVisit | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -30,8 +34,6 @@ export default function PatientDetailPage() {
     load()
   }, [id])
 
-  const handlePrint = () => window.print()
-
   if (loading) return <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" /></div>
   if (!patient) return <div className="p-6 text-center text-muted-foreground">Patient not found</div>
 
@@ -41,6 +43,44 @@ export default function PatientDetailPage() {
     ['Phone', patient.phone], ['Email', patient.email ?? 'N/A'], ['Address', patient.address ?? 'N/A'],
     ['Registered', formatDateTime(patient.created_at)],
   ]
+
+  const openPrintModal = (v: VisitWithServices) => {
+    const converted: StoredVisit = {
+      id: v.id,
+      bill_number: v.bill_number,
+      patient_id: patient.id,
+      patient_uid: patient.uid,
+      patient_name: patient.full_name,
+      patient_phone: patient.phone,
+      patient_age: patient.age,
+      patient_gender: patient.gender,
+      patient_address: patient.address || undefined,
+      doctor_id: v.doctor_id,
+      doctor_name: v.doctor_name,
+      doctor_specialization: null,
+      centre_id: v.centre_id,
+      centre_name: v.centre_name,
+      centre_address: null,
+      centre_phone: null,
+      items: (v.visit_services || []).map(s => ({
+        id: s.id,
+        service_id: s.service_id,
+        service_name: s.service_name,
+        price: Number(s.price) || 0,
+        quantity: Number(s.quantity) || 1,
+        total: (Number(s.price) || 0) * (Number(s.quantity) || 1),
+      })),
+      subtotal: Number(v.subtotal) || 0,
+      discount: Number(v.discount) || 0,
+      total: Number(v.total) || 0,
+      payment_mode: (v.payment_mode as any) || 'Cash',
+      payment_status: 'Paid',
+      visit_date: v.visit_date,
+      created_at: v.created_at,
+    }
+    setModalVisit(converted)
+    setModalOpen(true)
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -95,7 +135,7 @@ export default function PatientDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">{v.payment_mode}</Badge>
-                    <Button size="sm" variant="outline" className="no-print" onClick={() => setPrintVisit(v)}>
+                    <Button size="sm" variant="outline" className="no-print" onClick={() => openPrintModal(v)}>
                       <Printer className="h-3 w-3 mr-1" />Print
                     </Button>
                   </div>
@@ -121,48 +161,11 @@ export default function PatientDetailPage() {
         </div>
       </div>
 
-      {printVisit && (
-        <Dialog open={!!printVisit} onOpenChange={() => setPrintVisit(null)}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle className="no-print">Bill Preview</DialogTitle></DialogHeader>
-            <div className="print-bill-container p-4 border rounded-lg text-sm">
-              <div className="text-center mb-4">
-                <h2 className="text-lg font-bold">{printVisit.centre_name ?? 'Physionautics'}</h2>
-                <p className="text-xs text-muted-foreground">Clinic Management System</p>
-                <p className="text-xs font-mono mt-1">{printVisit.bill_number}</p>
-                <p className="text-xs text-muted-foreground">{formatDate(printVisit.visit_date)}</p>
-              </div>
-              <div className="border-t pt-3 mb-3 text-xs space-y-1">
-                <p><strong>Patient:</strong> {patient.full_name} ({patient.uid})</p>
-                <p><strong>Age/Gender:</strong> {patient.age} / {patient.gender}</p>
-                <p><strong>Phone:</strong> {patient.phone}</p>
-                {printVisit.doctor_name && <p><strong>Doctor:</strong> Dr. {printVisit.doctor_name}</p>}
-              </div>
-              <table className="w-full text-xs border-t mb-3">
-                <thead><tr className="border-b text-left"><th className="py-1 pr-2">Sr</th><th className="py-1">Service</th><th className="py-1 text-right">Amount</th></tr></thead>
-                <tbody>{printVisit.visit_services?.map((s, i) => (
-                  <tr key={s.id} className="border-b">
-                    <td className="py-1 pr-2">{i+1}</td>
-                    <td className="py-1">{s.service_name}{s.quantity > 1 ? ` x${s.quantity}` : ''}</td>
-                    <td className="py-1 text-right">{formatCurrency(s.price * s.quantity)}</td>
-                  </tr>
-                ))}</tbody>
-              </table>
-              <div className="text-xs space-y-1 text-right border-t pt-2">
-                <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(printVisit.subtotal)}</span></div>
-                {printVisit.discount > 0 && <div className="flex justify-between"><span>Discount</span><span>- {formatCurrency(printVisit.discount)}</span></div>}
-                <div className="flex justify-between font-bold text-sm"><span>TOTAL</span><span>{formatCurrency(printVisit.total)}</span></div>
-                <div className="flex justify-between text-muted-foreground"><span>Payment</span><span>{printVisit.payment_mode}</span></div>
-              </div>
-              <p className="text-center text-xs text-muted-foreground mt-4 border-t pt-2">Thank you. Get well soon!</p>
-            </div>
-            <div className="flex justify-end gap-2 no-print">
-              <Button variant="outline" onClick={() => setPrintVisit(null)}>Close</Button>
-              <Button onClick={handlePrint}><Printer className="h-4 w-4 mr-2" />Print</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      <PrintableInvoiceModal
+        visit={modalVisit}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+      />
     </div>
   )
 }

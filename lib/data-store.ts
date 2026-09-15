@@ -1,4 +1,4 @@
-﻿import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import type { Centre, Doctor, Patient, Service, DiscountPreset } from '@/lib/supabase/types'
 import * as XLSX from 'xlsx'
 
@@ -432,4 +432,340 @@ export function exportPatientsToExcel(patients: Patient[]) {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Patients')
   XLSX.writeFile(wb, `Physionautics_Patients_${new Date().toISOString().split('T')[0]}.xlsx`)
+}
+
+// ================= VISITS & BILLING DATA =================
+export interface BillLineItem {
+  id?: string
+  service_id?: string
+  service_name: string
+  price: number
+  quantity: number
+  total: number
+}
+
+export interface StoredVisit {
+  id: string
+  bill_number: string
+  patient_id: string
+  patient_uid: string
+  patient_name: string
+  patient_phone: string
+  patient_age?: number
+  patient_gender?: string
+  patient_address?: string
+  doctor_id?: string | null
+  doctor_name?: string | null
+  doctor_specialization?: string | null
+  centre_id?: string | null
+  centre_name?: string | null
+  centre_address?: string | null
+  centre_phone?: string | null
+  items: BillLineItem[]
+  subtotal: number
+  discount: number
+  discount_preset_name?: string
+  total: number
+  payment_mode: 'Cash' | 'Card' | 'UPI' | 'Insurance' | 'Bank Transfer'
+  payment_status: 'Paid' | 'Pending'
+  notes?: string
+  visit_date: string
+  created_at: string
+}
+
+const DEFAULT_VISITS: StoredVisit[] = [
+  {
+    id: 'vis-101',
+    bill_number: 'INV-202609-0001',
+    patient_id: 'pat-1',
+    patient_uid: 'CLN-202609-0001',
+    patient_name: 'Rahul Verma',
+    patient_phone: '+91 98765 11111',
+    patient_age: 38,
+    patient_gender: 'Male',
+    patient_address: 'Flat 402, Green Meadows, Central Dist',
+    doctor_id: 'doc-101',
+    doctor_name: 'Dr. Sarah Jenkins',
+    doctor_specialization: 'Orthopedic Physiotherapy',
+    centre_id: 'c1111111-1111-1111-1111-111111111111',
+    centre_name: 'Downtown Clinic (Centre 1)',
+    centre_address: '101 Central Ave, Suite 4',
+    centre_phone: '+91 98765 43210',
+    items: [
+      { service_name: 'Consultation', price: 500, quantity: 1, total: 500 },
+      { service_name: 'Physiotherapy Session (45 min)', price: 800, quantity: 1, total: 800 },
+      { service_name: 'Dry Needling Therapy', price: 600, quantity: 1, total: 600 },
+    ],
+    subtotal: 1900,
+    discount: 200,
+    discount_preset_name: 'Privilege Member (₹200)',
+    total: 1700,
+    payment_mode: 'UPI',
+    payment_status: 'Paid',
+    notes: 'Lower lumbar mobilization session completed.',
+    visit_date: new Date().toISOString().split('T')[0],
+    created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
+  },
+  {
+    id: 'vis-102',
+    bill_number: 'INV-202609-0002',
+    patient_id: 'pat-2',
+    patient_uid: 'CLN-202609-0002',
+    patient_name: 'Ananya Sharma',
+    patient_phone: '+91 98765 22222',
+    patient_age: 29,
+    patient_gender: 'Female',
+    patient_address: '12 Sunrise Enclave',
+    doctor_id: 'doc-201',
+    doctor_name: 'Dr. Emily Watson',
+    doctor_specialization: 'Neuro Physiotherapy',
+    centre_id: 'c2222222-2222-2222-2222-222222222222',
+    centre_name: 'Westside Rehab (Centre 2)',
+    centre_address: '45 West Park Blvd',
+    centre_phone: '+91 98765 43211',
+    items: [
+      { service_name: 'Consultation', price: 500, quantity: 1, total: 500 },
+      { service_name: 'Cupping Therapy', price: 700, quantity: 1, total: 700 },
+    ],
+    subtotal: 1200,
+    discount: 120,
+    discount_preset_name: 'Welcome 10% Discount',
+    total: 1080,
+    payment_mode: 'Card',
+    payment_status: 'Paid',
+    notes: 'Upper trapezius tension release.',
+    visit_date: new Date().toISOString().split('T')[0],
+    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+]
+
+export async function getVisits(centreId?: string, query?: string): Promise<StoredVisit[]> {
+  let list: StoredVisit[] = []
+  try {
+    const supabase = createClient()
+    let q = supabase.from('visits').select('*, visit_services(*), patients(*)').order('created_at', { ascending: false })
+    if (centreId && centreId !== 'all') {
+      q = q.eq('centre_id', centreId)
+    }
+    const { data } = await q
+    if (data && data.length > 0) {
+      const mapped: StoredVisit[] = data.map((v: any) => ({
+        id: v.id,
+        bill_number: v.bill_number,
+        patient_id: v.patient_id,
+        patient_uid: v.patients?.uid || 'CLN-PATIENT',
+        patient_name: v.patients?.full_name || 'Patient',
+        patient_phone: v.patients?.phone || '',
+        patient_age: v.patients?.age,
+        patient_gender: v.patients?.gender,
+        patient_address: v.patients?.address || '',
+        doctor_id: v.doctor_id,
+        doctor_name: v.doctor_name,
+        doctor_specialization: '',
+        centre_id: v.centre_id,
+        centre_name: v.centre_name,
+        centre_address: '',
+        centre_phone: '',
+        items: (v.visit_services || []).map((s: any) => ({
+          id: s.id,
+          service_id: s.service_id,
+          service_name: s.service_name,
+          price: Number(s.price) || 0,
+          quantity: Number(s.quantity) || 1,
+          total: (Number(s.price) || 0) * (Number(s.quantity) || 1),
+        })),
+        subtotal: Number(v.subtotal) || 0,
+        discount: Number(v.discount) || 0,
+        total: Number(v.total) || 0,
+        payment_mode: (v.payment_mode as any) || 'Cash',
+        payment_status: 'Paid',
+        visit_date: v.visit_date,
+        created_at: v.created_at,
+      }))
+
+      localStorage.setItem('physio_visits_cache', JSON.stringify(mapped))
+      return filterVisits(mapped, centreId, query)
+    }
+  } catch (_) {}
+
+  const cached = localStorage.getItem('physio_visits_cache')
+  if (cached) {
+    try {
+      list = JSON.parse(cached)
+    } catch (_) {}
+  } else {
+    list = DEFAULT_VISITS
+    localStorage.setItem('physio_visits_cache', JSON.stringify(DEFAULT_VISITS))
+  }
+
+  return filterVisits(list, centreId, query)
+}
+
+function filterVisits(list: StoredVisit[], centreId?: string, query?: string): StoredVisit[] {
+  let res = list
+  if (centreId && centreId !== 'all') {
+    res = res.filter(v => v.centre_id === centreId || v.centre_name?.toLowerCase().includes(centreId.toLowerCase()))
+  }
+  if (query?.trim()) {
+    const q = query.toLowerCase().trim()
+    res = res.filter(v =>
+      v.bill_number.toLowerCase().includes(q) ||
+      v.patient_name.toLowerCase().includes(q) ||
+      v.patient_uid.toLowerCase().includes(q) ||
+      v.patient_phone.includes(q) ||
+      (v.doctor_name && v.doctor_name.toLowerCase().includes(q)) ||
+      (v.centre_name && v.centre_name.toLowerCase().includes(q))
+    )
+  }
+  return res
+}
+
+export async function saveVisit(
+  visitData: {
+    patient: Patient
+    doctor?: Doctor | null
+    centre?: Centre | null
+    items: BillLineItem[]
+    subtotal: number
+    discount: number
+    discountPresetName?: string
+    total: number
+    paymentMode: 'Cash' | 'Card' | 'UPI' | 'Insurance' | 'Bank Transfer'
+    notes?: string
+  }
+): Promise<StoredVisit> {
+  const current = await getVisits()
+  const now = new Date()
+  const yyyymm = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
+  const billNumber = `INV-${yyyymm}-${String(current.length + 1).padStart(4, '0')}`
+
+  const newVisit: StoredVisit = {
+    id: `vis-${Date.now()}`,
+    bill_number: billNumber,
+    patient_id: visitData.patient.id,
+    patient_uid: visitData.patient.uid,
+    patient_name: visitData.patient.full_name,
+    patient_phone: visitData.patient.phone,
+    patient_age: visitData.patient.age,
+    patient_gender: visitData.patient.gender,
+    patient_address: visitData.patient.address || undefined,
+    doctor_id: visitData.doctor?.id || null,
+    doctor_name: visitData.doctor?.name || null,
+    doctor_specialization: visitData.doctor?.specialization || null,
+    centre_id: visitData.centre?.id || null,
+    centre_name: visitData.centre?.name || null,
+    centre_address: visitData.centre?.address || null,
+    centre_phone: visitData.centre?.phone || null,
+    items: visitData.items,
+    subtotal: visitData.subtotal,
+    discount: visitData.discount,
+    discount_preset_name: visitData.discountPresetName,
+    total: visitData.total,
+    payment_mode: visitData.paymentMode,
+    payment_status: 'Paid',
+    notes: visitData.notes,
+    visit_date: now.toISOString().split('T')[0],
+    created_at: now.toISOString(),
+  }
+
+  const updated = [newVisit, ...current]
+  localStorage.setItem('physio_visits_cache', JSON.stringify(updated))
+
+  try {
+    const supabase = createClient()
+    const { data: vRecord, error } = await supabase.from('visits').insert({
+      bill_number: newVisit.bill_number,
+      patient_id: newVisit.patient_id,
+      subtotal: newVisit.subtotal,
+      discount: newVisit.discount,
+      total: newVisit.total,
+      payment_mode: newVisit.payment_mode === 'Bank Transfer' ? 'UPI' : newVisit.payment_mode,
+      visit_date: newVisit.visit_date,
+      centre_id: newVisit.centre_id,
+      doctor_id: newVisit.doctor_id,
+      doctor_name: newVisit.doctor_name,
+      centre_name: newVisit.centre_name,
+    }).select('id').single()
+
+    if (vRecord && !error) {
+      await supabase.from('visit_services').insert(
+        newVisit.items.map(i => ({
+          visit_id: vRecord.id,
+          service_id: i.service_id || null,
+          service_name: i.service_name,
+          price: i.price,
+          quantity: i.quantity,
+        }))
+      )
+    }
+  } catch (_) {}
+
+  return newVisit
+}
+
+export function exportBillsToExcel(visits: StoredVisit[]) {
+  const exportData = visits.map((v, idx) => ({
+    'Sr No': idx + 1,
+    'Invoice Number': v.bill_number,
+    'Date': v.visit_date,
+    'Patient UID': v.patient_uid,
+    'Patient Name': v.patient_name,
+    'Patient Phone': v.patient_phone,
+    'Patient Age / Gender': `${v.patient_age || ''} / ${v.patient_gender || ''}`,
+    'Consulting Doctor': v.doctor_name ? `Dr. ${v.doctor_name}` : 'Not Specified',
+    'Clinic Centre': v.centre_name || 'Downtown Clinic (Centre 1)',
+    'Services Breakdown': v.items.map(i => `${i.service_name} (x${i.quantity} @ ₹${i.price})`).join('; '),
+    'Subtotal (INR)': v.subtotal,
+    'Discount (INR)': v.discount,
+    'Net Total (INR)': v.total,
+    'Payment Mode': v.payment_mode,
+    'Payment Status': v.payment_status,
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(exportData)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Billing_Ledger')
+  XLSX.writeFile(wb, `Physionautics_Billing_Ledger_${new Date().toISOString().split('T')[0]}.xlsx`)
+}
+
+export function exportSingleBillToExcel(v: StoredVisit) {
+  const meta = [
+    ['PHYSIONAUTICS CLINIC - PATIENT INVOICE & RECEIPT'],
+    ['Branch / Centre:', v.centre_name || 'Physionautics Main Centre'],
+    ['Centre Address:', v.centre_address || 'Clinic Reception'],
+    ['Centre Phone:', v.centre_phone || ''],
+    [],
+    ['Invoice Number:', v.bill_number, 'Invoice Date:', v.visit_date],
+    ['Patient UID:', v.patient_uid, 'Payment Mode:', v.payment_mode],
+    ['Patient Name:', v.patient_name, 'Payment Status:', v.payment_status],
+    ['Patient Phone:', v.patient_phone, 'Doctor:', v.doctor_name ? `Dr. ${v.doctor_name}` : 'Consultant'],
+    ['Age / Gender:', `${v.patient_age || ''} / ${v.patient_gender || ''}`, 'Specialization:', v.doctor_specialization || 'Physiotherapist'],
+    [],
+    ['ITEMIZED CHARGES BREAKDOWN'],
+    ['S.No', 'Service / Procedure Description', 'Rate (INR)', 'Qty', 'Line Total (INR)'],
+  ]
+
+  const itemsRows = v.items.map((i, idx) => [
+    idx + 1,
+    i.service_name,
+    i.price,
+    i.quantity,
+    i.price * i.quantity,
+  ])
+
+  const totals = [
+    [],
+    ['', '', '', 'Subtotal (INR):', v.subtotal],
+    ['', '', '', 'Discount Applied (INR):', v.discount],
+    ['', '', '', 'GRAND TOTAL (INR):', v.total],
+    [],
+    ['Notes / Instructions:', v.notes || 'Thank you for choosing Physionautics. Get well soon!'],
+    ['Authorized Signatory:', 'Physionautics Billing Desk'],
+  ]
+
+  const fullSheetData = [...meta, ...itemsRows, ...totals]
+  const ws = XLSX.utils.aoa_to_sheet(fullSheetData)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Invoice')
+  XLSX.writeFile(wb, `Invoice_${v.bill_number}_${v.patient_uid}.xlsx`)
 }

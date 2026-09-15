@@ -15,6 +15,7 @@ export function Sidebar() {
 
   const adminNav = [
     { label: 'Financials & KPIs', href: '/dashboard', icon: DollarSign },
+    { label: 'Billing & Invoices', href: '/billing', icon: Receipt },
     { label: 'Patients Directory', href: '/patients', icon: Users },
     { label: 'Doctors & Tagging', href: '/doctors', icon: UserCog },
     { label: 'Centres Management', href: '/centres', icon: Building2 },

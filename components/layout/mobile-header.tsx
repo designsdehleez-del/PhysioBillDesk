@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert } from 'lucide-react'
+import { Menu, LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert, Ticket } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ export function MobileHeader() {
   const adminNav = [
     { label: 'Financials & KPIs', href: '/dashboard', icon: DollarSign },
     { label: 'Billing & Invoices', href: '/billing', icon: Receipt },
+    { label: 'Packages & Wallet', href: '/packages', icon: Ticket },
     { label: 'Patients Directory', href: '/patients', icon: Users },
     { label: 'Doctors & Tagging', href: '/doctors', icon: UserCog },
     { label: 'Centres Management', href: '/centres', icon: Building2 },
@@ -31,6 +32,7 @@ export function MobileHeader() {
     { label: 'Register Patient', href: '/patients/register', icon: UserPlus },
     { label: 'Patient Directory', href: '/patients', icon: Users },
     { label: 'Generate Bill', href: '/billing', icon: Receipt },
+    { label: 'Packages & Wallet', href: '/packages', icon: Ticket },
     { label: 'Centre Doctors', href: '/doctors', icon: UserCog },
   ]
 

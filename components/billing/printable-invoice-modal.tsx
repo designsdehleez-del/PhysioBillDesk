@@ -1,12 +1,13 @@
 'use client'
 
 import React from 'react'
-import { Printer, Download, Stethoscope, Building2, User } from 'lucide-react'
+import { Printer, Download, Stethoscope, Building2, User, MessageCircle } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { StoredVisit, exportSingleBillToExcel } from '@/lib/data-store'
+import { openWhatsAppInvoice } from '@/lib/whatsapp'
 
 interface PrintableInvoiceModalProps {
   visit: StoredVisit | null
@@ -78,119 +79,112 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
           }
           .invoice-badge {
             display: inline-block;
-            background: #dbeafe;
+            background: #eff6ff;
             color: #1e40af;
             font-weight: 700;
-            font-size: 12px;
+            font-family: monospace;
             padding: 4px 10px;
-            border-radius: 4px;
-            margin-bottom: 6px;
+            border-radius: 6px;
+            font-size: 14px;
+            border: 1px solid #bfdbfe;
           }
-          .bill-meta {
-            font-size: 12px;
-            color: #374151;
-          }
-          .grid-info {
+          .patient-doctor-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 20px;
             background: #f9fafb;
-            padding: 14px;
+            padding: 16px;
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             border: 1px solid #f3f4f6;
           }
-          .section-title {
+          .grid-col h3 {
             font-size: 11px;
             font-weight: 700;
-            text-transform: uppercase;
             color: #6b7280;
-            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
             border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 2px;
+            padding-bottom: 4px;
           }
-          .info-row {
-            margin: 3px 0;
-            font-size: 12px;
+          .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
           }
-          .info-label {
-            font-weight: 600;
-            color: #4b5563;
-            display: inline-block;
-            width: 90px;
-          }
-          .table-container {
-            margin-bottom: 20px;
-          }
+          .label { color: #6b7280; }
+          .val { font-weight: 600; color: #111827; }
           table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 24px;
           }
           th {
             background: #f3f4f6;
-            text-align: left;
-            padding: 8px 10px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
             color: #374151;
-            border-bottom: 1px solid #d1d5db;
+            font-weight: 600;
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 12px;
           }
           td {
-            padding: 8px 10px;
+            padding: 10px 12px;
             border-bottom: 1px solid #e5e7eb;
             font-size: 12px;
           }
           .text-right { text-align: right; }
           .text-center { text-align: center; }
-          .totals-section {
+          .totals-container {
             display: flex;
             justify-content: flex-end;
-            margin-bottom: 24px;
+            margin-bottom: 30px;
           }
-          .totals-table {
+          .totals-box {
             width: 280px;
-          }
-          .totals-table td {
-            padding: 4px 8px;
-            border: none;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            border-radius: 6px;
+            padding: 14px;
           }
           .grand-total {
+            border-top: 1px solid #d1d5db;
+            padding-top: 8px;
+            margin-top: 8px;
             font-size: 15px;
             font-weight: 800;
             color: #1e40af;
-            border-top: 2px solid #2563eb !important;
-            padding-top: 6px !important;
           }
-          .footer-section {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-            border-top: 1px dashed #d1d5db;
-            padding-top: 16px;
-            margin-top: 16px;
+          .footer {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
           }
-          .terms {
+          .feedback-banner {
+            margin-top: 20px;
+            background: #f0fdf4;
+            border: 1px dashed #86efac;
+            padding: 10px 14px;
+            border-radius: 6px;
             font-size: 11px;
-            color: #6b7280;
-          }
-          .signatory {
-            text-align: center;
+            color: #166534;
           }
           .sign-line {
-            height: 40px;
-            border-bottom: 1px solid #9ca3af;
+            width: 160px;
+            border-bottom: 1px solid #4b5563;
             margin-bottom: 4px;
           }
           .sign-title {
             font-size: 11px;
-            font-weight: 600;
-            color: #4b5563;
+            font-weight: 700;
+            color: #374151;
           }
           @media print {
-            body { padding: 0; background: transparent; }
+            body { padding: 0; }
             .invoice-card { border: none; padding: 0; }
-            @page { margin: 15mm; size: auto; }
           }
         </style>
       </head>
@@ -199,94 +193,124 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
           <div class="header">
             <div>
               <div class="brand-title">PHYSIONAUTICS</div>
-              <div class="brand-subtitle">Specialized Physiotherapy & Rehabilitation Clinic</div>
+              <div class="brand-subtitle">Physiotherapy & Pain Rehabilitation Centre</div>
               <div class="centre-details">
-                <strong>${visit.centre_name || 'New Friends Colony, New Delhi'}</strong><br/>
-                ${visit.centre_address || 'D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025'}<br/>
-                ${visit.centre_phone ? 'Phone: ' + visit.centre_phone : 'Phone: 08383936905'}
+                <strong>${visit.centre_name || 'New Friends Colony, New Delhi'}</strong><br />
+                ${visit.centre_address || 'D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025'}<br />
+                Phone: ${visit.centre_phone || '08383936905'}
               </div>
             </div>
             <div class="invoice-tag">
-              <div class="invoice-badge">TAX INVOICE / RECEIPT</div>
-              <div class="bill-meta">
-                <strong>Invoice #:</strong> ${visit.bill_number}<br/>
-                <strong>Date:</strong> ${formatDate(visit.visit_date)}<br/>
-                <strong>Payment:</strong> ${visit.payment_mode} (${visit.payment_status})
+              <div class="invoice-badge">${visit.bill_number}</div>
+              <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">
+                Date: <strong>${formatDate(visit.visit_date)}</strong>
+              </div>
+              <div style="font-size: 11px; color: #6b7280; margin-top: 2px;">
+                Mode: <strong>${visit.payment_mode}</strong> (Paid)
               </div>
             </div>
           </div>
 
-          <div class="grid-info">
-            <div>
-              <div class="section-title">Patient Details</div>
-              <div class="info-row"><span class="info-label">Patient UID:</span> <strong>${visit.patient_uid}</strong></div>
-              <div class="info-row"><span class="info-label">Full Name:</span> <strong>${visit.patient_name}</strong></div>
-              <div class="info-row"><span class="info-label">Age / Gender:</span> ${visit.patient_age || '--'} Yrs / ${visit.patient_gender || '--'}</div>
-              <div class="info-row"><span class="info-label">Phone:</span> ${visit.patient_phone || '--'}</div>
-              ${visit.patient_address ? `<div class="info-row"><span class="info-label">Address:</span> ${visit.patient_address}</div>` : ''}
+          <div class="patient-doctor-grid">
+            <div class="grid-col">
+              <h3>Patient Particulars</h3>
+              <div class="row">
+                <span class="label">Name:</span>
+                <span class="val">${visit.patient_name}</span>
+              </div>
+              <div class="row">
+                <span class="label">Patient UID:</span>
+                <span class="val" style="font-family: monospace;">${visit.patient_uid}</span>
+              </div>
+              <div class="row">
+                <span class="label">Phone:</span>
+                <span class="val">${visit.patient_phone || '—'}</span>
+              </div>
+              <div class="row">
+                <span class="label">Age / Gender:</span>
+                <span class="val">${visit.patient_age || '—'} yrs / ${visit.patient_gender || '—'}</span>
+              </div>
             </div>
 
-            <div>
-              <div class="section-title">Consultation & Care</div>
-              <div class="info-row"><span class="info-label">Attending:</span> <strong>${visit.doctor_name ? 'Dr. ' + visit.doctor_name : 'Consultant Physiotherapist'}</strong></div>
-              ${visit.doctor_specialization ? `<div class="info-row"><span class="info-label">Specialty:</span> ${visit.doctor_specialization}</div>` : ''}
-              <div class="info-row"><span class="info-label">Clinic Branch:</span> ${visit.centre_name || 'New Friends Colony, New Delhi'}</div>
-              ${visit.notes ? `<div class="info-row"><span class="info-label">Care Notes:</span> ${visit.notes}</div>` : ''}
-            </div>
-          </div>
-
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width: 40px;" class="text-center">Sr</th>
-                  <th>Service / Treatment Description</th>
-                  <th style="width: 100px;" class="text-right">Rate</th>
-                  <th style="width: 60px;" class="text-center">Qty</th>
-                  <th style="width: 110px;" class="text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${visit.items.map((item, idx) => `
-                  <tr>
-                    <td class="text-center">${idx + 1}</td>
-                    <td><strong>${item.service_name}</strong></td>
-                    <td class="text-right">${formatCurrency(item.price)}</td>
-                    <td class="text-center">${item.quantity}</td>
-                    <td class="text-right"><strong>${formatCurrency(item.price * item.quantity)}</strong></td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="totals-section">
-            <table class="totals-table">
-              <tr>
-                <td>Subtotal:</td>
-                <td class="text-right">${formatCurrency(visit.subtotal)}</td>
-              </tr>
-              ${visit.discount > 0 ? `
-                <tr style="color: #dc2626;">
-                  <td>Discount ${visit.discount_preset_name ? '(' + visit.discount_preset_name + ')' : ''}:</td>
-                  <td class="text-right">- ${formatCurrency(visit.discount)}</td>
-                </tr>
+            <div class="grid-col">
+              <h3>Consulting Clinician</h3>
+              <div class="row">
+                <span class="label">Doctor:</span>
+                <span class="val">${visit.doctor_name ? `Dr. ${visit.doctor_name}` : 'Attending Consultant'}</span>
+              </div>
+              <div class="row">
+                <span class="label">Specialty:</span>
+                <span class="val">${visit.doctor_specialization || 'Physiotherapy & Rehab'}</span>
+              </div>
+              <div class="row">
+                <span class="label">Branch:</span>
+                <span class="val">${visit.centre_name || 'Main Centre'}</span>
+              </div>
+              ${visit.notes ? `
+                <div class="row" style="margin-top: 4px;">
+                  <span class="label">Remarks:</span>
+                  <span class="val" style="font-size: 11px; font-weight: normal;">${visit.notes}</span>
+                </div>
               ` : ''}
-              <tr>
-                <td class="grand-total">NET TOTAL:</td>
-                <td class="text-right grand-total">${formatCurrency(visit.total)}</td>
-              </tr>
-            </table>
+            </div>
           </div>
 
-          <div class="footer-section">
-            <div class="terms">
-              <strong>Patient Instructions & Remarks:</strong>
-              <p style="margin-top: 4px;">• This is a computer generated medical invoice and receipt.<br/>
-              • Kindly retain this receipt for follow-up consultations and insurance claim verification.<br/>
-              • Physionautics wishes you a speedy and holistic recovery.</p>
+          <table>
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 40px;">#</th>
+                <th>Service / Procedure Description</th>
+                <th class="text-right" style="width: 100px;">Rate</th>
+                <th class="text-center" style="width: 60px;">Qty</th>
+                <th class="text-right" style="width: 110px;">Line Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${visit.items.map((item, idx) => `
+                <tr>
+                  <td class="text-center" style="color: #6b7280;">${idx + 1}</td>
+                  <td><strong>${item.service_name}</strong></td>
+                  <td class="text-right">${formatCurrency(item.price)}</td>
+                  <td class="text-center">${item.quantity}</td>
+                  <td class="text-right" style="font-weight: 700;">${formatCurrency(item.price * item.quantity)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="totals-container">
+            <div class="totals-box">
+              <div class="row">
+                <span class="label">Subtotal:</span>
+                <span class="val">${formatCurrency(visit.subtotal)}</span>
+              </div>
+              ${visit.discount > 0 ? `
+                <div class="row" style="color: #dc2626;">
+                  <span class="label" style="color: #dc2626;">Discount ${visit.discount_preset_name ? `(${visit.discount_preset_name})` : ''}:</span>
+                  <span class="val" style="color: #dc2626;">- ${formatCurrency(visit.discount)}</span>
+                </div>
+              ` : ''}
+              <div class="row grand-total">
+                <span>Grand Total Paid:</span>
+                <span>${formatCurrency(visit.total)}</span>
+              </div>
             </div>
-            <div class="signatory">
+          </div>
+
+          <div class="feedback-banner">
+            ⭐ <strong>We value your recovery!</strong> Please share your session feedback at: 
+            <u>https://physionautics.vercel.app/feedback?bid=${visit.bill_number}&uid=${visit.patient_uid}&name=${encodeURIComponent(visit.patient_name)}</u>
+          </div>
+
+          <div class="footer" style="margin-top: 24px;">
+            <div>
+              <div style="font-weight: 600; font-size: 11px; color: #374151;">Thank you for trusting Physionautics!</div>
+              <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">
+                Computerized receipt generated for patient UID ${visit.patient_uid}.<br />
+                Valid for consultations, follow-ups, and corporate claim reimbursements.
+              </div>
+            </div>
+            <div style="text-align: right;">
               <div class="sign-line"></div>
               <div class="sign-title">Authorized Signatory</div>
               <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">Physionautics Billing Desk</div>
@@ -320,6 +344,14 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
             </DialogDescription>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs gap-1.5 border-green-300 text-green-700 bg-green-50/50 hover:bg-green-100"
+              onClick={() => openWhatsAppInvoice(visit)}
+            >
+              <MessageCircle className="h-3.5 w-3.5 text-green-600" /> Share on WhatsApp
+            </Button>
             <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={() => exportSingleBillToExcel(visit)}>
               <Download className="h-3.5 w-3.5 text-emerald-600" /> Excel
             </Button>

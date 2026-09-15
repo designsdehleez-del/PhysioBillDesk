@@ -187,3 +187,49 @@ export interface StaffUser {
   updated_at?: string
 }
 export type StaffUserInsert = Omit<StaffUser, 'id' | 'created_at' | 'updated_at'>
+
+export interface PackagePreset {
+  id: string
+  name: string
+  description?: string
+  total_sessions: number
+  price: number
+  validity_days: number
+  is_active: boolean
+  created_at?: string
+}
+
+export interface PatientPackageCredit {
+  id: string
+  patient_id: string
+  patient_uid: string
+  patient_name: string
+  patient_phone: string
+  package_id?: string
+  package_name: string
+  total_sessions: number
+  remaining_sessions: number
+  used_sessions: number
+  price_paid: number
+  centre_id?: string | null
+  centre_name?: string | null
+  purchased_at: string
+  expires_at?: string
+  status: 'Active' | 'Exhausted' | 'Expired'
+}
+
+export interface PatientFeedback {
+  id: string
+  bill_number?: string
+  patient_uid?: string
+  patient_name: string
+  patient_phone?: string
+  doctor_name?: string
+  centre_name?: string
+  rating: number // 1 to 5
+  hygiene_rating?: number // 1 to 5
+  treatment_rating?: number // 1 to 5
+  staff_rating?: number // 1 to 5
+  comments?: string
+  created_at: string
+}

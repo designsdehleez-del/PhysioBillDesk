@@ -1,12 +1,11 @@
 'use client'
-
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Search, X, Plus, Minus, CheckCircle, Printer, Download,
   Receipt, UserPlus, Filter, FileSpreadsheet, Eye, User,
-  Building2, Stethoscope, Tag, CreditCard, RefreshCw
+  Building2, Stethoscope, Tag, CreditCard, RefreshCw, MessageCircle, Ticket, Sparkles
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -16,12 +15,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/auth-context'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import type { Patient, Service, Centre, Doctor, DiscountPreset } from '@/lib/supabase/types'
+import type { Patient, Service, Centre, Doctor, DiscountPreset, PatientPackageCredit } from '@/lib/supabase/types'
 import {
   getCentres, getDoctors, getPatients, getServices,
   getVisits, saveVisit, exportBillsToExcel, exportSingleBillToExcel,
+  getPatientCredits, redeemPackageSession,
   StoredVisit, BillLineItem
 } from '@/lib/data-store'
+import { openWhatsAppInvoice } from '@/lib/whatsapp'
 import { PrintableInvoiceModal } from '@/components/billing/printable-invoice-modal'
 
 export default function BillingPage() {
@@ -45,6 +46,8 @@ export default function BillingPage() {
   const [patientQuery, setPatientQuery] = useState('')
   const [searchedPatients, setSearchedPatients] = useState<Patient[]>([])
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+  const [patientCredits, setPatientCredits] = useState<PatientPackageCredit[]>([])
+  const [activeRedemptionCreditId, setActiveRedemptionCreditId] = useState<string | null>(null)
   const [selectedCentreId, setSelectedCentreId] = useState('')
   const [selectedDoctorId, setSelectedDoctorId] = useState('')
   const [billItems, setBillItems] = useState<BillLineItem[]>([])
@@ -114,6 +117,18 @@ export default function BillingPage() {
     }
   }, [preselectedId, patients])
 
+  useEffect(() => {
+    if (selectedPatient) {
+      getPatientCredits(selectedPatient.id).then(creds => {
+        const active = creds.filter(c => c.status === 'Active' && c.remaining_sessions > 0)
+        setPatientCredits(active)
+      })
+    } else {
+      setPatientCredits([])
+      setActiveRedemptionCreditId(null)
+    }
+  }, [selectedPatient])
+
   // Patient search handler
   const handleSearchPatient = (q: string) => {
     setPatientQuery(q)
@@ -180,11 +195,22 @@ export default function BillingPage() {
     setBillItems(prev => prev.filter((_, idx) => idx !== index))
   }
 
+  // Handle Package Redemption
+  const handleApplyPackageRedemption = (credit: PatientPackageCredit) => {
+    setActiveRedemptionCreditId(credit.id)
+    setDiscountPresetId('')
+    setNotes(`1 Session redeemed from package: ${credit.package_name}`)
+  }
+
   // Calculate totals
   const subtotal = billItems.reduce((s, i) => s + i.price * i.quantity, 0)
   const selectedPreset = discountPresets.find(d => d.id === discountPresetId)
 
   const getDiscount = () => {
+    if (activeRedemptionCreditId) {
+      // 100% discount for package redemption
+      return subtotal
+    }
     if (selectedPreset) {
       return selectedPreset.type === 'percentage'
         ? (subtotal * Math.min(selectedPreset.value, 100)) / 100
@@ -211,11 +237,16 @@ export default function BillingPage() {
         items: billItems,
         subtotal,
         discount,
-        discountPresetName: selectedPreset?.label,
+        discountPresetName: activeRedemptionCreditId ? 'Package Session Credit (100% Paid)' : selectedPreset?.label,
         total,
-        paymentMode,
+        paymentMode: activeRedemptionCreditId ? 'UPI' : paymentMode,
         notes: notes.trim() || undefined,
       })
+
+      // If package credit was redeemed, decrement session
+      if (activeRedemptionCreditId) {
+        await redeemPackageSession(activeRedemptionCreditId)
+      }
 
       setRecentSavedVisit(saved)
       const freshVisits = await getVisits()
@@ -230,6 +261,8 @@ export default function BillingPage() {
   const resetForm = () => {
     setRecentSavedVisit(null)
     setSelectedPatient(null)
+    setPatientCredits([])
+    setActiveRedemptionCreditId(null)
     setBillItems([])
     setDiscountPresetId('')
     setCustomDiscount('')
@@ -348,6 +381,12 @@ export default function BillingPage() {
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2 justify-center pt-2">
                   <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
+                    onClick={() => openWhatsAppInvoice(recentSavedVisit)}
+                  >
+                    <MessageCircle className="h-4 w-4" /> Share on WhatsApp
+                  </Button>
+                  <Button
                     className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm"
                     onClick={() => {
                       setPrintModalVisit(recentSavedVisit)
@@ -392,25 +431,59 @@ export default function BillingPage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {selectedPatient ? (
-                      <div className="flex items-start justify-between p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-bold text-gray-900 text-sm">{selectedPatient.full_name}</p>
-                            <Badge className="bg-blue-600 font-mono text-[10px]">{selectedPatient.uid}</Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {selectedPatient.phone} · {selectedPatient.age} yrs · {selectedPatient.gender}
-                            {selectedPatient.blood_group ? ` · Blood: ${selectedPatient.blood_group}` : ''}
-                          </p>
-                          {selectedPatient.medical_notes && (
-                            <p className="text-[11px] text-blue-800 italic bg-white/60 px-2 py-0.5 rounded mt-1 border border-blue-100">
-                              Note: {selectedPatient.medical_notes}
+                      <div className="space-y-2.5">
+                        <div className="flex items-start justify-between p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-gray-900 text-sm">{selectedPatient.full_name}</p>
+                              <Badge className="bg-blue-600 font-mono text-[10px]">{selectedPatient.uid}</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {selectedPatient.phone} · {selectedPatient.age} yrs · {selectedPatient.gender}
+                              {selectedPatient.blood_group ? ` · Blood: ${selectedPatient.blood_group}` : ''}
                             </p>
-                          )}
+                            {selectedPatient.medical_notes && (
+                              <p className="text-[11px] text-blue-800 italic bg-white/60 px-2 py-0.5 rounded mt-1 border border-blue-100">
+                                Note: {selectedPatient.medical_notes}
+                              </p>
+                            )}
+                          </div>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-500 hover:text-red-600" onClick={() => setSelectedPatient(null)}>
+                            <X className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-500 hover:text-red-600" onClick={() => setSelectedPatient(null)}>
-                          <X className="h-4 w-4" />
-                        </Button>
+
+                        {/* Patient Package Credit Banner */}
+                        {patientCredits.length > 0 && (
+                          <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                                <Ticket className="h-4 w-4 text-purple-700" /> Active Session Wallet
+                              </span>
+                              <Badge className="bg-purple-600 text-white text-[10px]">
+                                {patientCredits.reduce((a, b) => a + b.remaining_sessions, 0)} Sessions Total
+                              </Badge>
+                            </div>
+                            {patientCredits.map(credit => (
+                              <div key={credit.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-white rounded-lg border border-purple-100 text-xs">
+                                <div>
+                                  <p className="font-semibold text-gray-900">{credit.package_name}</p>
+                                  <p className="text-[11px] text-purple-700 font-medium">
+                                    {credit.remaining_sessions} of {credit.total_sessions} sessions remaining
+                                  </p>
+                                </div>
+                                <Button
+                                  size="xs"
+                                  variant={activeRedemptionCreditId === credit.id ? 'default' : 'outline'}
+                                  className={activeRedemptionCreditId === credit.id ? 'bg-purple-600 text-white' : 'border-purple-300 text-purple-800 hover:bg-purple-50'}
+                                  onClick={() => handleApplyPackageRedemption(credit)}
+                                >
+                                  {activeRedemptionCreditId === credit.id ? '✓ 1 Session Applied (₹0 Due)' : '🎟️ Redeem 1 Session'}
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -890,6 +963,15 @@ export default function BillingPage() {
                           </td>
                           <td className="p-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                className="h-7 px-2 text-[11px] gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                onClick={() => openWhatsAppInvoice(v)}
+                                title="Share Invoice & Feedback link on WhatsApp"
+                              >
+                                <MessageCircle className="h-3 w-3" /> WhatsApp
+                              </Button>
                               <Button
                                 size="xs"
                                 variant="outline"

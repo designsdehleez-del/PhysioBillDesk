@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import type { Centre, Doctor, Patient, Service, DiscountPreset } from '@/lib/supabase/types'
+import type { Centre, Doctor, Patient, Service, DiscountPreset, PackagePreset, PatientPackageCredit, PatientFeedback } from '@/lib/supabase/types'
 import * as XLSX from 'xlsx'
 
 const DEFAULT_CENTRES: Centre[] = [
@@ -855,4 +855,247 @@ export function exportSingleBillToExcel(v: StoredVisit) {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Invoice')
   XLSX.writeFile(wb, `Invoice_${v.bill_number}_${v.patient_uid}.xlsx`)
+}
+
+// ================= PACKAGES & PATIENT CREDITS =================
+export const DEFAULT_PACKAGES: PackagePreset[] = [
+  {
+    id: 'pkg-1',
+    name: '5-Session Pain Relief & Recovery Pack',
+    description: 'Includes 5 manual therapy & electrotherapy sessions with home exercise protocol.',
+    total_sessions: 5,
+    price: 3600,
+    validity_days: 60,
+    is_active: true,
+  },
+  {
+    id: 'pkg-2',
+    name: '10-Session Comprehensive Rehab Bundle',
+    description: '10 structured sessions with doctor reviews, dry needling, and joint mobilization.',
+    total_sessions: 10,
+    price: 6800,
+    validity_days: 90,
+    is_active: true,
+  },
+  {
+    id: 'pkg-3',
+    name: '20-Session Spine & Neuro Extended Rehab',
+    description: 'Ideal for stroke, paralysis, or severe spinal disc rehabilitation.',
+    total_sessions: 20,
+    price: 12500,
+    validity_days: 180,
+    is_active: true,
+  },
+  {
+    id: 'pkg-4',
+    name: 'Post-Operative Orthopedic 8-Pack',
+    description: 'ACL, knee replacement, or shoulder post-surgery mobilization.',
+    total_sessions: 8,
+    price: 7200,
+    validity_days: 90,
+    is_active: true,
+  },
+  {
+    id: 'pkg-5',
+    name: 'Elderly Care & Gait Training 6-Pack',
+    description: 'Fall prevention, balance retraining, and geriatric strengthening.',
+    total_sessions: 6,
+    price: 4200,
+    validity_days: 60,
+    is_active: true,
+  },
+]
+
+export const DEFAULT_PATIENT_CREDITS: PatientPackageCredit[] = [
+  {
+    id: 'cred-1',
+    patient_id: 'pat-1',
+    patient_uid: 'CLN-202609-0001',
+    patient_name: 'Rahul Verma',
+    patient_phone: '+91 98765 11111',
+    package_id: 'pkg-2',
+    package_name: '10-Session Comprehensive Rehab Bundle',
+    total_sessions: 10,
+    remaining_sessions: 7,
+    used_sessions: 3,
+    price_paid: 6800,
+    centre_id: 'c1111111-1111-1111-1111-111111111111',
+    centre_name: 'New Friends Colony, New Delhi',
+    purchased_at: new Date(Date.now() - 86400000 * 7).toISOString(),
+    expires_at: new Date(Date.now() + 86400000 * 83).toISOString(),
+    status: 'Active',
+  },
+]
+
+export async function getPackages(): Promise<PackagePreset[]> {
+  const cached = localStorage.getItem('physio_packages_cache')
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached)
+      if (parsed.length > 0) return parsed
+    } catch (_) {}
+  }
+  localStorage.setItem('physio_packages_cache', JSON.stringify(DEFAULT_PACKAGES))
+  return DEFAULT_PACKAGES
+}
+
+export async function savePackage(pkg: Partial<PackagePreset>): Promise<PackagePreset> {
+  const current = await getPackages()
+  let updated: PackagePreset[]
+  let saved: PackagePreset
+
+  if (pkg.id) {
+    saved = { ...current.find(p => p.id === pkg.id)!, ...pkg } as PackagePreset
+    updated = current.map(p => p.id === pkg.id ? saved : p)
+  } else {
+    saved = {
+      id: `pkg-${Date.now()}`,
+      name: pkg.name || 'Custom Package',
+      description: pkg.description || '',
+      total_sessions: Number(pkg.total_sessions) || 5,
+      price: Number(pkg.price) || 3000,
+      validity_days: Number(pkg.validity_days) || 60,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    }
+    updated = [...current, saved]
+  }
+  localStorage.setItem('physio_packages_cache', JSON.stringify(updated))
+  return saved
+}
+
+export async function deletePackage(id: string): Promise<void> {
+  const current = await getPackages()
+  const updated = current.filter(p => p.id !== id)
+  localStorage.setItem('physio_packages_cache', JSON.stringify(updated))
+}
+
+export async function getPatientCredits(patientId?: string): Promise<PatientPackageCredit[]> {
+  let list: PatientPackageCredit[] = []
+  const cached = localStorage.getItem('physio_patient_credits_cache')
+  if (cached) {
+    try { list = JSON.parse(cached) } catch (_) {}
+  } else {
+    list = DEFAULT_PATIENT_CREDITS
+    localStorage.setItem('physio_patient_credits_cache', JSON.stringify(DEFAULT_PATIENT_CREDITS))
+  }
+
+  if (patientId) {
+    return list.filter(c => c.patient_id === patientId || c.patient_uid === patientId)
+  }
+  return list
+}
+
+export async function purchasePatientPackage(data: {
+  patient: Patient
+  packagePreset: PackagePreset
+  centre?: Centre | null
+  paymentMode: string
+}): Promise<PatientPackageCredit> {
+  const current = await getPatientCredits()
+  const now = new Date()
+  const expiresAt = new Date(now.getTime() + (data.packagePreset.validity_days || 60) * 86400000)
+
+  const newCredit: PatientPackageCredit = {
+    id: `cred-${Date.now()}`,
+    patient_id: data.patient.id,
+    patient_uid: data.patient.uid,
+    patient_name: data.patient.full_name,
+    patient_phone: data.patient.phone,
+    package_id: data.packagePreset.id,
+    package_name: data.packagePreset.name,
+    total_sessions: data.packagePreset.total_sessions,
+    remaining_sessions: data.packagePreset.total_sessions,
+    used_sessions: 0,
+    price_paid: data.packagePreset.price,
+    centre_id: data.centre?.id || null,
+    centre_name: data.centre?.name || null,
+    purchased_at: now.toISOString(),
+    expires_at: expiresAt.toISOString(),
+    status: 'Active',
+  }
+
+  const updated = [newCredit, ...current]
+  localStorage.setItem('physio_patient_credits_cache', JSON.stringify(updated))
+  return newCredit
+}
+
+export async function redeemPackageSession(creditId: string): Promise<{ success: boolean; remaining: number }> {
+  const current = await getPatientCredits()
+  let remaining = 0
+  const updated = current.map(c => {
+    if (c.id === creditId && c.remaining_sessions > 0) {
+      const nextRemaining = c.remaining_sessions - 1
+      const nextUsed = c.used_sessions + 1
+      remaining = nextRemaining
+      return {
+        ...c,
+        remaining_sessions: nextRemaining,
+        used_sessions: nextUsed,
+        status: nextRemaining <= 0 ? 'Exhausted' as const : 'Active' as const,
+      }
+    }
+    return c
+  })
+
+  localStorage.setItem('physio_patient_credits_cache', JSON.stringify(updated))
+  return { success: true, remaining }
+}
+
+// ================= PATIENT FEEDBACK =================
+export const DEFAULT_FEEDBACK: PatientFeedback[] = [
+  {
+    id: 'fb-1',
+    bill_number: 'INV-202609-0001',
+    patient_uid: 'CLN-202609-0001',
+    patient_name: 'Rahul Verma',
+    patient_phone: '+91 98765 11111',
+    doctor_name: 'Dr. Sarah Jenkins',
+    centre_name: 'New Friends Colony, New Delhi',
+    rating: 5,
+    hygiene_rating: 5,
+    treatment_rating: 5,
+    staff_rating: 5,
+    comments: 'Great lower back pain relief after dry needling. Very clean clinic and polite staff!',
+    created_at: new Date(Date.now() - 3600000 * 3).toISOString(),
+  },
+  {
+    id: 'fb-2',
+    bill_number: 'INV-202609-0002',
+    patient_uid: 'CLN-202609-0002',
+    patient_name: 'Ananya Sharma',
+    patient_phone: '+91 98765 22222',
+    doctor_name: 'Dr. Emily Watson',
+    centre_name: 'Vasant Vihar, New Delhi',
+    rating: 5,
+    hygiene_rating: 5,
+    treatment_rating: 5,
+    staff_rating: 5,
+    comments: 'My neck stiffness feels much lighter after cupping therapy. Highly recommended!',
+    created_at: new Date(Date.now() - 3600000 * 1).toISOString(),
+  },
+]
+
+export async function getPatientFeedback(): Promise<PatientFeedback[]> {
+  const cached = localStorage.getItem('physio_feedback_cache')
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached)
+      if (parsed.length > 0) return parsed
+    } catch (_) {}
+  }
+  localStorage.setItem('physio_feedback_cache', JSON.stringify(DEFAULT_FEEDBACK))
+  return DEFAULT_FEEDBACK
+}
+
+export async function savePatientFeedback(fb: Omit<PatientFeedback, 'id' | 'created_at'>): Promise<PatientFeedback> {
+  const current = await getPatientFeedback()
+  const newFb: PatientFeedback = {
+    id: `fb-${Date.now()}`,
+    ...fb,
+    created_at: new Date().toISOString(),
+  }
+  const updated = [newFb, ...current]
+  localStorage.setItem('physio_feedback_cache', JSON.stringify(updated))
+  return newFb
 }

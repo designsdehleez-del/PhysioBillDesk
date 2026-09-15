@@ -36,10 +36,23 @@ export default function AuthPage() {
     } finally { setLoading(false) }
   }
 
-  const fillCredentials = (em: string, pw: string) => {
+  const handleQuickLogin = async (em: string, pw: string) => {
+    setLoading(true)
+    setError(null)
     setEmail(em)
     setPassword(pw)
-    setError(null)
+    try {
+      const res = await signIn(em, pw)
+      if (res?.error) {
+        setError(res.error.message)
+      } else {
+        router.push('/dashboard')
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Login failed')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -81,16 +94,15 @@ export default function AuthPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="•••••••• (optional for admin)"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                required
                 disabled={loading}
                 className="bg-white"
               />
             </div>
             <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 shadow-md" disabled={loading}>
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{isSignUp ? 'Creating Account…' : 'Authenticating…'}</> : isSignUp ? 'Sign Up' : 'Sign In to Portal'}
+              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{isSignUp ? 'Creating Account…' : 'Signing In…'}</> : isSignUp ? 'Sign Up' : 'Sign In to Portal'}
             </Button>
           </form>
 
@@ -100,43 +112,47 @@ export default function AuthPage() {
           {/* Quick Access Account Pill Presets */}
           <div className="pt-3 border-t space-y-2">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">
-              Quick Login Presets
+              ⚡ 1-Click Instant Login
             </p>
-            <div className="grid grid-cols-2 gap-1.5 text-xs">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                className="p-2 rounded-lg border bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-900 text-left transition-colors"
-                onClick={() => fillCredentials('admin@physionautics.com', 'admin')}
+                disabled={loading}
+                className="p-2.5 rounded-lg border bg-purple-50 hover:bg-purple-100 active:scale-[0.98] border-purple-200 text-purple-900 text-left transition-all shadow-sm cursor-pointer"
+                onClick={() => handleQuickLogin('admin@physionautics.com', 'admin')}
               >
-                <p className="font-bold text-[11px]">👑 Super Admin</p>
-                <p className="text-[10px] text-purple-700 opacity-80">admin / admin</p>
+                <p className="font-bold text-[12px] flex items-center gap-1">👑 Super Admin</p>
+                <p className="text-[10px] text-purple-700 opacity-80 mt-0.5">Full Financials & Settings</p>
               </button>
 
               <button
                 type="button"
-                className="p-2 rounded-lg border bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-900 text-left transition-colors"
-                onClick={() => fillCredentials('nfc@physionautics.com', 'centre123')}
+                disabled={loading}
+                className="p-2.5 rounded-lg border bg-blue-50 hover:bg-blue-100 active:scale-[0.98] border-blue-200 text-blue-900 text-left transition-all shadow-sm cursor-pointer"
+                onClick={() => handleQuickLogin('nfc@physionautics.com', 'centre123')}
               >
-                <p className="font-bold text-[11px]">🏥 Friends Colony</p>
-                <p className="text-[10px] text-blue-700 opacity-80">nfc / centre123</p>
+                <p className="font-bold text-[12px] flex items-center gap-1">🏥 Friends Colony</p>
+                <p className="text-[10px] text-blue-700 opacity-80 mt-0.5">New Delhi Branch Desk</p>
               </button>
 
               <button
                 type="button"
-                className="p-2 rounded-lg border bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-900 text-left transition-colors"
-                onClick={() => fillCredentials('vasantvihar@physionautics.com', 'centre123')}
+                disabled={loading}
+                className="p-2.5 rounded-lg border bg-emerald-50 hover:bg-emerald-100 active:scale-[0.98] border-emerald-200 text-emerald-900 text-left transition-all shadow-sm cursor-pointer"
+                onClick={() => handleQuickLogin('vasantvihar@physionautics.com', 'centre123')}
               >
-                <p className="font-bold text-[11px]">🏥 Vasant Vihar</p>
-                <p className="text-[10px] text-emerald-700 opacity-80">vasant / centre123</p>
+                <p className="font-bold text-[12px] flex items-center gap-1">🏥 Vasant Vihar</p>
+                <p className="text-[10px] text-emerald-700 opacity-80 mt-0.5">New Delhi Branch Desk</p>
               </button>
 
               <button
                 type="button"
-                className="p-2 rounded-lg border bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-900 text-left transition-colors"
-                onClick={() => fillCredentials('gurugram@physionautics.com', 'centre123')}
+                disabled={loading}
+                className="p-2.5 rounded-lg border bg-orange-50 hover:bg-orange-100 active:scale-[0.98] border-orange-200 text-orange-900 text-left transition-all shadow-sm cursor-pointer"
+                onClick={() => handleQuickLogin('gurugram@physionautics.com', 'centre123')}
               >
-                <p className="font-bold text-[11px]">🏥 Gurugram DLF 1</p>
-                <p className="text-[10px] text-orange-700 opacity-80">gurugram / centre123</p>
+                <p className="font-bold text-[12px] flex items-center gap-1">🏥 Gurugram DLF 1</p>
+                <p className="text-[10px] text-orange-700 opacity-80 mt-0.5">Gurugram Branch Desk</p>
               </button>
             </div>
           </div>

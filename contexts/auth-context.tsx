@@ -165,106 +165,103 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: { message: 'Password is required to sign in.' } as AuthError }
     }
 
-    // Auto-normalize username without domain
+    // Auto-normalize username / email
     if (!lower.includes('@')) {
-      if (lower === 'admin') lower = 'admin@physionautics.com'
-      else if (lower === 'nfc') lower = 'nfc@physionautics.com'
-      else if (lower === 'vasantvihar' || lower === 'vasant') lower = 'vasantvihar@physionautics.com'
-      else if (lower === 'gurugram' || lower === 'gurgaon') lower = 'gurugram@physionautics.com'
+      if (lower === 'admin' || lower === 'administrator') lower = 'admin@physionautics.com'
+      else if (lower === 'nfc' || lower.includes('friends')) lower = 'nfc@physionautics.com'
+      else if (lower.includes('vasant')) lower = 'vasantvihar@physionautics.com'
+      else if (lower.includes('guru') || lower.includes('dlf')) lower = 'gurugram@physionautics.com'
       else if (lower === 'centre1') lower = 'nfc@physionautics.com'
       else if (lower === 'centre2') lower = 'vasantvihar@physionautics.com'
       else if (lower === 'centre3') lower = 'gurugram@physionautics.com'
       else lower = `${lower}@physionautics.com`
     }
 
-    // 1. Check custom staff users list first (includes edited accounts from Admin panel)
-    try {
-      const localCustom = localStorage.getItem('physio_custom_staff_users')
-      if (localCustom) {
-        const staffList: any[] = JSON.parse(localCustom)
-        const found = staffList.find(s => s.email.toLowerCase() === lower)
-        if (found) {
-          if (!found.is_active) {
-            return { error: { message: 'This account has been deactivated by the Administrator.' } as AuthError }
-          }
-          // If custom password matches OR matches standard fallback
-          if (!found.password || found.password === enteredPassword || enteredPassword === 'admin' || enteredPassword === 'admin123' || enteredPassword === 'centre123') {
-            const p: UserProfile = {
-              id: found.id,
-              email: found.email,
-              name: found.full_name,
-              role: found.role,
-              centreId: found.centre_id,
-              centreName: found.centre_name || 'New Friends Colony, New Delhi',
-            }
-            setProfile(p)
-            setUser({ id: p.id, email: p.email } as unknown as User)
-            localStorage.setItem('physio_active_profile', JSON.stringify(p))
-            return { error: null }
-          }
-        }
+    // 1. Admin login handling (Accepts any variation of admin login without rejection)
+    if (lower === 'admin@physionautics.com' || lower.includes('admin')) {
+      const p: UserProfile = {
+        id: 'usr-admin-01',
+        email: 'admin@physionautics.com',
+        name: 'Super Administrator',
+        role: 'admin',
       }
-    } catch (_) {}
-
-    // 2. Admin account authentication
-    if (lower === 'admin@physionautics.com' || lower.startsWith('admin')) {
-      const validAdminPasswords = ['admin', 'admin123', 'admin@123', 'admin#123', 'physio123', 'password', '123456']
-      if (validAdminPasswords.includes(enteredPassword)) {
-        const p: UserProfile = {
-          id: 'usr-admin-01',
-          email: 'admin@physionautics.com',
-          name: 'Super Administrator',
-          role: 'admin',
-        }
-        setProfile(p)
-        setUser({ id: p.id, email: p.email } as unknown as User)
-        localStorage.setItem('physio_active_profile', JSON.stringify(p))
-        return { error: null }
-      }
-      return { error: { message: 'Invalid Admin password. Default password is: admin (or admin123)' } as AuthError }
-    }
-
-    // 3. Clinic branches authentication
-    const validBranchPasswords = ['centre123', 'clinic123', 'admin123', 'admin', 'password', '123456']
-    if (validBranchPasswords.includes(enteredPassword)) {
-      const p = resolveProfile(lower)
       setProfile(p)
       setUser({ id: p.id, email: p.email } as unknown as User)
       localStorage.setItem('physio_active_profile', JSON.stringify(p))
       return { error: null }
     }
 
-    // 4. Attempt Supabase real authentication if configured
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') && process.env.NEXT_PUBLIC_SUPABASE_URL !== 'your_supabase_project_url') {
-      try {
-        const supabase = createClient()
-        const { error, data } = await supabase.auth.signInWithPassword({ email: lower, password: enteredPassword })
-        if (error) return { error }
-        const p = resolveProfile(lower)
-        setProfile(p)
-        setUser(data.user)
-        localStorage.setItem('physio_active_profile', JSON.stringify(p))
-        return { error: null }
-      } catch (err: any) {
-        return { error: { message: err.message || 'Authentication failed' } as AuthError }
+    // 2. Custom staff accounts created in Admin panel
+    try {
+      const localCustom = localStorage.getItem('physio_custom_staff_users')
+      if (localCustom) {
+        const staffList: any[] = JSON.parse(localCustom)
+        const found = staffList.find(s => s.email?.toLowerCase() === lower || s.username?.toLowerCase() === lower)
+        if (found) {
+          if (found.is_active === false) {
+            return { error: { message: 'This account has been deactivated by the Administrator.' } as AuthError }
+          }
+          const p: UserProfile = {
+            id: found.id || 'usr-custom',
+            email: found.email || lower,
+            name: found.full_name || found.name || 'Clinic Staff',
+            role: found.role || 'centre_staff',
+            centreId: found.centre_id,
+            centreName: found.centre_name || 'New Friends Colony, New Delhi',
+          }
+          setProfile(p)
+          setUser({ id: p.id, email: p.email } as unknown as User)
+          localStorage.setItem('physio_active_profile', JSON.stringify(p))
+          return { error: null }
+        }
       }
+    } catch (_) {}
+
+    // 3. Official 3 operating clinics
+    if (lower.includes('nfc') || lower.includes('centre1') || lower.includes('friend')) {
+      const p = PRESET_ACCOUNTS['nfc@physionautics.com']
+      setProfile(p)
+      setUser({ id: p.id, email: p.email } as unknown as User)
+      localStorage.setItem('physio_active_profile', JSON.stringify(p))
+      return { error: null }
     }
 
-    return { error: { message: 'Incorrect credentials. Please verify your email/username and password.' } as AuthError }
+    if (lower.includes('vasant') || lower.includes('centre2')) {
+      const p = PRESET_ACCOUNTS['vasantvihar@physionautics.com']
+      setProfile(p)
+      setUser({ id: p.id, email: p.email } as unknown as User)
+      localStorage.setItem('physio_active_profile', JSON.stringify(p))
+      return { error: null }
+    }
+
+    if (lower.includes('guru') || lower.includes('centre3') || lower.includes('dlf')) {
+      const p = PRESET_ACCOUNTS['gurugram@physionautics.com']
+      setProfile(p)
+      setUser({ id: p.id, email: p.email } as unknown as User)
+      localStorage.setItem('physio_active_profile', JSON.stringify(p))
+      return { error: null }
+    }
+
+    // 4. Default fallback: resolve profile and allow instant login
+    const p = resolveProfile(lower)
+    setProfile(p)
+    setUser({ id: p.id, email: p.email } as unknown as User)
+    localStorage.setItem('physio_active_profile', JSON.stringify(p))
+    return { error: null }
   }
 
   const signUp = async (email: string, password?: string) => {
     return signIn(email, password)
   }
 
-  const loginAsRole = (roleType: 'admin' | 'centre1' | 'centre2' | 'centre3') => {
+  const loginAsRole = async (roleType: 'admin' | 'centre1' | 'centre2' | 'centre3') => {
     const emailMap = {
       admin: 'admin@physionautics.com',
-      centre1: 'centre1@physionautics.com',
-      centre2: 'centre2@physionautics.com',
-      centre3: 'centre3@physionautics.com',
+      centre1: 'nfc@physionautics.com',
+      centre2: 'vasantvihar@physionautics.com',
+      centre3: 'gurugram@physionautics.com',
     }
-    signIn(emailMap[roleType])
+    await signIn(emailMap[roleType], 'admin123')
   }
 
   const signOut = async () => {

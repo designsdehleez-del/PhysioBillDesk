@@ -1,4 +1,4 @@
-﻿export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export interface Database {
   public: {
@@ -173,3 +173,17 @@ export interface VisitWithServices extends Visit {
 export interface DoctorWithCentre extends Doctor {
   centres: Pick<Centre, 'name'> | null
 }
+
+export interface StaffUser {
+  id: string
+  full_name: string
+  email: string
+  password?: string
+  centre_id: string | null
+  centre_name: string | null
+  role: 'admin' | 'centre_staff'
+  is_active: boolean
+  created_at?: string
+  updated_at?: string
+}
+export type StaffUserInsert = Omit<StaffUser, 'id' | 'created_at' | 'updated_at'>

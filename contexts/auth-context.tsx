@@ -70,6 +70,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resolveProfile = (email: string): UserProfile => {
     const lower = email.toLowerCase()
     if (PRESET_ACCOUNTS[lower]) return PRESET_ACCOUNTS[lower]
+
+    try {
+      const localCustom = localStorage.getItem('physio_custom_staff_users')
+      if (localCustom) {
+        const staffList: any[] = JSON.parse(localCustom)
+        const found = staffList.find(s => s.email.toLowerCase() === lower)
+        if (found) {
+          return {
+            id: found.id,
+            email: found.email,
+            name: found.full_name,
+            role: found.role,
+            centreId: found.centre_id,
+            centreName: found.centre_name || 'Clinic Branch',
+          }
+        }
+      }
+    } catch (_) {}
+
     if (lower.startsWith('admin')) {
       return { id: 'admin-auto', email, name: 'Administrator', role: 'admin' }
     }
@@ -77,7 +96,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    // Check local storage for persistent role session
     const cached = localStorage.getItem('physio_active_profile')
     if (cached) {
       try {
@@ -116,7 +134,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password?: string) => {
-    const p = resolveProfile(email)
+    const lower = email.toLowerCase().trim()
+
+    // Check custom staff users for active status and password match
+    try {
+      const localCustom = localStorage.getItem('physio_custom_staff_users')
+      if (localCustom) {
+        const staffList: any[] = JSON.parse(localCustom)
+        const found = staffList.find(s => s.email.toLowerCase() === lower)
+        if (found) {
+          if (!found.is_active) {
+            return { error: { message: 'This clinic staff account has been deactivated by the Administrator.' } as AuthError }
+          }
+          if (password && found.password && found.password !== password) {
+            return { error: { message: 'Invalid login credentials or password.' } as AuthError }
+          }
+        }
+      }
+    } catch (_) {}
+
+    const p = resolveProfile(lower)
     setProfile(p)
     const mockUser = { id: p.id, email: p.email } as unknown as User
     setUser(mockUser)

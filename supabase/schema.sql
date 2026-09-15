@@ -149,6 +149,25 @@ CREATE POLICY visit_services_insert ON public.visit_services FOR INSERT TO authe
 CREATE POLICY visit_services_update ON public.visit_services FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY visit_services_delete ON public.visit_services FOR DELETE TO authenticated USING (true);
 
+-- 9. staff_users (Clinic Logins & Staff)
+CREATE TABLE IF NOT EXISTS public.staff_users (
+  id           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  full_name    text        NOT NULL,
+  email        text        UNIQUE NOT NULL,
+  password     text        NOT NULL,
+  centre_id    uuid        REFERENCES public.centres(id) ON DELETE SET NULL,
+  centre_name  text,
+  role         text        NOT NULL CHECK (role IN ('admin', 'centre_staff')) DEFAULT 'centre_staff',
+  is_active    boolean     NOT NULL DEFAULT true,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.staff_users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY staff_users_select ON public.staff_users FOR SELECT TO authenticated USING (true);
+CREATE POLICY staff_users_insert ON public.staff_users FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY staff_users_update ON public.staff_users FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY staff_users_delete ON public.staff_users FOR DELETE TO authenticated USING (true);
+
 -- generate_patient_uid()
 CREATE OR REPLACE FUNCTION public.generate_patient_uid()
 RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$

@@ -228,3 +228,27 @@ VALUES
   ('First Visit Complimentary (₹500 OFF)', 'fixed', 500, true)
 ON CONFLICT DO NOTHING;
 
+-- Seed 18 Physiotherapy Services & Procedures
+INSERT INTO public.services (name, price)
+VALUES
+  ('Initial Consultation & Assessment', 600),
+  ('Follow-up Consultation & Review', 400),
+  ('Standard Physiotherapy Session (45 min)', 800),
+  ('Manual Therapy & Joint Mobilization', 900),
+  ('Electrotherapy (IFT / TENS / Ultrasound)', 500),
+  ('Spine Decompression & Mechanical Traction', 950),
+  ('Dry Needling Therapy (Trigger Point Release)', 750),
+  ('Cupping & Myofascial Release Therapy', 700),
+  ('Sports Injury Rehabilitation & Conditioning', 1200),
+  ('Post-Operative Orthopedic Rehab (ACL/Knee/Hip)', 1100),
+  ('Neurological Rehabilitation Session', 1300),
+  ('Kinesiology Taping & Strapping', 450),
+  ('Stroke & Paralysis Functional Rehab', 1500),
+  ('Ergonomic Evaluation & Posture Correction', 850),
+  ('High-Power Laser Therapy (Class 4)', 1000),
+  ('Chest Physiotherapy & Postural Drainage', 750),
+  ('Pediatric Physiotherapy & Motor Skills', 1000),
+  ('Full Body Wellness & Recovery Package', 2500)
+ON CONFLICT DO NOTHING;
+
+

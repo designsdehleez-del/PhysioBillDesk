@@ -18,7 +18,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Patient, Service, Centre, Doctor, DiscountPreset } from '@/lib/supabase/types'
 import {
-  getCentres, getDoctors, getPatients,
+  getCentres, getDoctors, getPatients, getServices,
   getVisits, saveVisit, exportBillsToExcel, exportSingleBillToExcel,
   StoredVisit, BillLineItem
 } from '@/lib/data-store'
@@ -68,11 +68,12 @@ export default function BillingPage() {
   const [printModalOpen, setPrintModalOpen] = useState(false)
 
   const loadData = useCallback(async () => {
-    const [cList, dList, pList, vList] = await Promise.all([
+    const [cList, dList, pList, vList, sList] = await Promise.all([
       getCentres(),
       getDoctors(),
       getPatients(),
       getVisits(),
+      getServices(),
     ])
 
     const activeCentres = cList.filter(c => c.is_active)
@@ -80,18 +81,7 @@ export default function BillingPage() {
     setDoctors(dList.filter(d => d.is_active))
     setPatients(pList)
     setVisits(vList)
-
-    // Pre-populate standard clinic services
-    setServices([
-      { id: 'svc-1', name: 'Consultation & Assessment', price: 500, created_at: '', updated_at: '' },
-      { id: 'svc-2', name: 'Physiotherapy Session (45 min)', price: 800, created_at: '', updated_at: '' },
-      { id: 'svc-3', name: 'Dry Needling Therapy', price: 600, created_at: '', updated_at: '' },
-      { id: 'svc-4', name: 'Cupping & Myofascial Release', price: 700, created_at: '', updated_at: '' },
-      { id: 'svc-5', name: 'Spine Decompression / Traction', price: 900, created_at: '', updated_at: '' },
-      { id: 'svc-6', name: 'Sports Injury Rehabilitation', price: 1200, created_at: '', updated_at: '' },
-      { id: 'svc-7', name: 'Post-Op Joint Mobilization', price: 1000, created_at: '', updated_at: '' },
-      { id: 'svc-8', name: 'Follow-up Review', price: 300, created_at: '', updated_at: '' },
-    ])
+    setServices(sList)
 
     setDiscountPresets([
       { id: 'dp-1', label: 'Welcome 10% Discount', type: 'percentage', value: 10, is_active: true, created_at: '' },

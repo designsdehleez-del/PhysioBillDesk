@@ -104,16 +104,100 @@ const DEFAULT_DOCTORS: Doctor[] = [
   },
 ]
 
-const DEFAULT_SERVICES: Service[] = [
-  { id: 'svc-1', name: 'Consultation', price: 500, created_at: '', updated_at: '' },
-  { id: 'svc-2', name: 'Physiotherapy Session (45 min)', price: 800, created_at: '', updated_at: '' },
-  { id: 'svc-3', name: 'Dry Needling Therapy', price: 600, created_at: '', updated_at: '' },
-  { id: 'svc-4', name: 'Cupping Therapy', price: 700, created_at: '', updated_at: '' },
-  { id: 'svc-5', name: 'Spine Traction / Decompression', price: 900, created_at: '', updated_at: '' },
-  { id: 'svc-6', name: 'Sports Injury Rehab', price: 1200, created_at: '', updated_at: '' },
-  { id: 'svc-7', name: 'Post-Surgery Joint Mobilization', price: 1000, created_at: '', updated_at: '' },
-  { id: 'svc-8', name: 'Follow-up Review', price: 300, created_at: '', updated_at: '' },
+export const DEFAULT_SERVICES: Service[] = [
+  { id: 'svc-1', name: 'Initial Consultation & Assessment', price: 600, created_at: '', updated_at: '' },
+  { id: 'svc-2', name: 'Follow-up Consultation & Review', price: 400, created_at: '', updated_at: '' },
+  { id: 'svc-3', name: 'Standard Physiotherapy Session (45 min)', price: 800, created_at: '', updated_at: '' },
+  { id: 'svc-4', name: 'Manual Therapy & Joint Mobilization', price: 900, created_at: '', updated_at: '' },
+  { id: 'svc-5', name: 'Electrotherapy (IFT / TENS / Ultrasound)', price: 500, created_at: '', updated_at: '' },
+  { id: 'svc-6', name: 'Spine Decompression & Mechanical Traction', price: 950, created_at: '', updated_at: '' },
+  { id: 'svc-7', name: 'Dry Needling Therapy (Trigger Point Release)', price: 750, created_at: '', updated_at: '' },
+  { id: 'svc-8', name: 'Cupping & Myofascial Release Therapy', price: 700, created_at: '', updated_at: '' },
+  { id: 'svc-9', name: 'Sports Injury Rehabilitation & Conditioning', price: 1200, created_at: '', updated_at: '' },
+  { id: 'svc-10', name: 'Post-Operative Orthopedic Rehab (ACL/Knee/Hip)', price: 1100, created_at: '', updated_at: '' },
+  { id: 'svc-11', name: 'Neurological Rehabilitation Session', price: 1300, created_at: '', updated_at: '' },
+  { id: 'svc-12', name: 'Kinesiology Taping & Strapping', price: 450, created_at: '', updated_at: '' },
+  { id: 'svc-13', name: 'Stroke & Paralysis Functional Rehab', price: 1500, created_at: '', updated_at: '' },
+  { id: 'svc-14', name: 'Ergonomic Evaluation & Posture Correction', price: 850, created_at: '', updated_at: '' },
+  { id: 'svc-15', name: 'High-Power Laser Therapy (Class 4)', price: 1000, created_at: '', updated_at: '' },
+  { id: 'svc-16', name: 'Chest Physiotherapy & Postural Drainage', price: 750, created_at: '', updated_at: '' },
+  { id: 'svc-17', name: 'Pediatric Physiotherapy & Motor Skills', price: 1000, created_at: '', updated_at: '' },
+  { id: 'svc-18', name: 'Full Body Wellness & Recovery Package', price: 2500, created_at: '', updated_at: '' },
 ]
+
+// ================= SERVICES =================
+export async function getServices(): Promise<Service[]> {
+  try {
+    const supabase = createClient()
+    const { data } = await supabase.from('services').select('*').order('name')
+    if (data && data.length > 0) {
+      localStorage.setItem('physio_services_cache_v2', JSON.stringify(data))
+      return data as unknown as Service[]
+    }
+  } catch (_) {}
+
+  const cached = localStorage.getItem('physio_services_cache_v2')
+  if (cached) {
+    try {
+      const parsed: Service[] = JSON.parse(cached)
+      if (parsed.length > 0) return parsed
+    } catch (_) {}
+  }
+  localStorage.setItem('physio_services_cache_v2', JSON.stringify(DEFAULT_SERVICES))
+  return DEFAULT_SERVICES
+}
+
+export async function saveService(s: { id?: string; name: string; price: number }): Promise<Service> {
+  const current = await getServices()
+  let updated: Service[]
+  let savedService: Service
+
+  if (s.id) {
+    savedService = {
+      ...current.find(item => item.id === s.id)!,
+      name: s.name.trim(),
+      price: s.price,
+      updated_at: new Date().toISOString(),
+    } as Service
+    updated = current.map(item => item.id === s.id ? savedService : item)
+  } else {
+    savedService = {
+      id: `svc-${Date.now()}`,
+      name: s.name.trim(),
+      price: s.price,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    updated = [...current, savedService]
+  }
+
+  localStorage.setItem('physio_services_cache_v2', JSON.stringify(updated))
+
+  try {
+    const supabase = createClient()
+    if (s.id) {
+      await supabase.from('services').update({ name: savedService.name, price: savedService.price }).eq('id', s.id)
+    } else {
+      await supabase.from('services').insert({ name: savedService.name, price: savedService.price })
+    }
+  } catch (_) {}
+
+  return savedService
+}
+
+export async function deleteService(id: string): Promise<void> {
+  const current = await getServices()
+  const updated = current.filter(s => s.id !== id)
+  localStorage.setItem('physio_services_cache_v2', JSON.stringify(updated))
+  try {
+    await createClient().from('services').delete().eq('id', id)
+  } catch (_) {}
+}
+
+export async function resetDefaultServices(): Promise<Service[]> {
+  localStorage.setItem('physio_services_cache_v2', JSON.stringify(DEFAULT_SERVICES))
+  return DEFAULT_SERVICES
+}
 
 // ================= CENTRES =================
 export async function getCentres(): Promise<Centre[]> {

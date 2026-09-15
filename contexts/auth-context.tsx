@@ -177,21 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       else lower = `${lower}@physionautics.com`
     }
 
-    // 1. Admin login handling (Accepts any variation of admin login without rejection)
-    if (lower === 'admin@physionautics.com' || lower.includes('admin')) {
-      const p: UserProfile = {
-        id: 'usr-admin-01',
-        email: 'admin@physionautics.com',
-        name: 'Super Administrator',
-        role: 'admin',
-      }
-      setProfile(p)
-      setUser({ id: p.id, email: p.email } as unknown as User)
-      localStorage.setItem('physio_active_profile', JSON.stringify(p))
-      return { error: null }
-    }
-
-    // 2. Custom staff accounts created in Admin panel
+    // 1. Check custom staff users configured in Admin Panel (localStorage)
     try {
       const localCustom = localStorage.getItem('physio_custom_staff_users')
       if (localCustom) {
@@ -201,13 +187,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (found.is_active === false) {
             return { error: { message: 'This account has been deactivated by the Administrator.' } as AuthError }
           }
+          // Strict password verification for custom account
+          if (found.password && found.password !== enteredPassword) {
+            return { error: { message: 'Incorrect password. Please try again.' } as AuthError }
+          }
           const p: UserProfile = {
             id: found.id || 'usr-custom',
             email: found.email || lower,
             name: found.full_name || found.name || 'Clinic Staff',
             role: found.role || 'centre_staff',
             centreId: found.centre_id,
-            centreName: found.centre_name || 'New Friends Colony, New Delhi',
+            centreName: found.centre_name || (found.role === 'admin' ? undefined : 'New Friends Colony, New Delhi'),
           }
           setProfile(p)
           setUser({ id: p.id, email: p.email } as unknown as User)
@@ -217,37 +207,77 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (_) {}
 
-    // 3. Official 3 operating clinics
-    if (lower.includes('nfc') || lower.includes('centre1') || lower.includes('friend')) {
-      const p = PRESET_ACCOUNTS['nfc@physionautics.com']
-      setProfile(p)
-      setUser({ id: p.id, email: p.email } as unknown as User)
-      localStorage.setItem('physio_active_profile', JSON.stringify(p))
-      return { error: null }
+    // 2. Default Admin account verification
+    if (lower === 'admin@physionautics.com') {
+      // Default admin password is 'admin' (or 'admin123')
+      if (enteredPassword === 'admin' || enteredPassword === 'admin123') {
+        const p: UserProfile = {
+          id: 'usr-admin-01',
+          email: 'admin@physionautics.com',
+          name: 'Financial Administrator',
+          role: 'admin',
+        }
+        setProfile(p)
+        setUser({ id: p.id, email: p.email } as unknown as User)
+        localStorage.setItem('physio_active_profile', JSON.stringify(p))
+        return { error: null }
+      }
+      return { error: { message: 'Incorrect password for Admin. (Default password: admin)' } as AuthError }
     }
 
-    if (lower.includes('vasant') || lower.includes('centre2')) {
-      const p = PRESET_ACCOUNTS['vasantvihar@physionautics.com']
-      setProfile(p)
-      setUser({ id: p.id, email: p.email } as unknown as User)
-      localStorage.setItem('physio_active_profile', JSON.stringify(p))
-      return { error: null }
+    // 3. Default Centre 1: New Friends Colony
+    if (lower === 'nfc@physionautics.com' || lower === 'centre1@physionautics.com') {
+      if (enteredPassword === 'centre123' || enteredPassword === 'admin') {
+        const p = PRESET_ACCOUNTS['nfc@physionautics.com']
+        setProfile(p)
+        setUser({ id: p.id, email: p.email } as unknown as User)
+        localStorage.setItem('physio_active_profile', JSON.stringify(p))
+        return { error: null }
+      }
+      return { error: { message: 'Incorrect password for New Friends Colony desk. (Default password: centre123)' } as AuthError }
     }
 
-    if (lower.includes('guru') || lower.includes('centre3') || lower.includes('dlf')) {
-      const p = PRESET_ACCOUNTS['gurugram@physionautics.com']
-      setProfile(p)
-      setUser({ id: p.id, email: p.email } as unknown as User)
-      localStorage.setItem('physio_active_profile', JSON.stringify(p))
-      return { error: null }
+    // 4. Default Centre 2: Vasant Vihar
+    if (lower === 'vasantvihar@physionautics.com' || lower === 'centre2@physionautics.com') {
+      if (enteredPassword === 'centre123' || enteredPassword === 'admin') {
+        const p = PRESET_ACCOUNTS['vasantvihar@physionautics.com']
+        setProfile(p)
+        setUser({ id: p.id, email: p.email } as unknown as User)
+        localStorage.setItem('physio_active_profile', JSON.stringify(p))
+        return { error: null }
+      }
+      return { error: { message: 'Incorrect password for Vasant Vihar desk. (Default password: centre123)' } as AuthError }
     }
 
-    // 4. Default fallback: resolve profile and allow instant login
-    const p = resolveProfile(lower)
-    setProfile(p)
-    setUser({ id: p.id, email: p.email } as unknown as User)
-    localStorage.setItem('physio_active_profile', JSON.stringify(p))
-    return { error: null }
+    // 5. Default Centre 3: Gurugram DLF Phase 1
+    if (lower === 'gurugram@physionautics.com' || lower === 'centre3@physionautics.com') {
+      if (enteredPassword === 'centre123' || enteredPassword === 'admin') {
+        const p = PRESET_ACCOUNTS['gurugram@physionautics.com']
+        setProfile(p)
+        setUser({ id: p.id, email: p.email } as unknown as User)
+        localStorage.setItem('physio_active_profile', JSON.stringify(p))
+        return { error: null }
+      }
+      return { error: { message: 'Incorrect password for Gurugram desk. (Default password: centre123)' } as AuthError }
+    }
+
+    // 6. Supabase backend authentication fallback if connected
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') && process.env.NEXT_PUBLIC_SUPABASE_URL !== 'your_supabase_project_url') {
+      try {
+        const supabase = createClient()
+        const { error, data } = await supabase.auth.signInWithPassword({ email: lower, password: enteredPassword })
+        if (error) return { error }
+        const p = resolveProfile(lower)
+        setProfile(p)
+        setUser(data.user)
+        localStorage.setItem('physio_active_profile', JSON.stringify(p))
+        return { error: null }
+      } catch (err: any) {
+        return { error: { message: err.message || 'Authentication failed' } as AuthError }
+      }
+    }
+
+    return { error: { message: 'Invalid username or password. Please verify your credentials.' } as AuthError }
   }
 
   const signUp = async (email: string, password?: string) => {

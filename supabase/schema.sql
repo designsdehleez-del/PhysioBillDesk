@@ -203,9 +203,9 @@ GRANT EXECUTE ON FUNCTION public.generate_bill_number() TO authenticated;
 -- Seed 3 Clinic Centres
 INSERT INTO public.centres (id, name, address, phone, email, is_active)
 VALUES 
-  ('c1111111-1111-1111-1111-111111111111', 'Downtown Clinic (Centre 1)', '101 Central Ave, Suite 4', '+91 98765 43210', 'centre1@physionautics.com', true),
-  ('c2222222-2222-2222-2222-222222222222', 'Westside Rehab (Centre 2)', '45 West Park Blvd', '+91 98765 43211', 'centre2@physionautics.com', true),
-  ('c3333333-3333-3333-3333-333333333333', 'East Care Centre (Centre 3)', '88 East Ring Road', '+91 98765 43212', 'centre3@physionautics.com', true)
+  ('c1111111-1111-1111-1111-111111111111', 'New Friends Colony, New Delhi', 'D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025', '08383936905', 'nfc@physionautics.com', true),
+  ('c2222222-2222-2222-2222-222222222222', 'Vasant Vihar, New Delhi', '86 Basement, Poorvi Marg, Indian Air Lines & Air India Estate, Vasant Vihar, New Delhi, Delhi 110057', '08700264533', 'vasantvihar@physionautics.com', true),
+  ('c3333333-3333-3333-3333-333333333333', 'Gurugram – DLF Phase 1', 'C2/17, Arjun Marg, DLF Phase 1, Gurugram, Haryana – 122002', '+91 92171 83736', 'gurugram@physionautics.com', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed Sample Doctors per Centre

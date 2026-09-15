@@ -1,6 +1,6 @@
-﻿'use client'
-import { useEffect, useState } from 'react'
-import { Pencil, Trash2, Plus, UserCog, Upload, Building2, Search, Filter } from 'lucide-react'
+'use client'
+import { useEffect, useState, useCallback } from 'react'
+import { Pencil, Trash2, Plus, UserCog, Upload, Download, Building2, Search, Filter } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,14 +16,14 @@ import type { Doctor, Centre } from '@/lib/supabase/types'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
 
-interface DoctorRow extends Doctor { centreName?: string }
+interface DoctorRow extends Doctor { centreName?: string | null }
 
 const DOCTOR_IMPORT_COLUMNS: ColumnDefinition[] = [
   { key: 'name', label: 'Doctor Name', required: true, example: 'Dr. Ananya Roy' },
   { key: 'specialization', label: 'Specialization', required: true, example: 'Sports Rehabilitation' },
   { key: 'phone', label: 'Phone', required: false, example: '+91 98123 45678' },
   { key: 'email', label: 'Email', required: false, example: 'ananya@physionautics.com' },
-  { key: 'centre_name', label: 'Centre Name', required: false, example: 'Downtown Clinic (Centre 1)' },
+  { key: 'centre_name', label: 'Centre Name', required: false, example: 'New Friends Colony, New Delhi' },
 ]
 
 export default function DoctorsPage() {
@@ -34,186 +34,175 @@ export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<DoctorRow[]>([])
   const [centres, setCentres] = useState<Centre[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCentreFilter, setSelectedCentreFilter] = useState<string>('all')
+  const [search, setSearch] = useState('')
+  const [centreFilter, setCentreFilter] = useState('all')
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [editing, setEditing] = useState<Doctor | null>(null)
-  const [form, setForm] = useState({ name: '', specialization: '', phone: '', email: '', centre_id: '' })
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ name: '', specialization: '', phone: '', email: '', centre_id: '' })
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     const [cList, dList] = await Promise.all([
       getCentres(),
-      getDoctors(isAdmin ? (selectedCentreFilter === 'all' ? undefined : selectedCentreFilter) : profile?.centreId),
+      getDoctors(centreFilter),
     ])
-
-    const centreMap = Object.fromEntries(cList.map(x => [x.id, x.name]))
     setCentres(cList)
-    setDoctors(dList.map(doc => ({
-      ...doc,
-      centreName: doc.centre_id ? centreMap[doc.centre_id] : 'All Centres (Visiting)',
+
+    const cMap = new Map(cList.map(c => [c.id, c.name]))
+    setDoctors(dList.map(d => ({
+      ...d,
+      centreName: d.centre_id ? cMap.get(d.centre_id) ?? null : null,
     })))
     setLoading(false)
-  }
+  }, [centreFilter])
 
-  useEffect(() => {
-    load()
-  }, [selectedCentreFilter, profile])
+  useEffect(() => { load() }, [load])
+
+  const filteredDoctors = doctors.filter(d => {
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    return d.name.toLowerCase().includes(q) || (d.specialization?.toLowerCase().includes(q))
+  })
 
   const openAdd = () => {
     setEditing(null)
-    setForm({
-      name: '',
-      specialization: '',
-      phone: '',
-      email: '',
-      centre_id: (!isAdmin && profile?.centreId) ? profile.centreId : (centres[0]?.id || ''),
-    })
+    setForm({ name: '', specialization: '', phone: '', email: '', centre_id: centres[0]?.id ?? '' })
     setDialogOpen(true)
   }
 
   const openEdit = (d: Doctor) => {
     setEditing(d)
-    setForm({
-      name: d.name,
-      specialization: d.specialization ?? '',
-      phone: d.phone ?? '',
-      email: d.email ?? '',
-      centre_id: d.centre_id ?? '',
-    })
+    setForm({ name: d.name, specialization: d.specialization ?? '', phone: d.phone ?? '', email: d.email ?? '', centre_id: d.centre_id ?? '' })
     setDialogOpen(true)
   }
 
   const save = async () => {
-    if (!form.name.trim()) return
+    if (!form.name.trim() || !form.specialization.trim()) {
+      toast({ title: 'Name and Specialization are required', variant: 'destructive' })
+      return
+    }
     setSaving(true)
-    await saveDoctor({
-      id: editing ? editing.id : undefined,
-      name: form.name.trim(),
-      specialization: form.specialization || null,
-      phone: form.phone || null,
-      email: form.email || null,
-      centre_id: form.centre_id || null,
-    })
-    toast({ title: editing ? 'Doctor profile updated' : 'New doctor added successfully' })
-    setSaving(false)
-    setDialogOpen(false)
-    load()
+    try {
+      await saveDoctor({
+        ...(editing ? { id: editing.id } : {}),
+        name: form.name.trim(),
+        specialization: form.specialization.trim() || null,
+        phone: form.phone.trim() || null,
+        email: form.email.trim() || null,
+        centre_id: form.centre_id || null,
+      })
+      toast({ title: editing ? 'Doctor updated' : 'Doctor created' })
+      setDialogOpen(false)
+      load()
+    } catch (err: unknown) {
+      toast({ title: 'Failed to save doctor', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const toggleActive = async (d: Doctor) => {
     await toggleDoctorActive(d.id)
-    toast({ title: `Doctor ${!d.is_active ? 'activated' : 'deactivated'}` })
+    toast({ title: `Doctor marked as ${!d.is_active ? 'active' : 'inactive'}` })
     load()
   }
 
   const doDelete = async () => {
     if (!deleteId) return
     await deleteDoctor(deleteId)
-    toast({ title: 'Doctor removed', variant: 'destructive' })
+    toast({ title: 'Doctor deleted' })
     setDeleteId(null)
     load()
   }
 
   const handleBulkImport = async (rows: Record<string, any>[]) => {
-    const cList = await getCentres()
-    const mappedDoctors: Partial<Doctor>[] = rows.map(r => {
+    const validDoctors: Partial<Doctor>[] = rows.map(r => {
       let matchedCentreId: string | null = null
       if (r.centre_name) {
-        const found = cList.find(c => 
-          c.name.toLowerCase().includes(String(r.centre_name).toLowerCase().trim()) ||
-          String(r.centre_name).toLowerCase().includes(c.name.toLowerCase().trim())
-        )
+        const found = centres.find(c => c.name.toLowerCase().includes(String(r.centre_name).toLowerCase().trim()))
         if (found) matchedCentreId = found.id
       }
       return {
-        name: r.name ? (String(r.name).startsWith('Dr.') ? String(r.name) : `Dr. ${r.name}`) : 'Dr. Consultant',
-        specialization: r.specialization || 'Physiotherapy Consultant',
-        phone: r.phone ? String(r.phone) : null,
-        email: r.email ? String(r.email) : null,
-        centre_id: matchedCentreId || cList[0]?.id || null,
+        name: String(r.name || '').trim(),
+        specialization: String(r.specialization || '').trim(),
+        phone: r.phone ? String(r.phone).trim() : null,
+        email: r.email ? String(r.email).trim() : null,
+        centre_id: matchedCentreId || centres[0]?.id || null,
       }
-    })
+    }).filter(d => d.name && d.specialization)
 
-    const count = await bulkImportDoctors(mappedDoctors)
-    toast({ title: `Successfully imported and tagged ${count} doctors to clinic centres!` })
+    if (validDoctors.length === 0) {
+      toast({ title: 'No valid doctor rows found to import', variant: 'destructive' })
+      return
+    }
+
+    const count = await bulkImportDoctors(validDoctors)
+    toast({ title: `Successfully imported and tagged ${count} doctors` })
     load()
   }
 
-  const filteredDoctors = doctors.filter(d => 
-    d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (d.specialization && d.specialization.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (d.centreName && d.centreName.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
-
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Doctor Directory</h1>
-          <p className="text-sm text-muted-foreground">
-            {isAdmin ? 'Manage doctor profiles and branch tagging across all centres' : `Doctors practicing at ${profile?.centreName || 'your centre'}`}
-          </p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">Doctor Directory & Tagging</h1>
+            <Badge className="bg-purple-600 text-white text-xs">{isAdmin ? 'Admin View' : 'Clinic Desk'}</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage doctor profiles and assign them to specific clinic centres</p>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          {isAdmin && (
-            <Button variant="outline" className="gap-2 border-emerald-300 text-emerald-800 hover:bg-emerald-50" onClick={() => setImportOpen(true)}>
-              <Upload className="h-4 w-4 text-emerald-600" /> Import Excel / CSV
-            </Button>
-          )}
-          <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 gap-1.5" onClick={() => setImportOpen(true)}>
+            <Download className="h-4 w-4" /> 📥 Import Excel / CSV
+          </Button>
+          <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
             <Plus className="h-4 w-4" /> Add Doctor
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            className="pl-9 bg-white" 
-            placeholder="Search doctors by name, specialization, or clinic..." 
-            value={searchQuery} 
-            onChange={e => setSearchQuery(e.target.value)} 
-          />
-        </div>
-
-        {isAdmin && (
+      {/* Filter and Search Bar */}
+      <Card>
+        <CardContent className="p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search doctors by name or specialization…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          </div>
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedCentreFilter} onValueChange={(v: string | null) => setSelectedCentreFilter(v ?? 'all')}>
+            <Select value={centreFilter} onValueChange={(v: string | null) => setCentreFilter(v ?? 'all')}>
               <SelectTrigger className="w-56 bg-white"><SelectValue placeholder="All Centres" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Centres</SelectItem>
+                <SelectItem value="all">All Centres ({doctors.length})</SelectItem>
                 {centres.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
 
+      {/* Doctor List Table */}
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" /></div>
+            <div className="p-12 text-center text-muted-foreground">Loading doctors…</div>
           ) : filteredDoctors.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <UserCog className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No doctors found.</p>
-              <Button className="mt-4" onClick={openAdd}>Add First Doctor</Button>
+            <div className="p-12 text-center text-muted-foreground">
+              No doctors found. Click &quot;Add Doctor&quot; or import from Excel.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b bg-gray-50">
+                <thead className="bg-gray-50 border-b">
                   <tr className="text-left text-xs font-semibold text-muted-foreground">
                     <th className="px-4 py-3">Doctor Name</th>
                     <th className="px-4 py-3">Specialization</th>
-                    <th className="px-4 py-3">Tagged Clinic Branch</th>
+                    <th className="px-4 py-3">Clinic Centre</th>
                     <th className="px-4 py-3 hidden md:table-cell">Contact Phone</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
@@ -226,7 +215,7 @@ export default function DoctorsPage() {
                       <td className="px-4 py-3 text-gray-700">{d.specialization ?? '—'}</td>
                       <td className="px-4 py-3">
                         <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50/60 font-medium flex items-center gap-1 w-fit">
-                          <Building2 className="h-3 w-3" /> {d.centreName ?? 'Downtown Clinic (Centre 1)'}
+                          <Building2 className="h-3 w-3" /> {d.centreName ?? 'New Friends Colony, New Delhi'}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{d.phone ?? '—'}</td>
@@ -301,8 +290,9 @@ export default function DoctorsPage() {
         templateFileName="Doctors_Import"
         columns={DOCTOR_IMPORT_COLUMNS}
         sampleRows={[
-          { name: 'Dr. Neha Verma', specialization: 'Pediatric Physiotherapy', phone: '+91 98765 00001', email: 'neha@physio.com', centre_name: 'Downtown Clinic (Centre 1)' },
-          { name: 'Dr. Arjun Kapoor', specialization: 'Sports Medicine & Rehab', phone: '+91 98765 00002', email: 'arjun@physio.com', centre_name: 'Westside Rehab (Centre 2)' },
+          { name: 'Dr. Neha Verma', specialization: 'Pediatric Physiotherapy', phone: '+91 98765 00001', email: 'neha@physio.com', centre_name: 'New Friends Colony, New Delhi' },
+          { name: 'Dr. Arjun Kapoor', specialization: 'Sports Medicine & Rehab', phone: '+91 98765 00002', email: 'arjun@physio.com', centre_name: 'Vasant Vihar, New Delhi' },
+          { name: 'Dr. Priya Nair', specialization: 'Cardiorespiratory Rehab', phone: '+91 98765 00003', email: 'priya@physio.com', centre_name: 'Gurugram – DLF Phase 1' },
         ]}
         onImport={handleBulkImport}
       />

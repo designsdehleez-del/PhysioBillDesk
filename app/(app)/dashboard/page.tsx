@@ -79,11 +79,11 @@ export default function DashboardPage() {
 
   // Centre-wise revenue breakdowns
   const centreBreakdown = [
-    { id: 'centre-1', name: 'Downtown Clinic (Centre 1)' },
-    { id: 'centre-2', name: 'Westside Rehab (Centre 2)' },
-    { id: 'centre-3', name: 'East Care Centre (Centre 3)' },
+    { id: 'centre-1', name: 'New Friends Colony, New Delhi' },
+    { id: 'centre-2', name: 'Vasant Vihar, New Delhi' },
+    { id: 'centre-3', name: 'Gurugram – DLF Phase 1' },
   ].map(c => {
-    const matching = allVisits.filter(v => v.centre_name?.includes('Centre 1') || v.centre_name?.includes('Downtown') || v.centre_id === c.id)
+    const matching = allVisits.filter(v => v.centre_name?.includes('Friends Colony') || v.centre_name?.includes('CV Raman') || v.centre_id === c.id)
     const amount = matching.reduce((s, v) => s + (Number(v.total) || 0), 0)
     const pct = totalRevenue > 0 ? Math.round((amount / totalRevenue) * 100) : 0
     return { ...c, count: matching.length, amount, pct }
@@ -114,12 +114,12 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-purple-700" />
             <Select value={selectedFilterCentre} onValueChange={(v: string | null) => setSelectedFilterCentre(v ?? 'all')}>
-              <SelectTrigger className="w-56 bg-white"><SelectValue placeholder="All Centres" /></SelectTrigger>
+              <SelectTrigger className="w-64 bg-white"><SelectValue placeholder="All Centres" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All 3 Clinic Centres</SelectItem>
-                <SelectItem value="centre1">Downtown Clinic (Centre 1)</SelectItem>
-                <SelectItem value="centre2">Westside Rehab (Centre 2)</SelectItem>
-                <SelectItem value="centre3">East Care Centre (Centre 3)</SelectItem>
+                <SelectItem value="c1111111-1111-1111-1111-111111111111">New Friends Colony, New Delhi</SelectItem>
+                <SelectItem value="c2222222-2222-2222-2222-222222222222">Vasant Vihar, New Delhi</SelectItem>
+                <SelectItem value="c3333333-3333-3333-3333-333333333333">Gurugram – DLF Phase 1</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -211,9 +211,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {[
-                { name: 'Downtown Clinic (Centre 1)', color: 'bg-blue-500', amount: Math.round(filteredRevenue * 0.45) },
-                { name: 'Westside Rehab (Centre 2)', color: 'bg-emerald-500', amount: Math.round(filteredRevenue * 0.35) },
-                { name: 'East Care Centre (Centre 3)', color: 'bg-orange-500', amount: Math.round(filteredRevenue * 0.20) },
+                { name: 'New Friends Colony, New Delhi', color: 'bg-blue-500', amount: Math.round(filteredRevenue * 0.45) },
+                { name: 'Vasant Vihar, New Delhi', color: 'bg-emerald-500', amount: Math.round(filteredRevenue * 0.35) },
+                { name: 'Gurugram – DLF Phase 1', color: 'bg-orange-500', amount: Math.round(filteredRevenue * 0.20) },
               ].map(c => (
                 <div key={c.name} className="p-3 rounded-lg border bg-gray-50/70 flex justify-between items-center">
                   <div className="flex items-center gap-2.5">
@@ -259,7 +259,7 @@ export default function DashboardPage() {
                       <tr key={v.id} className="hover:bg-gray-50">
                         <td className="px-4 py-2.5 font-mono text-purple-700 font-semibold">{v.bill_number}</td>
                         <td className="px-4 py-2.5 text-muted-foreground">{formatDate(v.visit_date)}</td>
-                        <td className="px-4 py-2.5 font-medium text-gray-900">{v.centre_name || 'Downtown Clinic (Centre 1)'}</td>
+                        <td className="px-4 py-2.5 font-medium text-gray-900">{v.centre_name || 'New Friends Colony, New Delhi'}</td>
                         <td className="px-4 py-2.5 text-muted-foreground">{v.doctor_name ? `Dr. ${v.doctor_name}` : 'Consultant'}</td>
                         <td className="px-4 py-2.5"><Badge variant="outline" className="text-[10px]">{v.payment_mode}</Badge></td>
                         <td className="px-4 py-2.5 text-right font-bold text-gray-900">{formatCurrency(v.total)}</td>

@@ -33,29 +33,53 @@ const PRESET_ACCOUNTS: Record<string, UserProfile> = {
     name: 'Financial Administrator',
     role: 'admin',
   },
+  'nfc@physionautics.com': {
+    id: 'usr-centre1-01',
+    email: 'nfc@physionautics.com',
+    name: 'New Friends Colony Staff',
+    role: 'centre_staff',
+    centreId: 'c1111111-1111-1111-1111-111111111111',
+    centreName: 'New Friends Colony, New Delhi',
+  },
   'centre1@physionautics.com': {
     id: 'usr-centre1-01',
     email: 'centre1@physionautics.com',
-    name: 'Downtown Clinic Staff',
+    name: 'New Friends Colony Staff',
     role: 'centre_staff',
     centreId: 'c1111111-1111-1111-1111-111111111111',
-    centreName: 'Downtown Clinic (Centre 1)',
+    centreName: 'New Friends Colony, New Delhi',
+  },
+  'vasantvihar@physionautics.com': {
+    id: 'usr-centre2-01',
+    email: 'vasantvihar@physionautics.com',
+    name: 'Vasant Vihar Staff',
+    role: 'centre_staff',
+    centreId: 'c2222222-2222-2222-2222-222222222222',
+    centreName: 'Vasant Vihar, New Delhi',
   },
   'centre2@physionautics.com': {
     id: 'usr-centre2-01',
     email: 'centre2@physionautics.com',
-    name: 'Westside Rehab Staff',
+    name: 'Vasant Vihar Staff',
     role: 'centre_staff',
     centreId: 'c2222222-2222-2222-2222-222222222222',
-    centreName: 'Westside Rehab (Centre 2)',
+    centreName: 'Vasant Vihar, New Delhi',
+  },
+  'gurugram@physionautics.com': {
+    id: 'usr-centre3-01',
+    email: 'gurugram@physionautics.com',
+    name: 'Gurugram DLF Phase 1 Staff',
+    role: 'centre_staff',
+    centreId: 'c3333333-3333-3333-3333-333333333333',
+    centreName: 'Gurugram – DLF Phase 1',
   },
   'centre3@physionautics.com': {
     id: 'usr-centre3-01',
     email: 'centre3@physionautics.com',
-    name: 'East Care Centre Staff',
+    name: 'Gurugram DLF Phase 1 Staff',
     role: 'centre_staff',
     centreId: 'c3333333-3333-3333-3333-333333333333',
-    centreName: 'East Care Centre (Centre 3)',
+    centreName: 'Gurugram – DLF Phase 1',
   },
 }
 
@@ -83,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: found.full_name,
             role: found.role,
             centreId: found.centre_id,
-            centreName: found.centre_name || 'Clinic Branch',
+            centreName: found.centre_name || 'New Friends Colony, New Delhi',
           }
         }
       }
@@ -92,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (lower.startsWith('admin')) {
       return { id: 'admin-auto', email, name: 'Administrator', role: 'admin' }
     }
-    return { id: 'staff-auto', email, name: 'Clinic Staff', role: 'centre_staff', centreName: 'Downtown Clinic (Centre 1)' }
+    return { id: 'staff-auto', email, name: 'Clinic Staff', role: 'centre_staff', centreName: 'New Friends Colony, New Delhi' }
   }
 
   useEffect(() => {
@@ -173,6 +197,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 2. Check default system credentials
     const defaultPasswords: Record<string, string> = {
       'admin@physionautics.com': 'admin123',
+      'nfc@physionautics.com': 'centre123',
+      'vasantvihar@physionautics.com': 'centre123',
+      'gurugram@physionautics.com': 'centre123',
       'centre1@physionautics.com': 'centre123',
       'centre2@physionautics.com': 'centre123',
       'centre3@physionautics.com': 'centre123',

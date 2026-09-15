@@ -5,30 +5,30 @@ import * as XLSX from 'xlsx'
 const DEFAULT_CENTRES: Centre[] = [
   {
     id: 'c1111111-1111-1111-1111-111111111111',
-    name: 'Downtown Clinic (Centre 1)',
-    address: '101 Central Ave, Suite 4',
-    phone: '+91 98765 43210',
-    email: 'centre1@physionautics.com',
+    name: 'New Friends Colony, New Delhi',
+    address: 'D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025',
+    phone: '08383936905',
+    email: 'nfc@physionautics.com',
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
   {
     id: 'c2222222-2222-2222-2222-222222222222',
-    name: 'Westside Rehab (Centre 2)',
-    address: '45 West Park Blvd',
-    phone: '+91 98765 43211',
-    email: 'centre2@physionautics.com',
+    name: 'Vasant Vihar, New Delhi',
+    address: '86 Basement, Poorvi Marg, Indian Air Lines & Air India Estate, Vasant Vihar, New Delhi, Delhi 110057',
+    phone: '08700264533',
+    email: 'vasantvihar@physionautics.com',
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
   {
     id: 'c3333333-3333-3333-3333-333333333333',
-    name: 'East Care Centre (Centre 3)',
-    address: '88 East Ring Road',
-    phone: '+91 98765 43212',
-    email: 'centre3@physionautics.com',
+    name: 'Gurugram – DLF Phase 1',
+    address: 'C2/17, Arjun Marg, DLF Phase 1, Gurugram, Haryana – 122002',
+    phone: '+91 92171 83736',
+    email: 'gurugram@physionautics.com',
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -121,16 +121,19 @@ export async function getCentres(): Promise<Centre[]> {
     const supabase = createClient()
     const { data } = await supabase.from('centres').select('*').order('name')
     if (data && data.length > 0) {
-      localStorage.setItem('physio_centres_cache', JSON.stringify(data))
+      localStorage.setItem('physio_centres_cache_v2', JSON.stringify(data))
       return data as unknown as Centre[]
     }
   } catch (_) {}
 
-  const cached = localStorage.getItem('physio_centres_cache')
+  const cached = localStorage.getItem('physio_centres_cache_v2')
   if (cached) {
-    try { return JSON.parse(cached) } catch (_) {}
+    try {
+      const parsed: Centre[] = JSON.parse(cached)
+      if (parsed.length > 0) return parsed
+    } catch (_) {}
   }
-  localStorage.setItem('physio_centres_cache', JSON.stringify(DEFAULT_CENTRES))
+  localStorage.setItem('physio_centres_cache_v2', JSON.stringify(DEFAULT_CENTRES))
   return DEFAULT_CENTRES
 }
 
@@ -483,14 +486,14 @@ const DEFAULT_VISITS: StoredVisit[] = [
     patient_phone: '+91 98765 11111',
     patient_age: 38,
     patient_gender: 'Male',
-    patient_address: 'Flat 402, Green Meadows, Central Dist',
+    patient_address: 'Flat 402, Green Meadows, New Delhi',
     doctor_id: 'doc-101',
     doctor_name: 'Dr. Sarah Jenkins',
     doctor_specialization: 'Orthopedic Physiotherapy',
     centre_id: 'c1111111-1111-1111-1111-111111111111',
-    centre_name: 'Downtown Clinic (Centre 1)',
-    centre_address: '101 Central Ave, Suite 4',
-    centre_phone: '+91 98765 43210',
+    centre_name: 'New Friends Colony, New Delhi',
+    centre_address: 'D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025',
+    centre_phone: '08383936905',
     items: [
       { service_name: 'Consultation', price: 500, quantity: 1, total: 500 },
       { service_name: 'Physiotherapy Session (45 min)', price: 800, quantity: 1, total: 800 },
@@ -515,14 +518,14 @@ const DEFAULT_VISITS: StoredVisit[] = [
     patient_phone: '+91 98765 22222',
     patient_age: 29,
     patient_gender: 'Female',
-    patient_address: '12 Sunrise Enclave',
+    patient_address: '12 Poorvi Marg, Vasant Vihar',
     doctor_id: 'doc-201',
     doctor_name: 'Dr. Emily Watson',
     doctor_specialization: 'Neuro Physiotherapy',
     centre_id: 'c2222222-2222-2222-2222-222222222222',
-    centre_name: 'Westside Rehab (Centre 2)',
-    centre_address: '45 West Park Blvd',
-    centre_phone: '+91 98765 43211',
+    centre_name: 'Vasant Vihar, New Delhi',
+    centre_address: '86 Basement, Poorvi Marg, Indian Air Lines & Air India Estate, Vasant Vihar, New Delhi, Delhi 110057',
+    centre_phone: '08700264533',
     items: [
       { service_name: 'Consultation', price: 500, quantity: 1, total: 500 },
       { service_name: 'Cupping Therapy', price: 700, quantity: 1, total: 700 },
@@ -713,7 +716,7 @@ export function exportBillsToExcel(visits: StoredVisit[]) {
     'Patient Phone': v.patient_phone,
     'Patient Age / Gender': `${v.patient_age || ''} / ${v.patient_gender || ''}`,
     'Consulting Doctor': v.doctor_name ? `Dr. ${v.doctor_name}` : 'Not Specified',
-    'Clinic Centre': v.centre_name || 'Downtown Clinic (Centre 1)',
+    'Clinic Centre': v.centre_name || 'New Friends Colony, New Delhi',
     'Services Breakdown': v.items.map(i => `${i.service_name} (x${i.quantity} @ ₹${i.price})`).join('; '),
     'Subtotal (INR)': v.subtotal,
     'Discount (INR)': v.discount,

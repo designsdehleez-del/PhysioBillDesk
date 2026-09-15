@@ -201,9 +201,9 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
               <div class="brand-title">PHYSIONAUTICS</div>
               <div class="brand-subtitle">Specialized Physiotherapy & Rehabilitation Clinic</div>
               <div class="centre-details">
-                <strong>${visit.centre_name || 'Downtown Centre'}</strong><br/>
-                ${visit.centre_address || 'Clinical Care Unit'}<br/>
-                ${visit.centre_phone ? 'Phone: ' + visit.centre_phone : ''}
+                <strong>${visit.centre_name || 'New Friends Colony, New Delhi'}</strong><br/>
+                ${visit.centre_address || 'D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025'}<br/>
+                ${visit.centre_phone ? 'Phone: ' + visit.centre_phone : 'Phone: 08383936905'}
               </div>
             </div>
             <div class="invoice-tag">
@@ -230,7 +230,7 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
               <div class="section-title">Consultation & Care</div>
               <div class="info-row"><span class="info-label">Attending:</span> <strong>${visit.doctor_name ? 'Dr. ' + visit.doctor_name : 'Consultant Physiotherapist'}</strong></div>
               ${visit.doctor_specialization ? `<div class="info-row"><span class="info-label">Specialty:</span> ${visit.doctor_specialization}</div>` : ''}
-              <div class="info-row"><span class="info-label">Clinic Branch:</span> ${visit.centre_name || 'Downtown Clinic'}</div>
+              <div class="info-row"><span class="info-label">Clinic Branch:</span> ${visit.centre_name || 'New Friends Colony, New Delhi'}</div>
               ${visit.notes ? `<div class="info-row"><span class="info-label">Care Notes:</span> ${visit.notes}</div>` : ''}
             </div>
           </div>
@@ -336,8 +336,8 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
             <div>
               <h2 className="text-xl font-extrabold text-blue-900 tracking-tight">PHYSIONAUTICS</h2>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Physiotherapy & Pain Rehabilitation</p>
-              <p className="text-xs text-gray-600 mt-1 font-medium">{visit.centre_name || 'Downtown Clinic'}</p>
-              <p className="text-xs text-muted-foreground">{visit.centre_address || 'Clinical Care Unit'}</p>
+              <p className="text-xs text-gray-600 mt-1 font-medium">{visit.centre_name || 'New Friends Colony, New Delhi'}</p>
+              <p className="text-xs text-muted-foreground">{visit.centre_address || 'D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025'}</p>
             </div>
             <div className="text-right space-y-1">
               <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 font-mono font-bold">
@@ -394,7 +394,7 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
               )}
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Centre:</span>
-                <span className="font-medium text-gray-800">{visit.centre_name || 'Downtown Clinic'}</span>
+                <span className="font-medium text-gray-800">{visit.centre_name || 'New Friends Colony, New Delhi'}</span>
               </div>
               {visit.notes && (
                 <div className="text-xs pt-1 text-muted-foreground bg-white/70 p-1.5 rounded border">

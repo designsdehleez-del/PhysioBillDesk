@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { Plus, Pencil, Trash2, KeyRound, Building2, ShieldAlert, Users, Search, CheckCircle2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -27,31 +27,31 @@ const DEFAULT_STAFF: StaffUser[] = [
   },
   {
     id: 'usr-centre1-01',
-    full_name: 'Downtown Reception',
-    email: 'centre1@physionautics.com',
+    full_name: 'New Friends Colony Reception',
+    email: 'nfc@physionautics.com',
     password: 'centre123',
     centre_id: 'c1111111-1111-1111-1111-111111111111',
-    centre_name: 'Downtown Clinic (Centre 1)',
+    centre_name: 'New Friends Colony, New Delhi',
     role: 'centre_staff',
     is_active: true,
   },
   {
     id: 'usr-centre2-01',
-    full_name: 'Westside Front Desk',
-    email: 'centre2@physionautics.com',
+    full_name: 'Vasant Vihar Reception',
+    email: 'vasantvihar@physionautics.com',
     password: 'centre123',
     centre_id: 'c2222222-2222-2222-2222-222222222222',
-    centre_name: 'Westside Rehab (Centre 2)',
+    centre_name: 'Vasant Vihar, New Delhi',
     role: 'centre_staff',
     is_active: true,
   },
   {
     id: 'usr-centre3-01',
-    full_name: 'East Care Billing Desk',
-    email: 'centre3@physionautics.com',
+    full_name: 'Gurugram DLF Phase 1 Desk',
+    email: 'gurugram@physionautics.com',
     password: 'centre123',
     centre_id: 'c3333333-3333-3333-3333-333333333333',
-    centre_name: 'East Care Centre (Centre 3)',
+    centre_name: 'Gurugram – DLF Phase 1',
     role: 'centre_staff',
     is_active: true,
   },
@@ -280,7 +280,7 @@ export default function StaffManagementPage() {
                       <td className="px-4 py-3 text-gray-600 font-mono text-xs">{staff.email}</td>
                       <td className="px-4 py-3">
                         <Badge variant="outline" className={staff.role === 'admin' ? 'border-purple-200 text-purple-700 bg-purple-50' : 'border-blue-200 text-blue-700 bg-blue-50'}>
-                          {staff.centre_name || 'Downtown Clinic (Centre 1)'}
+                          {staff.centre_name || 'New Friends Colony, New Delhi'}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">

@@ -343,7 +343,7 @@ export default function BillingPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Centre / Branch:</span>
-                    <span>{recentSavedVisit.centre_name || 'Downtown Clinic'}</span>
+                    <span>{recentSavedVisit.centre_name || 'New Friends Colony, New Delhi'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Charges Itemized:</span>
@@ -871,7 +871,7 @@ export default function BillingPage() {
                             </Badge>
                           </td>
                           <td className="p-3">
-                            <p className="font-medium text-gray-800">{v.centre_name || 'Downtown Clinic'}</p>
+                            <p className="font-medium text-gray-800">{v.centre_name || 'New Friends Colony, New Delhi'}</p>
                             <p className="text-[11px] text-muted-foreground">
                               {v.doctor_name ? `Dr. ${v.doctor_name}` : 'Consultant'}
                             </p>

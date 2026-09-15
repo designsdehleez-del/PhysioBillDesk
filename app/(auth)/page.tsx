@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Stethoscope, Loader2 } from 'lucide-react'
@@ -67,6 +67,18 @@ export default function AuthPage() {
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{isSignUp ? 'Creating…' : 'Signing in…'}</> : isSignUp ? 'Sign Up' : 'Sign In'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
+              onClick={async () => {
+                setLoading(true)
+                await signIn('admin@physionautics.com', 'demo123')
+                router.push('/dashboard')
+              }}
+            >
+              ⚡ Quick Demo Login (Instant Access)
             </Button>
           </form>
           {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}

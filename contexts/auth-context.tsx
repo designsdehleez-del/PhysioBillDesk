@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session, AuthError } from '@supabase/supabase-js'
@@ -32,16 +32,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string) => {
+    // If Supabase keys are still default placeholders, allow direct demo access
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') || process.env.NEXT_PUBLIC_SUPABASE_URL === 'your_supabase_project_url') {
+      const mockUser = { id: 'demo-user-id', email: email || 'demo@physionautics.com', user_metadata: { full_name: 'Dr. Demo' } } as unknown as User
+      setUser(mockUser)
+      return { error: null }
+    }
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     return { error }
   }
   const signUp = async (email: string, password: string) => {
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') || process.env.NEXT_PUBLIC_SUPABASE_URL === 'your_supabase_project_url') {
+      const mockUser = { id: 'demo-user-id', email: email || 'demo@physionautics.com', user_metadata: { full_name: 'Dr. Demo' } } as unknown as User
+      setUser(mockUser)
+      return { error: null }
+    }
     const supabase = createClient()
     const { error } = await supabase.auth.signUp({ email, password })
     return { error }
   }
-  const signOut = async () => { const supabase = createClient(); await supabase.auth.signOut() }
+  const signOut = async () => {
+    setUser(null)
+    setSession(null)
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+    } catch (_) {}
+  }
 
   return (
     <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>

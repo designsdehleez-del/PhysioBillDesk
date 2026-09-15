@@ -73,10 +73,25 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="px-4 py-4 border-t space-y-2">
-        {user?.email && <p className="text-xs text-muted-foreground truncate" title={user.email}>{user.email}</p>}
-        <Button variant="outline" size="sm" className="w-full justify-start gap-2 text-gray-700" onClick={() => signOut()}>
-          <LogOut className="h-4 w-4" />Sign Out
+      <div className="px-3 py-3 border-t space-y-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-start gap-2 text-xs border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100"
+          onClick={() => {
+            if ((window as any).__pwaPrompt) {
+              (window as any).__pwaPrompt.prompt()
+            } else {
+              alert('To install Physionautics on Desktop:\n1. Click the Install icon (💻/➕) in your browser address bar\n2. Or open browser menu (⋮) -> Apps -> Install this site as an app')
+            }
+          }}
+        >
+          <Building2 className="h-3.5 w-3.5 text-blue-600" />
+          Install Desktop App
+        </Button>
+        {user?.email && <p className="text-xs text-muted-foreground truncate px-1" title={user.email}>{user.email}</p>}
+        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-gray-700 h-8 text-xs" onClick={() => signOut()}>
+          <LogOut className="h-3.5 w-3.5" />Sign Out
         </Button>
       </div>
     </aside>

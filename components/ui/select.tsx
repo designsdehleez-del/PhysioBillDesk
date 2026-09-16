@@ -144,7 +144,7 @@ export function Select({
         containerRef,
       }}
     >
-      <div ref={containerRef} className="relative inline-block w-full text-left">
+      <div ref={containerRef} className={cn("relative inline-block w-full text-left", open && "z-40")}>
         {children}
       </div>
     </SelectContext.Provider>
@@ -252,7 +252,7 @@ export function SelectContent({
       role="listbox"
       data-slot="select-content"
       className={cn(
-        "absolute left-0 right-0 top-full mt-1 z-50 max-h-64 min-w-[8rem] overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 text-gray-900 shadow-lg ring-1 ring-black/5 animate-in fade-in-80 zoom-in-95",
+        "absolute left-0 right-0 top-full mt-1.5 z-[100] max-h-64 min-w-full overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 text-gray-900 shadow-2xl ring-1 ring-black/10 animate-in fade-in-80 zoom-in-95",
         className
       )}
       {...props}
@@ -286,20 +286,24 @@ export function SelectItem({
     }
   }, [value, children, ctx])
 
+  const handleSelect = (e: React.SyntheticEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    if (!disabled) {
+      ctx.onValueChange?.(value)
+    }
+  }
+
   return (
     <div
       role="option"
       aria-selected={isSelected}
       data-slot="select-item"
       data-value={value}
-      onClick={(e) => {
-        e.stopPropagation()
-        if (!disabled) {
-          ctx.onValueChange?.(value)
-        }
-      }}
+      onMouseDown={handleSelect}
+      onClick={handleSelect}
       className={cn(
-        "relative flex w-full cursor-pointer select-none items-center justify-between rounded-md px-2.5 py-1.5 text-xs sm:text-sm font-medium outline-none transition-colors",
+        "relative flex w-full cursor-pointer select-none items-center justify-between rounded-md px-2.5 py-2 text-xs sm:text-sm font-medium outline-none transition-colors",
         isSelected
           ? "bg-blue-50 text-blue-700 font-semibold"
           : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",

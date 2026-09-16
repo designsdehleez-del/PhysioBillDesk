@@ -473,26 +473,27 @@ export default function BillingPage() {
                 </Card>
 
                 {/* 2. Centre & Doctor Selection */}
-                <Card className="shadow-sm border">
+                <Card className="shadow-sm border overflow-visible">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-bold flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-purple-600" /> Step 2: Centre & Attending Doctor
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-visible">
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold">Clinic Centre / Branch</Label>
                       <Select
                         value={selectedCentreId}
                         onValueChange={(v: string | null) => {
-                          setSelectedCentreId(v ?? '')
+                          const newCentre = v ?? ''
+                          setSelectedCentreId(newCentre)
                           setSelectedDoctorId('')
                         }}
                       >
                         <SelectTrigger className="text-xs bg-white">
                           <SelectValue placeholder="Select Clinic Branch" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[100] max-h-60 bg-white">
                           {centres.map(c => (
                             <SelectItem key={c.id} value={c.id} className="text-xs">
                               {c.name}
@@ -511,8 +512,8 @@ export default function BillingPage() {
                         <SelectTrigger className="text-xs bg-white">
                           <SelectValue placeholder="Select Attending Doctor" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {filteredDoctors.map(d => (
+                        <SelectContent className="z-[100] max-h-60 bg-white">
+                          {(filteredDoctors.length > 0 ? filteredDoctors : doctors).map(d => (
                             <SelectItem key={d.id} value={d.id} className="text-xs">
                               {d.name} {d.specialization ? `(${d.specialization})` : ''}
                             </SelectItem>
@@ -579,7 +580,7 @@ export default function BillingPage() {
 
               {/* Right Column (5 cols): Structured Bill Ledger & Summary */}
               <div className="lg:col-span-5 space-y-5">
-                <Card className="shadow-sm border sticky top-4">
+                <Card className="shadow-sm border sticky top-4 overflow-visible">
                   <CardHeader className="pb-3 border-b bg-gray-50/60">
                     <CardTitle className="text-sm font-bold flex items-center justify-between">
                       <span className="flex items-center gap-2">

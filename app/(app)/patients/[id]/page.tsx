@@ -11,7 +11,7 @@ import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import type { Patient, VisitWithServices } from '@/lib/supabase/types'
 
 import { PrintableInvoiceModal } from '@/components/billing/printable-invoice-modal'
-import { StoredVisit } from '@/lib/data-store'
+import { StoredVisit, getPatients, getVisits } from '@/lib/data-store'
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -24,12 +24,87 @@ export default function PatientDetailPage() {
 
   useEffect(() => {
     const load = async () => {
-      const supabase = createClient()
-      const [{ data: p }, { data: v }] = await Promise.all([
-        supabase.from('patients').select('*').eq('id', id).single(),
-        supabase.from('visits').select('*, visit_services(*), patients(full_name,uid,age,gender,phone)').eq('patient_id', id).order('visit_date', { ascending: false }),
-      ])
-      setPatient(p); setVisits((v as VisitWithServices[]) ?? []); setLoading(false)
+      let patientData: Patient | null = null
+      let visitList: VisitWithServices[] = []
+      try {
+        const supabase = createClient()
+        const [{ data: p }, { data: v }] = await Promise.all([
+          supabase.from('patients').select('*').eq('id', id).single(),
+          supabase.from('visits').select('*, visit_services(*), patients(full_name,uid,age,gender,phone)').eq('patient_id', id).order('visit_date', { ascending: false }),
+        ])
+        if (p) patientData = p as Patient
+        if (v && v.length > 0) visitList = v as VisitWithServices[]
+      } catch (e) {
+        console.warn('Supabase fetch failed or offline, checking local store', e)
+      }
+
+      // Local store fallback ensuring cross-clinic patients & visits are 100% visible
+      if (!patientData) {
+        const localPatients = await getPatients()
+        const found = localPatients.find((p: any) => p.id === id || p.uid === id)
+        if (found) {
+          patientData = {
+            id: found.id,
+            uid: found.uid,
+            full_name: (found as any).full_name || (found as any).name || 'Patient',
+            phone: found.phone,
+            email: found.email || null,
+            age: found.age,
+            gender: found.gender,
+            blood_group: found.blood_group || null,
+            address: found.address || null,
+            medical_notes: found.medical_notes || null,
+            created_at: found.created_at,
+            updated_at: found.created_at,
+          }
+        }
+      }
+
+      if (visitList.length === 0) {
+        const allVisits = await getVisits()
+        const localVisits = allVisits.filter((v: any) => v.patient_id === id || v.patient_uid === id)
+        if (localVisits.length > 0) {
+          visitList = localVisits.map((lv: any) => ({
+            id: lv.id,
+            patient_id: lv.patient_id,
+            doctor_id: lv.doctor_id,
+            centre_id: lv.centre_id,
+            bill_number: lv.bill_number,
+            visit_date: lv.visit_date,
+            subtotal: lv.subtotal,
+            discount: lv.discount,
+            tax: 0,
+            total: lv.total,
+            payment_mode: lv.payment_mode,
+            payment_status: lv.payment_status,
+            notes: null,
+            created_at: lv.created_at,
+            doctor_name: lv.doctor_name,
+            centre_name: lv.centre_name,
+            patients: patientData ? {
+              full_name: patientData.full_name,
+              uid: patientData.uid,
+              age: patientData.age,
+              gender: patientData.gender,
+              phone: patientData.phone,
+            } : undefined,
+            visit_services: (lv.items || []).map((it: any) => ({
+              id: it.id || Math.random().toString(),
+              visit_id: lv.id,
+              service_id: it.service_id,
+              service_name: it.service_name,
+              price: it.price,
+              quantity: it.quantity,
+              total: it.total,
+              created_at: lv.created_at,
+            })),
+          })) as any
+        }
+      }
+
+      setPatient(patientData)
+      setVisits(visitList)
+      setLoading(false)
     }
     load()
   }, [id])

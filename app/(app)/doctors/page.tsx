@@ -50,11 +50,18 @@ export default function DoctorsPage() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ name: '', specialization: '', phone: '', email: '', centre_id: '' })
 
+  const staffCentreId = profile?.centreId || (
+    profile?.email === 'nfc@physionautics.com' ? 'c1111111-1111-1111-1111-111111111111' :
+    profile?.email === 'vasantvihar@physionautics.com' ? 'c2222222-2222-2222-2222-222222222222' :
+    profile?.email === 'gurugram@physionautics.com' ? 'c3333333-3333-3333-3333-333333333333' : null
+  )
+
   const load = useCallback(async () => {
     setLoading(true)
+    const effectiveFilter = !isAdmin && staffCentreId ? staffCentreId : centreFilter
     const [cList, dList, vList, fbList] = await Promise.all([
       getCentres(),
-      getDoctors(centreFilter),
+      getDoctors(effectiveFilter),
       getVisits(),
       getPatientFeedback(),
     ])
@@ -91,11 +98,15 @@ export default function DoctorsPage() {
       }
     }))
     setLoading(false)
-  }, [centreFilter])
+  }, [centreFilter, isAdmin, staffCentreId])
 
   useEffect(() => { load() }, [load])
 
-  const filteredDoctors = doctors.filter(d => {
+  const visibleDoctors = !isAdmin && staffCentreId
+    ? doctors.filter(d => d.centre_id === staffCentreId || (profile?.centreName && d.centreName === profile.centreName))
+    : doctors
+
+  const filteredDoctors = visibleDoctors.filter(d => {
     if (!search.trim()) return true
     const q = search.toLowerCase()
     return d.name.toLowerCase().includes(q) || (d.specialization?.toLowerCase().includes(q))

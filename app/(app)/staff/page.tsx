@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/use-toast'
+import { useAuth } from '@/contexts/auth-context'
 import type { Centre, StaffUser } from '@/lib/supabase/types'
 
 const DEFAULT_STAFF: StaffUser[] = [
@@ -59,6 +60,7 @@ const DEFAULT_STAFF: StaffUser[] = [
 
 export default function StaffManagementPage() {
   const { toast } = useToast()
+  const { profile } = useAuth()
   const [staffList, setStaffList] = useState<StaffUser[]>([])
   const [centres, setCentres] = useState<Centre[]>([])
   const [loading, setLoading] = useState(true)
@@ -217,6 +219,27 @@ export default function StaffManagementPage() {
     s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (s.centre_name && s.centre_name.toLowerCase().includes(searchQuery.toLowerCase()))
   )
+
+  if (profile && profile.role !== 'admin') {
+    return (
+      <div className="p-6 max-w-2xl mx-auto space-y-4">
+        <Card className="border-amber-200 bg-amber-50/50">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2 text-amber-900">
+              <ShieldAlert className="h-5 w-5 text-amber-600" /> Access Restricted
+            </CardTitle>
+            <CardDescription className="text-xs text-amber-800">
+              Staff login creation and credential management is exclusively reserved for the Chief Medical Officer (CMO) and Master Administrator.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-xs text-amber-900">
+            <p>Your current login is assigned to: <strong>{profile.centreName || 'Clinic Branch'}</strong>.</p>
+            <p>Please contact central administration if you require login changes or additional user access.</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">

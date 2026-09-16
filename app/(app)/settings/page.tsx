@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding, type ClinicBranding, type AdminProfileData } from '@/lib/settings-store'
+import { cn } from '@/lib/utils'
 
 const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80',
@@ -214,21 +215,104 @@ export default function SettingsPage() {
 
       {/* Main Settings Tabs */}
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid grid-cols-3 sm:w-[460px] bg-gray-100 p-1 rounded-xl">
+        <TabsList className={cn("grid bg-gray-100 p-1 rounded-xl", isAdmin ? "grid-cols-3 sm:w-[460px]" : "grid-cols-2 sm:w-[320px]")}>
           <TabsTrigger value="profile" className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-blue-900 data-[state=active]:shadow-xs rounded-lg gap-1.5">
-            <User className="h-3.5 w-3.5" /> Admin Profile
+            <User className="h-3.5 w-3.5" /> {isAdmin ? 'Admin Profile' : 'Staff Profile'}
           </TabsTrigger>
-          <TabsTrigger value="security" className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-blue-900 data-[state=active]:shadow-xs rounded-lg gap-1.5">
-            <KeyRound className="h-3.5 w-3.5" /> Reset Password
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="security" className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-blue-900 data-[state=active]:shadow-xs rounded-lg gap-1.5">
+              <KeyRound className="h-3.5 w-3.5" /> Reset Password
+            </TabsTrigger>
+          )}
           <TabsTrigger value="branding" className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-blue-900 data-[state=active]:shadow-xs rounded-lg gap-1.5">
             <ImageIcon className="h-3.5 w-3.5" /> Clinic Logo & Bills
           </TabsTrigger>
         </TabsList>
 
-        {/* ================= TAB 1: ADMIN PROFILE & PICTURE ================= */}
+        {/* ================= TAB 1: PROFILE ================= */}
         <TabsContent value="profile" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {!isAdmin ? (
+            /* Clinic Staff Read-Only Profile */
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="shadow-sm border">
+                <CardHeader className="pb-3 border-b bg-gray-50/50">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <User className="h-4 w-4 text-blue-600" /> Staff Account
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Your assigned clinic desk account details.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 flex flex-col items-center text-center space-y-4">
+                  <div className="w-24 h-24 rounded-full border-4 border-white shadow-md bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-3xl font-extrabold">
+                    {profile?.name ? profile.name.charAt(0).toUpperCase() : 'S'}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-bold text-gray-900 text-base">{profile?.name || 'Clinic Reception Staff'}</p>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                      {profile?.centreName || 'Assigned Clinic Centre'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Role: <span className="font-semibold text-gray-800">Clinic Front Desk & Billing</span>
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="lg:col-span-2 shadow-sm border space-y-0">
+                <CardHeader className="pb-3 border-b bg-gray-50/50">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-blue-600" /> Clinic Account Particulars
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Logged in branch credentials and security status.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1 p-3 bg-gray-50 rounded-lg border">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">Staff User Name</span>
+                      <p className="text-sm font-bold text-gray-900">{profile?.name || 'Clinic Staff'}</p>
+                    </div>
+
+                    <div className="space-y-1 p-3 bg-gray-50 rounded-lg border">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">Login ID / Email</span>
+                      <p className="text-sm font-bold text-gray-900 font-mono">{profile?.email || 'centre@physionautics.com'}</p>
+                    </div>
+
+                    <div className="space-y-1 p-3 bg-gray-50 rounded-lg border">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">Assigned Centre</span>
+                      <p className="text-sm font-bold text-blue-900">{profile?.centreName || 'PhysioNautics Centre'}</p>
+                    </div>
+
+                    <div className="space-y-1 p-3 bg-gray-50 rounded-lg border">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">Account Status</span>
+                      <span className="inline-flex items-center gap-1 text-emerald-700 text-xs font-bold">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Active & Verified
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Explicit Restriction Notice */}
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-1.5 text-amber-900">
+                    <div className="flex items-center gap-2">
+                      <KeyRound className="h-4 w-4 text-amber-700" />
+                      <h4 className="font-bold text-xs uppercase tracking-wide">ID & Password Modifications Restricted</h4>
+                    </div>
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                      Clinic reception logins cannot alter their login ID, email address, or system passwords directly. 
+                      Credentials and clinic branch assignments are strictly controlled by the <strong>Chief Medical Officer (CMO) / Master Administrator</strong>.
+                    </p>
+                    <p className="text-[11px] text-amber-700 pt-1">
+                      If you need your credentials updated or password reset, please contact central clinic governance.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            /* Admin Profile Form */
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Col: Profile Photo Uploader */}
             <Card className="shadow-sm border">
               <CardHeader className="pb-3 border-b bg-gray-50/50">
@@ -381,9 +465,11 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
+          )}
         </TabsContent>
 
         {/* ================= TAB 2: RESET PASSWORD ================= */}
+        {isAdmin && (
         <TabsContent value="security" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Password Reset Form (2 cols) */}
@@ -514,6 +600,7 @@ export default function SettingsPage() {
             </Card>
           </div>
         </TabsContent>
+        )}
 
         {/* ================= TAB 3: CLINIC LOGO & BILL BRANDING ================= */}
         <TabsContent value="branding" className="space-y-6">

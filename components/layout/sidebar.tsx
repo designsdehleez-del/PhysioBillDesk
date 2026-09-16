@@ -16,6 +16,8 @@ export function Sidebar() {
 
   const isAdmin = profile?.role === 'admin'
   const activeAvatar = isAdmin ? (adminProfile.avatarUrl || profile?.avatarUrl) : profile?.avatarUrl
+  const displayName = isAdmin ? (adminProfile.name || profile?.name || 'Administrator') : (profile?.name || 'Clinic Staff')
+  const displayRole = isAdmin ? (adminProfile.roleTitle || profile?.roleTitle || '👑 Master Admin (Financials)') : (profile?.centreName || 'Active Centre')
 
   const adminNav = [
     { label: 'Financials & KPIs', href: '/dashboard', icon: DollarSign },
@@ -87,8 +89,8 @@ export function Sidebar() {
             <Building2 className="h-4 w-4 text-blue-700 flex-shrink-0" />
           )}
           <div className="min-w-0 flex-1">
-            <p className="font-bold truncate">{profile?.name || (isAdmin ? 'Admin' : 'Staff')}</p>
-            <p className="text-[10px] opacity-75 truncate">{isAdmin ? '👑 Master Admin (Financials)' : (profile?.centreName || 'Active Centre')}</p>
+            <p className="font-bold truncate">{displayName}</p>
+            <p className="text-[10px] opacity-75 truncate">{displayRole}</p>
           </div>
         </div>
         <div className="mt-2 flex justify-center">

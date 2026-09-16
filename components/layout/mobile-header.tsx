@@ -17,6 +17,8 @@ export function MobileHeader() {
 
   const isAdmin = profile?.role === 'admin'
   const activeAvatar = isAdmin ? (adminProfile.avatarUrl || profile?.avatarUrl) : profile?.avatarUrl
+  const displayName = isAdmin ? (adminProfile.name || profile?.name || 'Administrator') : (profile?.name || 'Clinic Staff')
+  const displayRole = isAdmin ? (adminProfile.roleTitle || profile?.roleTitle || '👑 Master Admin (Financials)') : (profile?.centreName || 'Clinic Desk')
 
   const adminNav = [
     { label: 'Financials & KPIs', href: '/dashboard', icon: DollarSign },
@@ -101,8 +103,8 @@ export function MobileHeader() {
                 <Building2 className="h-4 w-4 text-blue-700 flex-shrink-0" />
               )}
               <div className="min-w-0 flex-1 text-xs">
-                <p className="font-bold truncate text-gray-900">{profile?.name || (isAdmin ? 'Admin' : 'Staff')}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{isAdmin ? 'Financial Access' : (profile?.centreName || 'Clinic Desk')}</p>
+                <p className="font-bold truncate text-gray-900">{displayName}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{displayRole}</p>
               </div>
             </div>
           </div>

@@ -120,6 +120,7 @@ export function saveAdminProfileData(updates: Partial<AdminProfileData>): AdminP
           active.email = updated.email
           active.avatarUrl = updated.avatarUrl
           active.phone = updated.phone
+          active.roleTitle = updated.roleTitle
           localStorage.setItem('physio_active_profile', JSON.stringify(active))
         }
       } catch (_) {}

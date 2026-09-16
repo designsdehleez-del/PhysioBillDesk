@@ -17,6 +17,7 @@ export interface UserProfile {
   centreName?: string
   avatarUrl?: string | null
   phone?: string
+  roleTitle?: string
 }
 
 interface AuthContextType {
@@ -38,6 +39,7 @@ const PRESET_ACCOUNTS: Record<string, UserProfile> = {
     email: 'admin@physionautics.com',
     name: 'Financial Administrator',
     role: 'admin',
+    roleTitle: 'Master Administrator (Financials & Governance)',
   },
   'nfc@physionautics.com': {
     id: 'usr-centre1-01',
@@ -107,6 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: adminData.email || 'admin@physionautics.com',
         name: adminData.name || 'Financial Administrator',
         role: 'admin',
+        roleTitle: adminData.roleTitle || 'Master Administrator (Financials & Governance)',
         avatarUrl: adminData.avatarUrl,
         phone: adminData.phone,
       }
@@ -138,48 +141,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    const cached = localStorage.getItem('physio_active_profile')
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached)
-        // If admin, merge latest avatar/name from settings
-        if (parsed.role === 'admin') {
-          const adminData = getAdminProfileData()
-          parsed.avatarUrl = adminData.avatarUrl
-          parsed.name = adminData.name
-          parsed.phone = adminData.phone
-        }
-        setProfile(parsed)
-        setUser({ id: parsed.id, email: parsed.email } as unknown as User)
-        setLoading(false)
-        return
-      } catch (_) {}
+    const syncProfileFromStorage = () => {
+      const cached = localStorage.getItem('physio_active_profile')
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached)
+          if (parsed.role === 'admin') {
+            const adminData = getAdminProfileData()
+            parsed.avatarUrl = adminData.avatarUrl
+            parsed.name = adminData.name || parsed.name
+            parsed.phone = adminData.phone || parsed.phone
+            parsed.roleTitle = adminData.roleTitle || parsed.roleTitle
+            parsed.email = adminData.email || parsed.email
+          }
+          setProfile(parsed)
+          setUser({ id: parsed.id, email: parsed.email } as unknown as User)
+          setLoading(false)
+          return true
+        } catch (_) {}
+      }
+      return false
     }
 
-    const supabase = createClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user?.email) {
-        setUser(session.user)
-        const p = resolveProfile(session.user.email)
-        setProfile(p)
-      }
-      setLoading(false)
-    })
+    const wasLoadedFromCache = syncProfileFromStorage()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      if (session?.user?.email) {
-        setUser(session.user)
-        const p = resolveProfile(session.user.email)
-        setProfile(p)
-      } else if (!localStorage.getItem('physio_active_profile')) {
-        setUser(null)
-        setProfile(null)
+    const handleAdminProfileChange = (e: any) => {
+      const updated = e.detail || getAdminProfileData()
+      setProfile(prev => {
+        if (!prev || prev.role !== 'admin') return prev
+        const newProfile: UserProfile = {
+          ...prev,
+          name: updated.name || prev.name,
+          email: updated.email || prev.email,
+          avatarUrl: updated.avatarUrl,
+          phone: updated.phone,
+          roleTitle: updated.roleTitle || prev.roleTitle,
+        }
+        try {
+          localStorage.setItem('physio_active_profile', JSON.stringify(newProfile))
+        } catch (_) {}
+        return newProfile
+      })
+    }
+
+    window.addEventListener('physio-admin-profile-updated', handleAdminProfileChange)
+    window.addEventListener('storage', syncProfileFromStorage)
+
+    if (!wasLoadedFromCache) {
+      const supabase = createClient()
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session)
+        if (session?.user?.email) {
+          setUser(session.user)
+          const p = resolveProfile(session.user.email)
+          setProfile(p)
+        }
+        setLoading(false)
+      })
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session)
+        if (session?.user?.email) {
+          setUser(session.user)
+          const p = resolveProfile(session.user.email)
+          setProfile(p)
+        } else if (!localStorage.getItem('physio_active_profile')) {
+          setUser(null)
+          setProfile(null)
+        }
+        setLoading(false)
+      })
+
+      return () => {
+        subscription.unsubscribe()
+        window.removeEventListener('physio-admin-profile-updated', handleAdminProfileChange)
+        window.removeEventListener('storage', syncProfileFromStorage)
       }
-      setLoading(false)
-    })
-    return () => subscription.unsubscribe()
+    }
+
+    return () => {
+      window.removeEventListener('physio-admin-profile-updated', handleAdminProfileChange)
+      window.removeEventListener('storage', syncProfileFromStorage)
+    }
   }, [])
 
   const signIn = async (email: string, password?: string) => {

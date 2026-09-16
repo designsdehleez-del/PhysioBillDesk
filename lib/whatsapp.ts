@@ -173,13 +173,15 @@ export function saveWhatsAppConfig(config: Partial<WhatsAppConfig>): WhatsAppCon
 
 export function getFeedbackUrl(visit: StoredVisit): string {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://physionautics.vercel.app'
+  const servicesList = (visit.items || []).map(i => i.service_name).join(', ')
   const params = new URLSearchParams({
     bid: visit.bill_number,
     uid: visit.patient_uid,
     name: visit.patient_name,
     phone: visit.patient_phone || '',
-    doc: visit.doctor_name || '',
+    doc: (visit.doctor_name || '').replace(/^Dr\.\s*/i, ''),
     centre: visit.centre_name || '',
+    services: servicesList || '',
   })
   return `${origin}/feedback?${params.toString()}`
 }

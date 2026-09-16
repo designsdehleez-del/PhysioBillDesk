@@ -226,10 +226,50 @@ export interface PatientFeedback {
   patient_phone?: string
   doctor_name?: string
   centre_name?: string
+  services_rendered?: string
   rating: number // 1 to 5
   hygiene_rating?: number // 1 to 5
   treatment_rating?: number // 1 to 5
   staff_rating?: number // 1 to 5
   comments?: string
+  custom_answers?: Record<string, any>
   created_at: string
+}
+
+export type FormFieldType = 
+  | 'star_rating'
+  | 'linear_scale'
+  | 'multiple_choice'
+  | 'checkbox'
+  | 'text'
+  | 'textarea'
+  | 'nps'
+
+export interface FormField {
+  id: string
+  type: FormFieldType
+  title: string
+  description?: string
+  required: boolean
+  options?: string[] // For multiple_choice, checkbox
+  min_scale?: number // For linear_scale (e.g. 1)
+  max_scale?: number // For linear_scale (e.g. 5 or 10)
+  min_label?: string // e.g. "Severe Pain" or "Poor"
+  max_label?: string // e.g. "No Pain" or "Exceptional"
+  category?: 'doctor' | 'treatment' | 'facility' | 'general'
+}
+
+export interface FeedbackFormTemplate {
+  id: string
+  title: string
+  description: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  fields: FormField[]
+  show_doctor_badge: boolean
+  show_invoice_badge: boolean
+  show_centre_badge: boolean
+  show_procedures_badge: boolean
+  accent_color?: string
 }

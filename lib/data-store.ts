@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import type { Centre, Doctor, Patient, Service, DiscountPreset, PackagePreset, PatientPackageCredit, PatientFeedback } from '@/lib/supabase/types'
+import type { Centre, Doctor, Patient, Service, DiscountPreset, PackagePreset, PatientPackageCredit, PatientFeedback, FeedbackFormTemplate, FormField } from '@/lib/supabase/types'
 import * as XLSX from 'xlsx'
 
 const DEFAULT_CENTRES: Centre[] = [
@@ -1696,30 +1696,353 @@ export const DEFAULT_FEEDBACK: PatientFeedback[] = [
   },
 ]
 
-export async function getPatientFeedback(): Promise<PatientFeedback[]> {
-  const CACHE_KEY = 'physio_feedback_cache_v6'
-  const cached = localStorage.getItem(CACHE_KEY)
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached)
-      if (Array.isArray(parsed) && parsed.length >= 6) return parsed
-    } catch (_) {}
+// ================= DYNAMIC FORM TEMPLATES (GOOGLE FORMS STYLE) =================
+
+export const DEFAULT_FEEDBACK_TEMPLATES: FeedbackFormTemplate[] = [
+  {
+    id: 'tmpl-clinical-comprehensive',
+    title: 'Physiotherapy Clinical Experience & Treatment Assessment',
+    description: 'Help us ensure the highest standards of physical rehabilitation and doctor care.',
+    is_active: true,
+    show_doctor_badge: true,
+    show_invoice_badge: true,
+    show_centre_badge: true,
+    show_procedures_badge: true,
+    accent_color: '#0d9488',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    fields: [
+      {
+        id: 'q-doctor-care',
+        type: 'star_rating',
+        title: 'Doctor Attentiveness & Treatment Explanation',
+        description: 'Did your physiotherapist listen to your symptoms and explain the therapy clearly?',
+        required: true,
+        category: 'doctor',
+      },
+      {
+        id: 'q-pain-relief',
+        type: 'linear_scale',
+        title: 'Pain Reduction & Mobility Improvement (1 = Minimal, 10 = Maximum Relief)',
+        description: 'Rate your physical improvement after today’s therapy session.',
+        required: true,
+        min_scale: 1,
+        max_scale: 10,
+        min_label: '1 (Little change)',
+        max_label: '10 (Significant relief)',
+        category: 'treatment',
+      },
+      {
+        id: 'q-hygiene',
+        type: 'star_rating',
+        title: 'Clinic Cleanliness & Equipment Sanitization',
+        description: 'How satisfied are you with the treatment bay, bed linen, and modality hygiene?',
+        required: true,
+        category: 'facility',
+      },
+      {
+        id: 'q-staff-courtesy',
+        type: 'star_rating',
+        title: 'Reception & Front-Desk Staff Cordiality',
+        description: 'Speed of billing, appointment scheduling, and polite assistance.',
+        required: true,
+        category: 'general',
+      },
+      {
+        id: 'q-waiting-time',
+        type: 'multiple_choice',
+        title: 'How would you rate your waiting time before seeing the doctor?',
+        required: false,
+        options: ['Directly attended without wait (0-5 mins)', 'Short acceptable wait (5-15 mins)', 'Moderate wait (15-30 mins)', 'Long wait (> 30 mins)'],
+        category: 'facility',
+      },
+      {
+        id: 'q-improvement-areas',
+        type: 'checkbox',
+        title: 'Areas where you felt the most improvement today:',
+        required: false,
+        options: ['Pain Relief & Stiffness', 'Range of Motion & Flexibility', 'Spine / Joint Alignment', 'Muscle Strength & Posture', 'Exercise Confidence'],
+        category: 'treatment',
+      },
+      {
+        id: 'q-nps',
+        type: 'nps',
+        title: 'How likely are you to recommend Physionautics to friends and family?',
+        description: '0 = Not Likely, 10 = Extremely Likely',
+        required: true,
+        min_scale: 0,
+        max_scale: 10,
+        category: 'general',
+      },
+      {
+        id: 'q-remarks',
+        type: 'textarea',
+        title: 'Personal Remarks for Your Doctor & Care Team',
+        description: 'Any specific feedback or praise for your treating therapist?',
+        required: false,
+        category: 'doctor',
+      },
+    ],
+  },
+  {
+    id: 'tmpl-sports-postop',
+    title: 'Post-Operative & Sports Rehab Progress Tracker',
+    description: 'Targeted survey evaluating recovery milestones, modality comfort, and strength progression.',
+    is_active: false,
+    show_doctor_badge: true,
+    show_invoice_badge: true,
+    show_centre_badge: true,
+    show_procedures_badge: true,
+    accent_color: '#2563eb',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    fields: [
+      {
+        id: 'q-sport-guidance',
+        type: 'star_rating',
+        title: 'Doctor Rehabilitation Protocol & Precision',
+        description: 'Quality of exercise biomechanics correction and home exercise guidance.',
+        required: true,
+        category: 'doctor',
+      },
+      {
+        id: 'q-sport-pain-score',
+        type: 'linear_scale',
+        title: 'Post-Therapy Joint Comfort Level',
+        required: true,
+        min_scale: 1,
+        max_scale: 10,
+        min_label: '1 (Severe Discomfort)',
+        max_label: '10 (Complete Comfort)',
+        category: 'treatment',
+      },
+      {
+        id: 'q-sport-modality',
+        type: 'checkbox',
+        title: 'Which treatment modalities provided the best comfort?',
+        required: false,
+        options: ['Class 4 High-Power Laser', 'Joint Mobilization / Manual Therapy', 'Dry Needling & Cupping', 'Mechanical Spine Traction', 'Therapeutic Exercise'],
+        category: 'treatment',
+      },
+      {
+        id: 'q-sport-comments',
+        type: 'textarea',
+        title: 'Doctor Notes & Home Workout Experience',
+        required: false,
+        category: 'doctor',
+      },
+    ],
+  },
+]
+
+export async function getFeedbackTemplates(): Promise<FeedbackFormTemplate[]> {
+  const CACHE_KEY = 'physio_feedback_templates_v2'
+  if (typeof window !== 'undefined') {
+    const cached = localStorage.getItem(CACHE_KEY)
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      } catch (_) {}
+    }
+    localStorage.setItem(CACHE_KEY, JSON.stringify(DEFAULT_FEEDBACK_TEMPLATES))
   }
-  localStorage.setItem(CACHE_KEY, JSON.stringify(DEMO_FEEDBACK))
+  return DEFAULT_FEEDBACK_TEMPLATES
+}
+
+export async function getActiveFeedbackTemplate(): Promise<FeedbackFormTemplate> {
+  const templates = await getFeedbackTemplates()
+  return templates.find(t => t.is_active) || templates[0] || DEFAULT_FEEDBACK_TEMPLATES[0]
+}
+
+export async function saveFeedbackTemplate(tmpl: Partial<FeedbackFormTemplate>): Promise<FeedbackFormTemplate> {
+  const current = await getFeedbackTemplates()
+  let updated: FeedbackFormTemplate[]
+  let saved: FeedbackFormTemplate
+
+  if (tmpl.id && current.some(t => t.id === tmpl.id)) {
+    // If setting active, deactivate others
+    if (tmpl.is_active) {
+      current.forEach(t => { t.is_active = false })
+    }
+    saved = {
+      ...current.find(t => t.id === tmpl.id)!,
+      ...tmpl,
+      updated_at: new Date().toISOString(),
+    } as FeedbackFormTemplate
+    updated = current.map(t => (t.id === tmpl.id ? saved : t))
+  } else {
+    if (tmpl.is_active) {
+      current.forEach(t => { t.is_active = false })
+    }
+    saved = {
+      id: `tmpl-${Date.now()}`,
+      title: tmpl.title || 'Untitled Feedback Form',
+      description: tmpl.description || 'Patient satisfaction and clinical survey.',
+      is_active: tmpl.is_active ?? true,
+      show_doctor_badge: tmpl.show_doctor_badge ?? true,
+      show_invoice_badge: tmpl.show_invoice_badge ?? true,
+      show_centre_badge: tmpl.show_centre_badge ?? true,
+      show_procedures_badge: tmpl.show_procedures_badge ?? true,
+      accent_color: tmpl.accent_color || '#0d9488',
+      fields: tmpl.fields || [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    updated = [saved, ...current]
+  }
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('physio_feedback_templates_v2', JSON.stringify(updated))
+  }
+  return saved
+}
+
+export async function deleteFeedbackTemplate(id: string): Promise<void> {
+  const current = await getFeedbackTemplates()
+  const updated = current.filter(t => t.id !== id)
+  if (updated.length > 0 && !updated.some(t => t.is_active)) {
+    updated[0].is_active = true
+  }
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('physio_feedback_templates_v2', JSON.stringify(updated))
+  }
+}
+
+export async function getPatientFeedback(): Promise<PatientFeedback[]> {
+  const supabase = createClient()
+  try {
+    const { data, error } = await supabase
+      .from('patient_feedback')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (!error && data && data.length > 0) {
+      return data as PatientFeedback[]
+    }
+  } catch (_) {}
+
+  const CACHE_KEY = 'physio_feedback_cache_v6'
+  if (typeof window !== 'undefined') {
+    const cached = localStorage.getItem(CACHE_KEY)
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length >= 6) return parsed
+      } catch (_) {}
+    }
+    localStorage.setItem(CACHE_KEY, JSON.stringify(DEMO_FEEDBACK))
+  }
   return DEMO_FEEDBACK
 }
 
 export async function savePatientFeedback(fb: Omit<PatientFeedback, 'id' | 'created_at'>): Promise<PatientFeedback> {
-  const current = await getPatientFeedback()
   const newFb: PatientFeedback = {
     id: `fb-${Date.now()}`,
     ...fb,
     created_at: new Date().toISOString(),
   }
-  const updated = [newFb, ...current]
-  localStorage.setItem('physio_feedback_cache', JSON.stringify(updated))
+
+  // Write to Supabase table
+  try {
+    const supabase = createClient()
+    await supabase.from('patient_feedback').insert([{
+      bill_number: fb.bill_number,
+      patient_uid: fb.patient_uid,
+      patient_name: fb.patient_name,
+      patient_phone: fb.patient_phone,
+      doctor_name: fb.doctor_name,
+      centre_name: fb.centre_name,
+      rating: fb.rating || 5,
+      hygiene_rating: fb.hygiene_rating || 5,
+      treatment_rating: fb.treatment_rating || 5,
+      staff_rating: fb.staff_rating || 5,
+      comments: fb.comments || (fb.custom_answers ? JSON.stringify(fb.custom_answers) : null),
+    }])
+  } catch (err) {
+    console.warn('Could not save feedback to Supabase, saving locally:', err)
+  }
+
+  // Update local cache
+  if (typeof window !== 'undefined') {
+    const current = await getPatientFeedback()
+    const updated = [newFb, ...current]
+    localStorage.setItem('physio_feedback_cache_v6', JSON.stringify(updated))
+  }
   return newFb
 }
+
+export async function getDoctorSatisfactionMetrics(): Promise<{
+  doctor_name: string
+  avg_rating: number
+  total_reviews: number
+  hygiene_score: number
+  treatment_score: number
+  staff_score: number
+  centre_name?: string
+  recent_comments: string[]
+}[]> {
+  const feedbacks = await getPatientFeedback()
+  const doctors = await getDoctors()
+  
+  const map = new Map<string, {
+    doctor_name: string
+    ratings: number[]
+    hygiene: number[]
+    treatment: number[]
+    staff: number[]
+    centre_name?: string
+    comments: string[]
+  }>()
+
+  // Initialize with known doctors
+  doctors.forEach(doc => {
+    map.set(doc.name, {
+      doctor_name: doc.name,
+      ratings: [],
+      hygiene: [],
+      treatment: [],
+      staff: [],
+      centre_name: (doc as any).centre_name || 'Assigned Clinic',
+      comments: [],
+    })
+  })
+
+  // Map feedbacks
+  feedbacks.forEach(fb => {
+    const docName = fb.doctor_name || 'Unassigned / General'
+    if (!map.has(docName)) {
+      map.set(docName, {
+        doctor_name: docName,
+        ratings: [],
+        hygiene: [],
+        treatment: [],
+        staff: [],
+        centre_name: fb.centre_name,
+        comments: [],
+      })
+    }
+    const entry = map.get(docName)!
+    if (fb.rating) entry.ratings.push(fb.rating)
+    if (fb.hygiene_rating) entry.hygiene.push(fb.hygiene_rating)
+    if (fb.treatment_rating) entry.treatment.push(fb.treatment_rating)
+    if (fb.staff_rating) entry.staff.push(fb.staff_rating)
+    if (fb.comments) entry.comments.push(fb.comments)
+  })
+
+  const avg = (arr: number[]) => (arr.length ? Number((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1)) : 5.0)
+
+  return Array.from(map.values()).map(item => ({
+    doctor_name: item.doctor_name,
+    avg_rating: avg(item.ratings),
+    total_reviews: item.ratings.length,
+    hygiene_score: avg(item.hygiene),
+    treatment_score: avg(item.treatment),
+    staff_score: avg(item.staff),
+    centre_name: item.centre_name,
+    recent_comments: item.comments.slice(0, 5),
+  }))
+}
+
 
 // ================= RICH DEMO DATASETS & DATA MANAGEMENT =================
 

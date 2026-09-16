@@ -113,26 +113,36 @@ export default function BillingPage() {
   }, [loadData])
 
   useEffect(() => {
-    if (preselectedId && patients.length > 0) {
-      const match = patients.find(p => p.id === preselectedId || p.uid === preselectedId)
-      if (match) setSelectedPatient(match)
+    if (preselectedId) {
+      getPatients().then(allP => {
+        const match = allP.find(p => p.id === preselectedId || p.uid === preselectedId)
+        if (match) setSelectedPatient(match)
+      })
     }
-  }, [preselectedId, patients])
+  }, [preselectedId])
 
   // Patient search handler
-  const handleSearchPatient = (q: string) => {
+  const handleSearchPatient = async (q: string) => {
     setPatientQuery(q)
     if (!q.trim()) {
       setSearchedPatients([])
       return
     }
     const lower = q.toLowerCase().trim()
-    const matches = patients.filter(
+    const currentMatches = patients.filter(
       p => p.full_name.toLowerCase().includes(lower) ||
            p.uid.toLowerCase().includes(lower) ||
            p.phone.includes(lower)
     ).slice(0, 6)
-    setSearchedPatients(matches)
+    
+    if (currentMatches.length > 0) {
+      setSearchedPatients(currentMatches)
+    }
+
+    const fetchedMatches = await getPatients(q)
+    if (fetchedMatches.length > 0) {
+      setSearchedPatients(fetchedMatches.slice(0, 6))
+    }
   }
 
   // Doctor list filtered by selected centre

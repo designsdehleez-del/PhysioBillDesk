@@ -443,44 +443,66 @@ export async function toggleDoctorActive(id: string): Promise<void> {
 // ================= PATIENTS =================
 export async function getPatients(query?: string): Promise<Patient[]> {
   const CACHE_KEY = 'physio_patients_cache_v5'
-  let list: Patient[] = []
+  
+  // 1. Get cached patients first
+  let cachedPatients: Patient[] = []
+  const cachedRaw = localStorage.getItem(CACHE_KEY) || localStorage.getItem('physio_patients_cache')
+  if (cachedRaw) {
+    try {
+      const parsed = JSON.parse(cachedRaw)
+      if (Array.isArray(parsed)) cachedPatients = parsed
+    } catch (_) {}
+  }
+  if (cachedPatients.length === 0) {
+    cachedPatients = DEMO_PATIENTS
+  }
+
+  let dbPatients: Patient[] = []
   try {
     const supabase = createClient()
     let q = supabase.from('patients').select('*').order('created_at', { ascending: false })
-    if (query?.trim()) {
-      q = q.or(`uid.ilike.%${query}%,full_name.ilike.%${query}%,phone.ilike.%${query}%`)
-    }
-    const { data } = await q.limit(200)
+    const { data } = await q.limit(300)
     if (data && data.length > 0) {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(data))
-      return data as unknown as Patient[]
+      dbPatients = data as unknown as Patient[]
     }
   } catch (_) {}
 
-  const cached = localStorage.getItem(CACHE_KEY)
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached)
-      if (Array.isArray(parsed) && parsed.length >= 8) {
-        list = parsed
-      }
-    } catch (_) {}
-  }
+  // Merge DB patients with cached patients (deduplicating by ID and UID, preferring newest)
+  const map = new Map<string, Patient>()
+  
+  // Add cached first
+  cachedPatients.forEach(p => {
+    if (p.id) map.set(p.id, p)
+    if (p.uid) map.set(p.uid, p)
+  })
 
-  if (list.length === 0) {
-    list = DEMO_PATIENTS
-    localStorage.setItem(CACHE_KEY, JSON.stringify(DEMO_PATIENTS))
-  }
+  // Merge DB patients over cached
+  dbPatients.forEach(p => {
+    if (p.id) map.set(p.id, p)
+    if (p.uid) map.set(p.uid, p)
+  })
+
+  const mergedList = Array.from(new Set(map.values())).sort((a, b) => {
+    const da = new Date(a.created_at || 0).getTime()
+    const db = new Date(b.created_at || 0).getTime()
+    return db - da
+  })
+
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(mergedList))
+    localStorage.setItem('physio_patients_cache', JSON.stringify(mergedList))
+  } catch (_) {}
 
   if (query?.trim()) {
     const lower = query.toLowerCase().trim()
-    return list.filter(p => 
+    return mergedList.filter(p => 
       p.full_name.toLowerCase().includes(lower) ||
       p.uid.toLowerCase().includes(lower) ||
       p.phone.includes(lower)
     )
   }
-  return list
+
+  return mergedList
 }
 
 export async function bulkImportPatients(patients: Partial<Patient>[]): Promise<number> {

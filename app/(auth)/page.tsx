@@ -106,7 +106,7 @@ export default function AuthPage() {
 
           {/* Mission & Vision: Minimal Light Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div className="bg-white border border-slate-200/80 p-4 rounded-xl space-y-1.5 shadow-xs">
+            <div className="bg-white border border-slate-200/80 p-4 rounded-xl space-y-1.5 shadow-xs hover:border-blue-300 transition-colors">
               <div className="flex items-center gap-1.5 text-blue-700 font-bold text-xs">
                 <HeartPulse className="w-4 h-4 text-blue-600" /> Clinical Mission
               </div>
@@ -115,13 +115,157 @@ export default function AuthPage() {
               </p>
             </div>
 
-            <div className="bg-white border border-slate-200/80 p-4 rounded-xl space-y-1.5 shadow-xs">
+            <div className="bg-white border border-slate-200/80 p-4 rounded-xl space-y-1.5 shadow-xs hover:border-blue-300 transition-colors">
               <div className="flex items-center gap-1.5 text-slate-800 font-bold text-xs">
                 <Award className="w-4 h-4 text-amber-500" /> Excellence Vision
               </div>
               <p className="text-xs text-slate-600 leading-normal">
                 Setting India's benchmark for physical rehabilitation where technology and clinical research converge.
               </p>
+            </div>
+          </div>
+
+          {/* Biomechanical Pain & Musculoskeletal Focus Vector Diagram */}
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+                  <Stethoscope className="w-3.5 h-3.5" />
+                </div>
+                <h3 className="text-xs font-bold text-slate-800">Biomechanical Rehabilitation & Spine/Joint Focal Points</h3>
+              </div>
+              <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                Non-Surgical Focus
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+              {/* Spine/Joint Musculoskeletal SVG Diagram */}
+              <div className="sm:col-span-5 bg-slate-50 border border-slate-100 rounded-lg p-3 flex flex-col items-center justify-center relative min-h-[160px]">
+                <svg viewBox="0 0 160 200" className="w-32 h-40 drop-shadow-xs">
+                  {/* Head & Neck */}
+                  <circle cx="80" cy="25" r="14" className="fill-slate-200 stroke-slate-400" strokeWidth="1.5" />
+                  
+                  {/* Spine Segment lines (Cervical, Thoracic, Lumbar) */}
+                  <path d="M 80 40 L 80 65" className="stroke-blue-500" strokeWidth="3" strokeDasharray="3 2" />
+                  <path d="M 80 65 L 80 115" className="stroke-slate-400" strokeWidth="3" strokeDasharray="4 2" />
+                  <path d="M 80 115 L 80 145" className="stroke-amber-500" strokeWidth="4" strokeDasharray="3 2" />
+                  
+                  {/* Shoulder girdle */}
+                  <path d="M 50 65 Q 80 58 110 65" className="fill-none stroke-slate-400" strokeWidth="2.5" />
+                  <circle cx="48" cy="66" r="6" className="fill-blue-100 stroke-blue-500" strokeWidth="1.5" />
+                  <circle cx="112" cy="66" r="6" className="fill-blue-100 stroke-blue-500" strokeWidth="1.5" />
+
+                  {/* Pelvic girdle */}
+                  <path d="M 60 145 Q 80 140 100 145" className="fill-none stroke-slate-500" strokeWidth="3" />
+
+                  {/* Lower Extremity (Knees) */}
+                  <path d="M 65 145 L 62 185" className="stroke-slate-400" strokeWidth="2.5" />
+                  <path d="M 95 145 L 98 185" className="stroke-slate-400" strokeWidth="2.5" />
+                  <circle cx="62" cy="185" r="5" className="fill-emerald-100 stroke-emerald-600" strokeWidth="1.5" />
+                  <circle cx="98" cy="185" r="5" className="fill-emerald-100 stroke-emerald-600" strokeWidth="1.5" />
+
+                  {/* Focal Pain Indicators */}
+                  {/* C5-C6 Cervical Pain pulse */}
+                  <circle cx="80" cy="52" r="4" className="fill-blue-600 animate-pulse" />
+                  <line x1="80" y1="52" x2="135" y2="45" className="stroke-blue-400" strokeWidth="1" strokeDasharray="2 2" />
+                  
+                  {/* L4-L5 Disc Herniation pulse */}
+                  <circle cx="80" cy="130" r="4.5" className="fill-amber-600 animate-pulse" />
+                  <line x1="80" y1="130" x2="140" y2="125" className="stroke-amber-400" strokeWidth="1" strokeDasharray="2 2" />
+
+                  {/* Knee OA Joint Space pulse */}
+                  <circle cx="98" cy="185" r="3.5" className="fill-emerald-600 animate-pulse" />
+                  <line x1="98" y1="185" x2="138" y2="175" className="stroke-emerald-400" strokeWidth="1" strokeDasharray="2 2" />
+                </svg>
+              </div>
+
+              {/* Focal Annotations Grid */}
+              <div className="sm:col-span-7 space-y-2">
+                <div className="p-2 rounded-lg bg-blue-50/60 border border-blue-100 flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-600 mt-1 shrink-0" />
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-800 block">Cervical Spine (C5-C6 Decompression)</span>
+                    <span className="text-[10px] text-slate-500">Radiculopathy, neck stiffness & nerve root tension release</span>
+                  </div>
+                </div>
+
+                <div className="p-2 rounded-lg bg-amber-50/60 border border-amber-100 flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-600 mt-1 shrink-0" />
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-800 block">Lumbar Spine (L4-L5 Disc Rehab)</span>
+                    <span className="text-[10px] text-slate-500">Sciatica relief, spinal traction & core postural stability</span>
+                  </div>
+                </div>
+
+                <div className="p-2 rounded-lg bg-emerald-50/60 border border-emerald-100 flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-600 mt-1 shrink-0" />
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-800 block">Tibiofemoral Knee OA & Shoulder Mobility</span>
+                    <span className="text-[10px] text-slate-500">Cartilage loading protocol & capsular range expansion</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Visual Treatment Modality Cards with SVG Icons */}
+          <div className="space-y-2">
+            <p className="text-[11px] uppercase font-bold tracking-wider text-slate-400">
+              Evidence-Based Therapy Modalities
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {/* Electrotherapy Waveform */}
+              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1.5 shadow-xs hover:border-blue-300 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M2 12h4l2-8 4 16 3-10 2 4h5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <span className="text-[11px] font-bold text-slate-800 leading-tight">IFT & Electrotherapy</span>
+                <span className="text-[9px] text-slate-500 leading-tight">Interferential pain block</span>
+              </div>
+
+              {/* Dry Needling & Trigger Point */}
+              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1.5 shadow-xs hover:border-blue-300 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="9" />
+                    <circle cx="12" cy="12" r="3" fill="currentColor" />
+                    <line x1="12" y1="3" x2="12" y2="6" />
+                    <line x1="12" y1="18" x2="12" y2="21" />
+                    <line x1="3" y1="12" x2="6" y2="12" />
+                    <line x1="18" y1="12" x2="21" y2="12" />
+                  </svg>
+                </div>
+                <span className="text-[11px] font-bold text-slate-800 leading-tight">Dry Needling</span>
+                <span className="text-[9px] text-slate-500 leading-tight">Myofascial trigger release</span>
+              </div>
+
+              {/* Spinal Decompression Traction */}
+              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1.5 shadow-xs hover:border-blue-300 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="5" y="4" width="14" height="4" rx="1" />
+                    <rect x="5" y="10" width="14" height="4" rx="1" />
+                    <rect x="5" y="16" width="14" height="4" rx="1" />
+                    <path d="M12 8v2M12 14v2" strokeDasharray="1 1" />
+                  </svg>
+                </div>
+                <span className="text-[11px] font-bold text-slate-800 leading-tight">Spinal Traction</span>
+                <span className="text-[9px] text-slate-500 leading-tight">Intervertebral spacing</span>
+              </div>
+
+              {/* Kinesiology Taping */}
+              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1.5 shadow-xs hover:border-blue-300 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 8l16-4M4 16l16-4M4 20l16-4" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <span className="text-[11px] font-bold text-slate-800 leading-tight">Kinesio Taping</span>
+                <span className="text-[9px] text-slate-500 leading-tight">Biomechanical support</span>
+              </div>
             </div>
           </div>
 

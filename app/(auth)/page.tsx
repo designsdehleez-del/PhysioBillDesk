@@ -171,32 +171,6 @@ export default function AuthPage() {
             </CardHeader>
 
             <CardContent className="space-y-4 pt-4 pb-5">
-              {/* Quick Fill Buttons for Testing */}
-              <div className="bg-slate-50 border border-slate-200/70 p-2.5 rounded-xl space-y-1.5">
-                <p className="text-[10px] font-semibold text-slate-600 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-500" /> Quick Sign-In Presets:
-                </p>
-                <div className="flex gap-2">
-                  <Button 
-                    type="button" 
-                    size="xs" 
-                    variant="outline" 
-                    className="bg-white border-purple-200 text-purple-700 hover:bg-purple-50 text-[11px] flex-1"
-                    onClick={() => fillQuickLogin('admin@physionautics.com', 'admin')}
-                  >
-                    👑 Admin
-                  </Button>
-                  <Button 
-                    type="button" 
-                    size="xs" 
-                    variant="outline" 
-                    className="bg-white border-blue-200 text-blue-700 hover:bg-blue-50 text-[11px] flex-1"
-                    onClick={() => fillQuickLogin('staff.nfc@physionautics.com', 'Pass@123')}
-                  >
-                    🏥 Reception Staff
-                  </Button>
-                </div>
-              </div>
 
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 <div className="space-y-1">

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { createClient } from '@/lib/supabase/client'
+import { registerPatient } from '@/lib/data-store'
 import { isValidPhone, isValidEmail } from '@/lib/utils'
 
 interface FormData {
@@ -42,18 +42,17 @@ export default function RegisterPatientPage() {
     if (!validate()) return
     setLoading(true)
     try {
-      const supabase = createClient()
-      const { data: uid, error: uidErr } = await supabase.rpc('generate_patient_uid')
-      if (uidErr) throw uidErr
-      const { data, error } = await supabase.from('patients').insert({
-        uid, full_name: form.full_name.trim(), age: Number(form.age),
+      const res = await registerPatient({
+        full_name: form.full_name.trim(),
+        age: Number(form.age),
         gender: form.gender as 'Male' | 'Female' | 'Other',
-        phone: form.phone.trim(), email: form.email || null,
-        address: form.address || null, blood_group: (form.blood_group || null) as never,
+        phone: form.phone.trim(),
+        email: form.email || null,
+        address: form.address || null,
+        blood_group: (form.blood_group || null) as any,
         medical_notes: form.medical_notes || null,
-      }).select('id').single()
-      if (error) throw error
-      setSuccess({ uid, id: data.id })
+      })
+      setSuccess({ uid: res.uid, id: res.id })
     } catch (err: unknown) {
       setErrors({ _: err instanceof Error ? err.message : 'Registration failed' })
     } finally { setLoading(false) }

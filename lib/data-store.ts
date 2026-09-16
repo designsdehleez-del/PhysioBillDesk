@@ -544,6 +544,74 @@ export function exportPatientsToExcel(patients: Patient[]) {
   XLSX.writeFile(wb, `Physionautics_Patients_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
+export async function registerPatient(input: {
+  full_name: string
+  age: number
+  gender: 'Male' | 'Female' | 'Other'
+  phone: string
+  email?: string | null
+  address?: string | null
+  blood_group?: 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-' | null
+  medical_notes?: string | null
+}): Promise<{ id: string; uid: string }> {
+  const current = await getPatients()
+  const now = new Date()
+  const yyyymm = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
+  const fallbackUid = `CLN-${yyyymm}-${String(current.length + 1).padStart(4, '0')}`
+  const fallbackId = `pat-${Date.now()}`
+
+  let finalId = fallbackId
+  let finalUid = fallbackUid
+
+  try {
+    const supabase = createClient()
+    const { data: generatedUid, error: uidErr } = await supabase.rpc('generate_patient_uid')
+    const uidToUse = (!uidErr && generatedUid) ? generatedUid : fallbackUid
+
+    const { data, error } = await supabase.from('patients').insert({
+      uid: uidToUse,
+      full_name: input.full_name.trim(),
+      age: Number(input.age),
+      gender: input.gender,
+      phone: input.phone.trim(),
+      email: input.email || null,
+      address: input.address || null,
+      blood_group: input.blood_group || null,
+      medical_notes: input.medical_notes || null,
+    }).select('id, uid').single()
+
+    if (!error && data) {
+      finalId = data.id
+      finalUid = data.uid
+    }
+  } catch (err) {
+    console.warn('Supabase patient insert failed, using resilient local storage fallback:', err)
+  }
+
+  const newPatient: Patient = {
+    id: finalId,
+    uid: finalUid,
+    full_name: input.full_name.trim(),
+    age: Number(input.age),
+    gender: input.gender,
+    phone: input.phone.trim(),
+    email: input.email || null,
+    address: input.address || null,
+    blood_group: input.blood_group || null,
+    medical_notes: input.medical_notes || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+
+  const updatedList = [newPatient, ...current.filter(p => p.id !== finalId && p.uid !== finalUid)]
+  try {
+    localStorage.setItem('physio_patients_cache_v5', JSON.stringify(updatedList))
+    localStorage.setItem('physio_patients_cache', JSON.stringify(updatedList))
+  } catch (_) {}
+
+  return { id: finalId, uid: finalUid }
+}
+
 // ================= VISITS & BILLING DATA =================
 export interface BillLineItem {
   id?: string

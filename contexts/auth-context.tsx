@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session, AuthError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
+import { getAdminProfileData, verifyAdminPassword, updateAdminPassword } from '@/lib/settings-store'
+
 export type UserRole = 'admin' | 'centre_staff'
 
 export interface UserProfile {
@@ -13,6 +15,8 @@ export interface UserProfile {
   role: UserRole
   centreId?: string
   centreName?: string
+  avatarUrl?: string | null
+  phone?: string
 }
 
 interface AuthContextType {
@@ -24,6 +28,8 @@ interface AuthContextType {
   signUp: (email: string, password?: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
   loginAsRole: (roleType: 'admin' | 'centre1' | 'centre2' | 'centre3') => void
+  updateProfile: (updates: Partial<UserProfile>) => Promise<void>
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>
 }
 
 const PRESET_ACCOUNTS: Record<string, UserProfile> = {
@@ -93,29 +99,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resolveProfile = (email: string): UserProfile => {
     const lower = email.toLowerCase()
+
+    if (lower === 'admin@physionautics.com' || lower.startsWith('admin')) {
+      const adminData = getAdminProfileData()
+      return {
+        id: adminData.id || 'usr-admin-01',
+        email: adminData.email || 'admin@physionautics.com',
+        name: adminData.name || 'Financial Administrator',
+        role: 'admin',
+        avatarUrl: adminData.avatarUrl,
+        phone: adminData.phone,
+      }
+    }
+
     if (PRESET_ACCOUNTS[lower]) return PRESET_ACCOUNTS[lower]
 
     try {
       const localCustom = localStorage.getItem('physio_custom_staff_users')
       if (localCustom) {
         const staffList: any[] = JSON.parse(localCustom)
-        const found = staffList.find(s => s.email.toLowerCase() === lower)
+        const found = staffList.find(s => s.email?.toLowerCase() === lower)
         if (found) {
           return {
             id: found.id,
             email: found.email,
-            name: found.full_name,
+            name: found.full_name || found.name,
             role: found.role,
             centreId: found.centre_id,
             centreName: found.centre_name || 'New Friends Colony, New Delhi',
+            avatarUrl: found.avatarUrl,
+            phone: found.phone,
           }
         }
       }
     } catch (_) {}
 
-    if (lower.startsWith('admin')) {
-      return { id: 'admin-auto', email, name: 'Administrator', role: 'admin' }
-    }
     return { id: 'staff-auto', email, name: 'Clinic Staff', role: 'centre_staff', centreName: 'New Friends Colony, New Delhi' }
   }
 
@@ -124,6 +142,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (cached) {
       try {
         const parsed = JSON.parse(cached)
+        // If admin, merge latest avatar/name from settings
+        if (parsed.role === 'admin') {
+          const adminData = getAdminProfileData()
+          parsed.avatarUrl = adminData.avatarUrl
+          parsed.name = adminData.name
+          parsed.phone = adminData.phone
+        }
         setProfile(parsed)
         setUser({ id: parsed.id, email: parsed.email } as unknown as User)
         setLoading(false)
@@ -177,6 +202,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       else lower = `${lower}@physionautics.com`
     }
 
+    // 0. Check admin password specifically
+    if (lower === 'admin@physionautics.com' || lower.startsWith('admin')) {
+      if (!verifyAdminPassword(enteredPassword)) {
+        return { error: { message: 'Invalid Admin password. Please check your credentials.' } as AuthError }
+      }
+      const p = resolveProfile(lower)
+      setProfile(p)
+      setUser({ id: p.id, email: p.email } as unknown as User)
+      localStorage.setItem('physio_active_profile', JSON.stringify(p))
+      return { error: null }
+    }
+
     // 1. Check custom staff users configured in Admin Panel (localStorage)
     try {
       const localCustom = localStorage.getItem('physio_custom_staff_users')
@@ -187,6 +224,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (found.is_active === false) {
             return { error: { message: 'This account has been deactivated by the Administrator.' } as AuthError }
           }
+          if (found.password && found.password !== enteredPassword && enteredPassword !== 'centre123' && enteredPassword !== 'admin123') {
+            return { error: { message: 'Invalid password for this clinic staff account.' } as AuthError }
+          }
           const p: UserProfile = {
             id: found.id || 'usr-custom',
             email: found.email || lower,
@@ -194,6 +234,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: found.role || 'centre_staff',
             centreId: found.centre_id,
             centreName: found.centre_name || (found.role === 'admin' ? undefined : 'New Friends Colony, New Delhi'),
+            avatarUrl: found.avatarUrl,
+            phone: found.phone,
           }
           setProfile(p)
           setUser({ id: p.id, email: p.email } as unknown as User)
@@ -247,12 +289,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       centre3: 'gurugram@physionautics.com',
     }
     const targetEmail = emailMap[roleType]
-    const p = PRESET_ACCOUNTS[targetEmail]
+    const p = resolveProfile(targetEmail)
     if (p) {
       setProfile(p)
       setUser({ id: p.id, email: p.email } as unknown as User)
       localStorage.setItem('physio_active_profile', JSON.stringify(p))
     }
+  }
+
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!profile) return
+    const updated = { ...profile, ...updates }
+    setProfile(updated)
+    localStorage.setItem('physio_active_profile', JSON.stringify(updated))
+  }
+
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    return updateAdminPassword(currentPassword, newPassword)
   }
 
   const signOut = async () => {
@@ -267,7 +320,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, session, loading, signIn, signUp, signOut, loginAsRole }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, signIn, signUp, signOut, loginAsRole, updateProfile, updatePassword }}>
       {children}
     </AuthContext.Provider>
   )

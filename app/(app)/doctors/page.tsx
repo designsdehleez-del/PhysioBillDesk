@@ -10,13 +10,19 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { getDoctors, saveDoctor, deleteDoctor, toggleDoctorActive, bulkImportDoctors, getCentres } from '@/lib/data-store'
+import { getDoctors, saveDoctor, deleteDoctor, toggleDoctorActive, bulkImportDoctors, getCentres, getVisits, getPatientFeedback, type StoredVisit } from '@/lib/data-store'
 import { ExcelImporter, type ColumnDefinition } from '@/components/import/excel-importer'
-import type { Doctor, Centre } from '@/lib/supabase/types'
+import type { Doctor, Centre, PatientFeedback } from '@/lib/supabase/types'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
+import { formatCurrency } from '@/lib/utils'
 
-interface DoctorRow extends Doctor { centreName?: string | null }
+interface DoctorRow extends Doctor { 
+  centreName?: string | null
+  revenue?: number
+  visitCount?: number
+  avgRating?: string
+}
 
 const DOCTOR_IMPORT_COLUMNS: ColumnDefinition[] = [
   { key: 'name', label: 'Doctor Name', required: true, example: 'Dr. Ananya Roy' },
@@ -46,17 +52,44 @@ export default function DoctorsPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [cList, dList] = await Promise.all([
+    const [cList, dList, vList, fbList] = await Promise.all([
       getCentres(),
       getDoctors(centreFilter),
+      getVisits(),
+      getPatientFeedback(),
     ])
     setCentres(cList)
 
     const cMap = new Map(cList.map(c => [c.id, c.name]))
-    setDoctors(dList.map(d => ({
-      ...d,
-      centreName: d.centre_id ? cMap.get(d.centre_id) ?? null : null,
-    })))
+    setDoctors(dList.map(d => {
+      const docRawName = d.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+      const docVisits = vList.filter(v => {
+        if (v.doctor_id && v.doctor_id === d.id) return true
+        if (v.doctor_name) {
+          const vDocName = v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+          return vDocName.includes(docRawName) || docRawName.includes(vDocName)
+        }
+        return false
+      })
+      const revenue = docVisits.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
+
+      const docFeedbacks = fbList.filter(f => {
+        if (!f.doctor_name) return false
+        const fDocName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+        return fDocName.includes(docRawName) || docRawName.includes(fDocName)
+      })
+      const avgRating = docFeedbacks.length > 0 
+        ? (docFeedbacks.reduce((s, f) => s + f.rating, 0) / docFeedbacks.length).toFixed(1)
+        : '5.0'
+
+      return {
+        ...d,
+        centreName: d.centre_id ? cMap.get(d.centre_id) ?? null : null,
+        revenue,
+        visitCount: docVisits.length,
+        avgRating,
+      }
+    }))
     setLoading(false)
   }, [centreFilter])
 
@@ -67,6 +100,9 @@ export default function DoctorsPage() {
     const q = search.toLowerCase()
     return d.name.toLowerCase().includes(q) || (d.specialization?.toLowerCase().includes(q))
   })
+
+  const totalDoctorRevenue = doctors.reduce((sum, d) => sum + (d.revenue || 0), 0)
+  const totalDoctorVisits = doctors.reduce((sum, d) => sum + (d.visitCount || 0), 0)
 
   const openAdd = () => {
     setEditing(null)
@@ -166,6 +202,54 @@ export default function DoctorsPage() {
         </div>
       </div>
 
+      {/* Admin Quick Performance Metric Cards */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="border shadow-xs bg-gradient-to-br from-white to-blue-50/50">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase text-muted-foreground">Total Doctors</p>
+                <p className="text-2xl font-extrabold text-blue-950">{doctors.length}</p>
+                <p className="text-[10px] text-blue-700 font-medium">Across {centres.length} branches</p>
+              </div>
+              <div className="p-2.5 bg-blue-600 text-white rounded-xl">
+                <UserCog className="h-5 w-5" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border shadow-xs bg-gradient-to-br from-white to-emerald-50/50">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase text-muted-foreground">Doctor-Attributed Revenue</p>
+                <p className="text-2xl font-extrabold text-emerald-950">{formatCurrency(totalDoctorRevenue)}</p>
+                <p className="text-[10px] text-emerald-700 font-medium">{totalDoctorVisits} billed consultations</p>
+              </div>
+              <div className="p-2.5 bg-emerald-600 text-white rounded-xl">
+                <Building2 className="h-5 w-5" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border shadow-xs bg-gradient-to-br from-white to-purple-50/50">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase text-muted-foreground">Top Consultant Earner</p>
+                <p className="text-base font-extrabold text-purple-950 truncate max-w-[180px]">
+                  {doctors.slice().sort((a, b) => (b.revenue || 0) - (a.revenue || 0))[0]?.name || '—'}
+                </p>
+                <p className="text-[10px] text-purple-700 font-bold">
+                  {formatCurrency(doctors.slice().sort((a, b) => (b.revenue || 0) - (a.revenue || 0))[0]?.revenue || 0)}
+                </p>
+              </div>
+              <div className="p-2.5 bg-purple-600 text-white rounded-xl">
+                <Badge className="bg-white text-purple-900 text-xs font-extrabold">👑 #1</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Filter and Search Bar */}
       <Card>
         <CardContent className="p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
@@ -203,6 +287,8 @@ export default function DoctorsPage() {
                     <th className="px-4 py-3">Doctor Name</th>
                     <th className="px-4 py-3">Specialization</th>
                     <th className="px-4 py-3">Clinic Centre</th>
+                    {isAdmin && <th className="px-4 py-3 text-right">Revenue Generated</th>}
+                    <th className="px-4 py-3 text-center">CSAT</th>
                     <th className="px-4 py-3 hidden md:table-cell">Contact Phone</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
@@ -216,6 +302,17 @@ export default function DoctorsPage() {
                       <td className="px-4 py-3">
                         <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50/60 font-medium flex items-center gap-1 w-fit">
                           <Building2 className="h-3 w-3" /> {d.centreName ?? 'New Friends Colony, New Delhi'}
+                        </Badge>
+                      </td>
+                      {isAdmin && (
+                        <td className="px-4 py-3 text-right">
+                          <span className="font-extrabold text-emerald-700 block">{formatCurrency(d.revenue || 0)}</span>
+                          <span className="text-[10px] text-muted-foreground block">{d.visitCount || 0} visits</span>
+                        </td>
+                      )}
+                      <td className="px-4 py-3 text-center">
+                        <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200 text-xs font-bold">
+                          ⭐ {d.avgRating}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{d.phone ?? '—'}</td>

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { StoredVisit, exportSingleBillToExcel } from '@/lib/data-store'
 import { openWhatsAppInvoice } from '@/lib/whatsapp'
+import { useClinicBranding } from '@/lib/settings-store'
 
 interface PrintableInvoiceModalProps {
   visit: StoredVisit | null
@@ -16,6 +17,7 @@ interface PrintableInvoiceModalProps {
 }
 
 export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableInvoiceModalProps) {
+  const { branding } = useClinicBranding()
   if (!visit) return null
 
   const handlePrint = () => {
@@ -55,6 +57,13 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
             border-bottom: 2px solid #2563eb;
             padding-bottom: 16px;
             margin-bottom: 20px;
+          }
+          .brand-logo-img {
+            max-height: 52px;
+            max-width: 250px;
+            object-fit: contain;
+            margin-bottom: 6px;
+            display: block;
           }
           .brand-title {
             font-size: 22px;
@@ -133,23 +142,31 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
             padding: 10px 12px;
             border-bottom: 1px solid #e5e7eb;
             font-size: 12px;
+            color: #1f2937;
           }
           .text-right { text-align: right; }
           .text-center { text-align: center; }
-          .totals-container {
+          .total-section {
             display: flex;
             justify-content: flex-end;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
           }
-          .totals-box {
-            width: 280px;
-            border: 1px solid #e5e7eb;
+          .total-box {
+            width: 320px;
             background: #f9fafb;
+            padding: 14px 18px;
             border-radius: 6px;
-            padding: 14px;
+            border: 1px solid #e5e7eb;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: #4b5563;
           }
           .grand-total {
-            border-top: 1px solid #d1d5db;
+            border-top: 2px solid #2563eb;
             padding-top: 8px;
             margin-top: 8px;
             font-size: 15px;
@@ -157,8 +174,8 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
             color: #1e40af;
           }
           .footer {
-            border-top: 1px solid #e5e7eb;
-            padding-top: 20px;
+            border-top: 1px dashed #d1d5db;
+            padding-top: 16px;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
@@ -192,12 +209,15 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
         <div class="invoice-card">
           <div class="header">
             <div>
-              <div class="brand-title">PHYSIONAUTICS</div>
-              <div class="brand-subtitle">Physiotherapy & Pain Rehabilitation Centre</div>
+              ${branding.logoUrl 
+                ? `<img src="${branding.logoUrl}" alt="${branding.clinicName || 'PhysioNautics'}" class="brand-logo-img" />` 
+                : `<div class="brand-title">${branding.clinicName || 'PhysioNautics'}</div>`
+              }
+              <div class="brand-subtitle">${branding.tagline || 'Physiotherapy & Pain Rehabilitation Centre'}</div>
               <div class="centre-details">
-                <strong>${visit.centre_name || 'New Friends Colony, New Delhi'}</strong><br />
-                ${visit.centre_address || 'D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025'}<br />
-                Phone: ${visit.centre_phone || '08383936905'}
+                <strong>${visit.centre_name || branding.clinicName || 'PhysioNautics Clinic'}</strong><br />
+                ${visit.centre_address || branding.address}<br />
+                Phone: ${visit.centre_phone || branding.phone} | GSTIN: ${branding.gstin || '07AAAAA0000A1Z5'}
               </div>
             </div>
             <div class="invoice-tag">
@@ -304,7 +324,7 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
 
           <div class="footer" style="margin-top: 24px;">
             <div>
-              <div style="font-weight: 600; font-size: 11px; color: #374151;">Thank you for trusting Physionautics!</div>
+              <div style="font-weight: 600; font-size: 11px; color: #374151;">${branding.invoiceFooterNote || 'Thank you for trusting Physionautics!'}</div>
               <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">
                 Computerized receipt generated for patient UID ${visit.patient_uid}.<br />
                 Valid for consultations, follow-ups, and corporate claim reimbursements.
@@ -312,8 +332,8 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
             </div>
             <div style="text-align: right;">
               <div class="sign-line"></div>
-              <div class="sign-title">Authorized Signatory</div>
-              <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">Physionautics Billing Desk</div>
+              <div class="sign-title">${branding.authorizedSignatoryName || 'Authorized Signatory'}</div>
+              <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">${branding.authorizedSignatoryTitle || (visit.centre_name || 'Clinic Billing Desk')}</div>
             </div>
           </div>
         </div>
@@ -365,11 +385,18 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
         <div className="p-6 space-y-6 text-sm">
           {/* Header */}
           <div className="flex justify-between items-start border-b-2 border-blue-600 pb-4">
-            <div>
-              <h2 className="text-xl font-extrabold text-blue-900 tracking-tight">PHYSIONAUTICS</h2>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Physiotherapy & Pain Rehabilitation</p>
-              <p className="text-xs text-gray-600 mt-1 font-medium">{visit.centre_name || 'New Friends Colony, New Delhi'}</p>
-              <p className="text-xs text-muted-foreground">{visit.centre_address || 'D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025'}</p>
+            <div className="space-y-1">
+              {branding.logoUrl ? (
+                <div className="h-12 mb-2 flex items-center">
+                  <img src={branding.logoUrl} alt={branding.clinicName || 'PhysioNautics'} className="max-h-full max-w-[240px] object-contain" />
+                </div>
+              ) : (
+                <h2 className="text-xl font-extrabold text-blue-900 tracking-tight">{branding.clinicName || 'PhysioNautics'}</h2>
+              )}
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{branding.tagline || 'Physiotherapy & Pain Rehabilitation'}</p>
+              <p className="text-xs text-gray-700 mt-1 font-semibold">{visit.centre_name || branding.clinicName || 'PhysioNautics Clinic'}</p>
+              <p className="text-xs text-muted-foreground">{visit.centre_address || branding.address}</p>
+              <p className="text-[11px] text-muted-foreground">GSTIN: <span className="font-mono font-medium">{branding.gstin || '07AAAAA0000A1Z5'}</span></p>
             </div>
             <div className="text-right space-y-1">
               <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 font-mono font-bold">
@@ -485,16 +512,16 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
           {/* Signatory & Notes */}
           <div className="pt-4 border-t flex flex-col sm:flex-row justify-between items-end gap-6 text-xs text-muted-foreground">
             <div className="space-y-1">
-              <p className="font-semibold text-gray-700">Thank you for visiting Physionautics!</p>
+              <p className="font-semibold text-gray-700">{branding.invoiceFooterNote || 'Thank you for visiting Physionautics!'}</p>
               <p className="text-[11px] leading-relaxed">
-                Computerized receipt generated for patient UID {visit.patient_uid}.<br />
+                Computerized receipt generated for patient UID ${visit.patient_uid}.<br />
                 Valid for consultations, rehabilitation follow-ups, and corporate claim reimbursements.
               </p>
             </div>
             <div className="text-center sm:text-right min-w-[160px]">
               <div className="h-10 border-b border-gray-400 w-36 mx-auto sm:ml-auto" />
-              <p className="text-[11px] font-bold text-gray-800 mt-1">Authorized Signatory</p>
-              <p className="text-[10px] text-muted-foreground">Physionautics Clinic Desk</p>
+              <p className="text-[11px] font-bold text-gray-800 mt-1">{branding.authorizedSignatoryName || 'Authorized Signatory'}</p>
+              <p className="text-[10px] text-muted-foreground">{branding.authorizedSignatoryTitle || (visit.centre_name || 'Physionautics Clinic Desk')}</p>
             </div>
           </div>
         </div>

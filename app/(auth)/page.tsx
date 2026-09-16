@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Stethoscope, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
+import { useClinicBranding } from '@/lib/settings-store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { Label } from '@/components/ui/label'
 export default function AuthPage() {
   const router = useRouter()
   const { signIn, signUp } = useAuth()
+  const { branding } = useClinicBranding()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
@@ -41,13 +43,21 @@ export default function AuthPage() {
       <Card className="w-full max-w-md shadow-2xl border-border/60 bg-white">
         <CardHeader className="text-center space-y-3 pb-2 pt-6">
           <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
-              <Stethoscope className="w-9 h-9 text-white" />
-            </div>
+            {branding.logoUrl ? (
+              <div className="h-16 px-4 py-2 rounded-2xl bg-white border border-border/50 shadow-md flex items-center justify-center">
+                <img src={branding.logoUrl} alt={branding.clinicName || 'PhysioNautics'} className="max-h-12 max-w-[240px] object-contain" />
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                <Stethoscope className="w-9 h-9 text-white" />
+              </div>
+            )}
           </div>
           <div>
-            <CardTitle className="text-2xl font-extrabold text-gray-900 tracking-tight">Physionautics</CardTitle>
-            <CardDescription className="text-xs font-semibold uppercase tracking-wider text-blue-600 mt-0.5">Clinic Management System</CardDescription>
+            {!branding.logoUrl && (
+              <CardTitle className="text-2xl font-extrabold text-gray-900 tracking-tight">{branding.clinicName || 'PhysioNautics'}</CardTitle>
+            )}
+            <CardDescription className="text-xs font-semibold uppercase tracking-wider text-blue-600 mt-1">{branding.tagline || 'Clinic Management System'}</CardDescription>
           </div>
           <CardDescription className="text-sm font-medium text-foreground pt-1">
             {isSignUp ? 'Create your authorized staff account' : 'Sign in to access your clinic portal'}

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { savePatientFeedback } from '@/lib/data-store'
+import { useClinicBranding } from '@/lib/settings-store'
 
 function FeedbackFormContent() {
+  const { branding } = useClinicBranding()
   const searchParams = useSearchParams()
   const billNumber = searchParams.get('bid') || ''
   const patientUid = searchParams.get('uid') || ''
@@ -109,7 +111,12 @@ function FeedbackFormContent() {
 
           <div className="bg-blue-50/70 rounded-2xl p-4 border border-blue-100 text-xs text-left space-y-1.5">
             <p className="font-bold text-blue-900 flex items-center gap-1.5">
-              <Stethoscope className="h-4 w-4 text-blue-600" /> Physionautics Clinic
+              {branding.logoUrl ? (
+                <img src={branding.logoUrl} alt={branding.clinicName} className="h-4 w-4 object-contain rounded" />
+              ) : (
+                <Stethoscope className="h-4 w-4 text-blue-600" />
+              )}
+              {branding.clinicName || 'Physionautics Clinic'}
             </p>
             {centreNameParam && (
               <p className="text-gray-700">
@@ -142,13 +149,21 @@ function FeedbackFormContent() {
     <Card className="w-full max-w-lg shadow-2xl border-border/80 bg-white">
       <CardHeader className="text-center space-y-3 pb-3 pt-6 bg-gradient-to-b from-blue-50/80 to-white border-b rounded-t-xl">
         <div className="flex justify-center">
-          <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
-            <Stethoscope className="w-8 h-8 text-white" />
-          </div>
+          {branding.logoUrl ? (
+            <div className="h-14 px-4 py-2 rounded-2xl bg-white border border-border/50 shadow-md flex items-center justify-center">
+              <img src={branding.logoUrl} alt={branding.clinicName || 'PhysioNautics'} className="max-h-10 max-w-[220px] object-contain" />
+            </div>
+          ) : (
+            <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+              <Stethoscope className="w-8 h-8 text-white" />
+            </div>
+          )}
         </div>
         <div>
-          <CardTitle className="text-2xl font-extrabold text-gray-900 tracking-tight">Physionautics</CardTitle>
-          <CardDescription className="text-xs font-semibold uppercase tracking-wider text-blue-600 mt-0.5">
+          {!branding.logoUrl && (
+            <CardTitle className="text-2xl font-extrabold text-gray-900 tracking-tight">{branding.clinicName || 'PhysioNautics'}</CardTitle>
+          )}
+          <CardDescription className="text-xs font-semibold uppercase tracking-wider text-blue-600 mt-1">
             Patient Session Feedback
           </CardDescription>
         </div>

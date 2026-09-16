@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 export function Sidebar() {
-  const { user, profile, signOut, loginAsRole } = useAuth()
+  const { user, profile, signOut } = useAuth()
   const { branding, adminProfile } = useClinicBranding()
   const pathname = usePathname()
 

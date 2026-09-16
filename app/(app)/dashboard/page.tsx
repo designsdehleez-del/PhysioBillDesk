@@ -33,7 +33,7 @@ interface DoctorStat {
 }
 
 export default function DashboardPage() {
-  const { profile, loginAsRole } = useAuth()
+  const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
 
   const [loading, setLoading] = useState(true)
@@ -296,45 +296,6 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
-      {/* ================= PRESENTATION ROLE SWITCHER ================= */}
-      <div className="bg-white border rounded-2xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-            ⚡ Quick Role Switch:
-          </span>
-          <span className="text-[11px] text-muted-foreground hidden sm:inline">
-            (Switch between Master Financials & Clinic Reception desks)
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
-          <button
-            onClick={() => loginAsRole('admin')}
-            className={`px-3 py-1.5 rounded-lg border transition-all ${isAdmin ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-purple-50 text-purple-900 border-purple-200 hover:bg-purple-100'}`}
-          >
-            👑 Master Admin (Financials & Doctor Earnings)
-          </button>
-          <button
-            onClick={() => loginAsRole('centre1')}
-            className={`px-3 py-1.5 rounded-lg border transition-all ${profile?.email === 'nfc@physionautics.com' ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100'}`}
-          >
-            🏥 New Friends Colony
-          </button>
-          <button
-            onClick={() => loginAsRole('centre2')}
-            className={`px-3 py-1.5 rounded-lg border transition-all ${profile?.email === 'vasantvihar@physionautics.com' ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100'}`}
-          >
-            🏥 Vasant Vihar
-          </button>
-          <button
-            onClick={() => loginAsRole('centre3')}
-            className={`px-3 py-1.5 rounded-lg border transition-all ${profile?.email === 'gurugram@physionautics.com' ? 'bg-amber-600 text-white border-amber-600 shadow-xs' : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100'}`}
-          >
-            🏥 Gurugram DLF Ph-1
-          </button>
-        </div>
-      </div>
-
       {/* ================= HEADER & TIMEFRAME FILTERS ================= */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 text-white p-5 rounded-2xl shadow-md">
         <div>

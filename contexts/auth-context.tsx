@@ -93,6 +93,19 @@ const PRESET_ACCOUNTS: Record<string, UserProfile> = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+function setSessionCookies(p: UserProfile) {
+  if (typeof document === 'undefined') return
+  const maxAge = 60 * 60 * 24 * 7 // 7 days
+  document.cookie = `physio_session_token=valid_${p.id}; path=/; max-age=${maxAge}; SameSite=Lax`
+  document.cookie = `physio_user_role=${p.role}; path=/; max-age=${maxAge}; SameSite=Lax`
+}
+
+function clearSessionCookies() {
+  if (typeof document === 'undefined') return
+  document.cookie = 'physio_session_token=; path=/; max-age=0; SameSite=Lax'
+  document.cookie = 'physio_user_role=; path=/; max-age=0; SameSite=Lax'
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -155,6 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             parsed.email = adminData.email || parsed.email
           }
           setProfile(parsed)
+          setSessionCookies(parsed)
           setUser({ id: parsed.id, email: parsed.email } as unknown as User)
           setLoading(false)
           return true
@@ -252,6 +266,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       const p = resolveProfile(lower)
       setProfile(p)
+      setSessionCookies(p)
       setUser({ id: p.id, email: p.email } as unknown as User)
       localStorage.setItem('physio_active_profile', JSON.stringify(p))
       return { error: null }
@@ -281,6 +296,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             phone: found.phone,
           }
           setProfile(p)
+          setSessionCookies(p)
           setUser({ id: p.id, email: p.email } as unknown as User)
           localStorage.setItem('physio_active_profile', JSON.stringify(p))
           return { error: null }
@@ -292,6 +308,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (PRESET_ACCOUNTS[lower]) {
       const p = PRESET_ACCOUNTS[lower]
       setProfile(p)
+      setSessionCookies(p)
       setUser({ id: p.id, email: p.email } as unknown as User)
       localStorage.setItem('physio_active_profile', JSON.stringify(p))
       return { error: null }
@@ -305,6 +322,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error) return { error }
         const p = resolveProfile(lower)
         setProfile(p)
+        setSessionCookies(p)
         setUser(data.user)
         localStorage.setItem('physio_active_profile', JSON.stringify(p))
         return { error: null }
@@ -315,6 +333,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const fallbackProfile = resolveProfile(lower)
     setProfile(fallbackProfile)
+    setSessionCookies(fallbackProfile)
     setUser({ id: fallbackProfile.id, email: fallbackProfile.email } as unknown as User)
     localStorage.setItem('physio_active_profile', JSON.stringify(fallbackProfile))
     return { error: null }
@@ -335,6 +354,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const p = resolveProfile(targetEmail)
     if (p) {
       setProfile(p)
+      setSessionCookies(p)
       setUser({ id: p.id, email: p.email } as unknown as User)
       localStorage.setItem('physio_active_profile', JSON.stringify(p))
     }
@@ -344,6 +364,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!profile) return
     const updated = { ...profile, ...updates }
     setProfile(updated)
+    setSessionCookies(updated)
     localStorage.setItem('physio_active_profile', JSON.stringify(updated))
   }
 
@@ -355,6 +376,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null)
     setProfile(null)
     setSession(null)
+    clearSessionCookies()
     localStorage.removeItem('physio_active_profile')
     try {
       const supabase = createClient()

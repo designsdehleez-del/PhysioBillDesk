@@ -1,13 +1,14 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert, MessageCircle, Database, Settings, Sparkles } from 'lucide-react'
+import { LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert, MessageCircle, Database, Settings, Sparkles, Lock } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding } from '@/lib/settings-store'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { ClinicWorkflowGuide } from '@/components/clinic-workflow-guide'
+import { triggerManualLock } from '@/components/security/inactivity-lock'
 
 export function Sidebar() {
   const { user, profile, signOut } = useAuth()
@@ -132,9 +133,25 @@ export function Sidebar() {
           Install Desktop App
         </Button>
         {user?.email && <p className="text-xs text-muted-foreground truncate px-1" title={user.email}>{user.email}</p>}
-        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-gray-700 h-8 text-xs" onClick={() => signOut()}>
-          <LogOut className="h-3.5 w-3.5" />Sign Out
-        </Button>
+        <div className="grid grid-cols-2 gap-1.5 pt-1">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full justify-center gap-1.5 text-gray-700 h-8 text-xs border-slate-200 hover:bg-slate-100" 
+            onClick={() => triggerManualLock()}
+            title="Lock screen now (Ctrl+Alt+L)"
+          >
+            <Lock className="h-3.5 w-3.5 text-amber-600" />Lock
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="w-full justify-center gap-1.5 text-destructive hover:bg-destructive/10 h-8 text-xs" 
+            onClick={() => signOut()}
+          >
+            <LogOut className="h-3.5 w-3.5" />Sign Out
+          </Button>
+        </div>
       </div>
     </aside>
   )

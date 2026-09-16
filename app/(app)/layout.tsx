@@ -1,10 +1,11 @@
-﻿'use client'
+'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileHeader } from '@/components/layout/mobile-header'
+import { InactivityLock } from '@/components/security/inactivity-lock'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -18,6 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!user) return null
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
+      <InactivityLock />
       <div className="hidden lg:flex"><Sidebar /></div>
       <div className="flex flex-col flex-1 overflow-hidden">
         <div className="lg:hidden"><MobileHeader /></div>

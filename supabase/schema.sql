@@ -299,10 +299,10 @@ ON CONFLICT DO NOTHING;
 -- Staff & Clinic Users
 INSERT INTO public.staff_users (id, full_name, email, password, centre_id, centre_name, role, is_active)
 VALUES
-  ('s0000000-0000-0000-0000-000000000000', 'Chief Medical Officer (CMO)', 'admin@physionautics.com', 'admin123', NULL, 'All Centres (HQ)', 'admin', true),
-  ('s1111111-1111-1111-1111-111111111111', 'Reception Desk - New Friends Colony', 'nfc@physionautics.com', 'nfc123', 'c1111111-1111-1111-1111-111111111111', 'New Friends Colony, New Delhi', 'centre_staff', true),
-  ('s2222222-2222-2222-2222-222222222222', 'Reception Desk - Vasant Vihar', 'vv@physionautics.com', 'vv123', 'c2222222-2222-2222-2222-222222222222', 'Vasant Vihar, New Delhi', 'centre_staff', true),
-  ('s3333333-3333-3333-3333-333333333333', 'Reception Desk - Gurugram Phase 1', 'ggn@physionautics.com', 'ggn123', 'c3333333-3333-3333-3333-333333333333', 'Gurugram – DLF Phase 1', 'centre_staff', true)
+  ('a0000000-0000-0000-0000-000000000000', 'Chief Medical Officer (CMO)', 'admin@physionautics.com', 'admin123', NULL, 'All Centres (HQ)', 'admin', true),
+  ('a1111111-1111-1111-1111-111111111111', 'Reception Desk - New Friends Colony', 'nfc@physionautics.com', 'nfc123', 'c1111111-1111-1111-1111-111111111111', 'New Friends Colony, New Delhi', 'centre_staff', true),
+  ('a2222222-2222-2222-2222-222222222222', 'Reception Desk - Vasant Vihar', 'vv@physionautics.com', 'vv123', 'c2222222-2222-2222-2222-222222222222', 'Vasant Vihar, New Delhi', 'centre_staff', true),
+  ('a3333333-3333-3333-3333-333333333333', 'Reception Desk - Gurugram Phase 1', 'ggn@physionautics.com', 'ggn123', 'c3333333-3333-3333-3333-333333333333', 'Gurugram – DLF Phase 1', 'centre_staff', true)
 ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, role = EXCLUDED.role;
 
 

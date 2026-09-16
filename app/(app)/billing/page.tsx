@@ -21,7 +21,7 @@ import {
   getVisits, saveVisit, exportBillsToExcel, exportSingleBillToExcel,
   StoredVisit, BillLineItem
 } from '@/lib/data-store'
-import { openWhatsAppInvoice } from '@/lib/whatsapp'
+import { openWhatsAppInvoice, getFeedbackUrl } from '@/lib/whatsapp'
 import { PrintableInvoiceModal } from '@/components/billing/printable-invoice-modal'
 import { WhatsAppShareModal } from '@/components/billing/whatsapp-share-modal'
 
@@ -233,6 +233,8 @@ export default function BillingPage() {
       })
 
       setRecentSavedVisit(saved)
+      setWhatsAppModalVisit(saved)
+      setWhatsAppModalOpen(true)
       const freshVisits = await getVisits()
       setVisits(freshVisits)
     } catch (err) {
@@ -358,40 +360,70 @@ export default function BillingPage() {
                     <span>Total Net Paid:</span>
                     <span>{formatCurrency(recentSavedVisit.total)} ({recentSavedVisit.payment_mode})</span>
                   </div>
+
+                  {/* Pre-tagged Patient Feedback URL Preview */}
+                  <div className="mt-3 pt-3 border-t space-y-1.5 bg-teal-50/60 p-2.5 rounded-lg border-teal-100">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-teal-900">
+                      <span className="flex items-center gap-1">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-500" /> Pre-tagged Patient Feedback Link:
+                      </span>
+                      <button
+                        type="button"
+                        className="text-[10px] text-teal-700 hover:underline font-semibold"
+                        onClick={() => {
+                          const url = getFeedbackUrl(recentSavedVisit)
+                          navigator.clipboard.writeText(url)
+                          alert('Feedback link copied to clipboard!')
+                        }}
+                      >
+                        Copy Link
+                      </button>
+                    </div>
+                    <p className="font-mono text-[10px] text-teal-800 break-all bg-white p-1.5 rounded border border-teal-200">
+                      {getFeedbackUrl(recentSavedVisit)}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2 justify-center pt-2">
+                {/* 2 Primary Actions: Print & WhatsApp */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <Button
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
+                    size="lg"
+                    className="bg-[#25D366] hover:bg-[#128C7E] text-white font-bold gap-2 shadow-md"
                     onClick={() => {
                       setWhatsAppModalVisit(recentSavedVisit)
                       setWhatsAppModalOpen(true)
                     }}
                   >
-                    <MessageCircle className="h-4 w-4" /> Share on WhatsApp
+                    <MessageCircle className="h-5 w-5" /> Share on WhatsApp
                   </Button>
+
                   <Button
-                    className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm"
+                    size="lg"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold gap-2 shadow-md"
                     onClick={() => {
                       setPrintModalVisit(recentSavedVisit)
                       setPrintModalOpen(true)
                     }}
                   >
-                    <Printer className="h-4 w-4" /> Print Tax Invoice
+                    <Printer className="h-5 w-5" /> Print Tax Invoice
                   </Button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 justify-center pt-2 text-xs">
                   <Button
                     variant="outline"
-                    className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                    size="sm"
+                    className="gap-1.5 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                     onClick={() => exportSingleBillToExcel(recentSavedVisit)}
                   >
-                    <Download className="h-4 w-4 text-emerald-600" /> Download Excel Invoice
+                    <Download className="h-3.5 w-3.5 text-emerald-600" /> Excel Invoice
                   </Button>
-                  <Button variant="ghost" onClick={resetForm}>
+                  <Button variant="ghost" size="sm" onClick={resetForm}>
                     ➕ Create Another Bill
                   </Button>
-                  <Button variant="ghost" onClick={() => setActiveTab('ledger')}>
-                    📑 View All Invoices
+                  <Button variant="ghost" size="sm" onClick={() => setActiveTab('ledger')}>
+                    📑 View Invoices Ledger ({visits.length})
                   </Button>
                 </div>
               </CardContent>

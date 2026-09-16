@@ -1332,7 +1332,21 @@ const DEFAULT_VISITS: StoredVisit[] = [
 
 export async function getVisits(centreId?: string, query?: string): Promise<StoredVisit[]> {
   const CACHE_KEY = 'physio_visits_cache_v7'
-  let list: StoredVisit[] = []
+  
+  // 1. Read local cache first
+  let cachedVisits: StoredVisit[] = []
+  const cachedRaw = localStorage.getItem(CACHE_KEY) || localStorage.getItem('physio_visits_cache')
+  if (cachedRaw) {
+    try {
+      const parsed = JSON.parse(cachedRaw)
+      if (Array.isArray(parsed)) cachedVisits = parsed
+    } catch (_) {}
+  }
+  if (cachedVisits.length === 0) {
+    cachedVisits = DEFAULT_VISITS
+  }
+
+  let dbVisits: StoredVisit[] = []
   try {
     const supabase = createClient()
     let q = supabase.from('visits').select('*, visit_services(*), patients(*)').order('created_at', { ascending: false })
@@ -1341,7 +1355,7 @@ export async function getVisits(centreId?: string, query?: string): Promise<Stor
     }
     const { data } = await q
     if (data && data.length > 0) {
-      const mapped: StoredVisit[] = data.map((v: any) => ({
+      dbVisits = data.map((v: any) => ({
         id: v.id,
         bill_number: v.bill_number,
         patient_id: v.patient_id,
@@ -1374,28 +1388,36 @@ export async function getVisits(centreId?: string, query?: string): Promise<Stor
         visit_date: v.visit_date,
         created_at: v.created_at,
       }))
-
-      localStorage.setItem(CACHE_KEY, JSON.stringify(mapped))
-      return filterVisits(mapped, centreId, query)
     }
   } catch (_) {}
 
-  const cached = localStorage.getItem(CACHE_KEY)
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached)
-      if (Array.isArray(parsed) && parsed.length >= 10) {
-        list = parsed
-      }
-    } catch (_) {}
-  }
+  // Merge DB visits with cached visits (deduplicating by ID and bill_number)
+  const map = new Map<string, StoredVisit>()
   
-  if (list.length === 0) {
-    list = DEFAULT_VISITS
-    localStorage.setItem(CACHE_KEY, JSON.stringify(list))
-  }
+  // Cached first
+  cachedVisits.forEach(v => {
+    if (v.id) map.set(v.id, v)
+    if (v.bill_number) map.set(v.bill_number, v)
+  })
 
-  return filterVisits(list, centreId, query)
+  // Supabase DB visits over cached
+  dbVisits.forEach(v => {
+    if (v.id) map.set(v.id, v)
+    if (v.bill_number) map.set(v.bill_number, v)
+  })
+
+  const mergedList = Array.from(new Set(map.values())).sort((a, b) => {
+    const da = new Date(a.created_at || a.visit_date || 0).getTime()
+    const db = new Date(b.created_at || b.visit_date || 0).getTime()
+    return db - da
+  })
+
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(mergedList))
+    localStorage.setItem('physio_visits_cache', JSON.stringify(mergedList))
+  } catch (_) {}
+
+  return filterVisits(mergedList, centreId, query)
 }
 
 function filterVisits(list: StoredVisit[], centreId?: string, query?: string): StoredVisit[] {
@@ -1465,37 +1487,57 @@ export async function saveVisit(
     created_at: now.toISOString(),
   }
 
-  const updated = [newVisit, ...current]
-  localStorage.setItem('physio_visits_cache', JSON.stringify(updated))
+  const updated = [newVisit, ...current.filter(v => v.id !== newVisit.id && v.bill_number !== newVisit.bill_number)]
+  try {
+    localStorage.setItem('physio_visits_cache_v7', JSON.stringify(updated))
+    localStorage.setItem('physio_visits_cache', JSON.stringify(updated))
+  } catch (_) {}
 
   try {
     const supabase = createClient()
-    const { data: vRecord, error } = await supabase.from('visits').insert({
-      bill_number: newVisit.bill_number,
-      patient_id: newVisit.patient_id,
-      subtotal: newVisit.subtotal,
-      discount: newVisit.discount,
-      total: newVisit.total,
-      payment_mode: newVisit.payment_mode === 'Bank Transfer' ? 'UPI' : newVisit.payment_mode,
-      visit_date: newVisit.visit_date,
-      centre_id: newVisit.centre_id,
-      doctor_id: newVisit.doctor_id,
-      doctor_name: newVisit.doctor_name,
-      centre_name: newVisit.centre_name,
-    }).select('id').single()
-
-    if (vRecord && !error) {
-      await supabase.from('visit_services').insert(
-        newVisit.items.map(i => ({
-          visit_id: vRecord.id,
-          service_id: i.service_id || null,
-          service_name: i.service_name,
-          price: i.price,
-          quantity: i.quantity,
-        }))
-      )
+    
+    // Resolve UUID for Supabase FK if patient was created locally
+    let realPatientId = visitData.patient.id
+    if (!realPatientId || realPatientId.startsWith('pat-')) {
+      const { data: foundP } = await supabase.from('patients').select('id').eq('uid', visitData.patient.uid).single()
+      if (foundP) {
+        realPatientId = foundP.id
+      }
     }
-  } catch (_) {}
+
+    // Only attempt insert if we have a valid UUID for patient_id (or if UUID format)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(realPatientId)
+    
+    if (isUuid) {
+      const { data: vRecord, error } = await supabase.from('visits').insert({
+        bill_number: newVisit.bill_number,
+        patient_id: realPatientId,
+        subtotal: newVisit.subtotal,
+        discount: newVisit.discount,
+        total: newVisit.total,
+        payment_mode: newVisit.payment_mode === 'Bank Transfer' ? 'UPI' : newVisit.payment_mode,
+        visit_date: newVisit.visit_date,
+        centre_id: (newVisit.centre_id && isUuid) ? newVisit.centre_id : null,
+        doctor_id: (newVisit.doctor_id && isUuid) ? newVisit.doctor_id : null,
+        doctor_name: newVisit.doctor_name,
+        centre_name: newVisit.centre_name,
+      }).select('id').single()
+
+      if (vRecord && !error) {
+        await supabase.from('visit_services').insert(
+          newVisit.items.map(i => ({
+            visit_id: vRecord.id,
+            service_id: (i.service_id && isUuid) ? i.service_id : null,
+            service_name: i.service_name,
+            price: i.price,
+            quantity: i.quantity,
+          }))
+        )
+      }
+    }
+  } catch (err) {
+    console.warn('Supabase visit save skipped due to offline/UUID fallback:', err)
+  }
 
   return newVisit
 }

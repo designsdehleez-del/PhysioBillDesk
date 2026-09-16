@@ -164,6 +164,72 @@ const PRESET_TOPICS: Record<string, FormField[]> = {
 }
 
 export async function generateFeedbackFormWithAI(req: AIGenerateFormRequest): Promise<Partial<FeedbackFormTemplate>> {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY
+
+  if (apiKey) {
+    try {
+      const systemInstruction = `You are a clinical physiotherapy feedback form architect for PhysioNautics. 
+Given a doctor's prompt or clinical goal, generate a structured feedback form JSON.
+Return ONLY valid JSON matching this exact structure:
+{
+  "title": "Short title",
+  "description": "Brief description for patient",
+  "accent_color": "#0d9488",
+  "fields": [
+    {
+      "id": "unique-string",
+      "type": "star_rating | linear_scale | multiple_choice | checkbox | textarea | nps",
+      "title": "Question text",
+      "description": "Optional subtext",
+      "required": true,
+      "category": "doctor | treatment | facility | general",
+      "options": ["Option 1", "Option 2"],
+      "min_scale": 1,
+      "max_scale": 10,
+      "min_label": "Low",
+      "max_label": "High"
+    }
+  ]
+}`
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${systemInstruction}\n\nUser Request: ${req.prompt}` }] }],
+          generationConfig: {
+            temperature: 0.3,
+            responseMimeType: 'application/json',
+          },
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+        if (text) {
+          const parsed = JSON.parse(text)
+          if (parsed && Array.isArray(parsed.fields) && parsed.fields.length > 0) {
+            return {
+              title: parsed.title || 'AI Clinical Patient Experience Form',
+              description: parsed.description || `Generated AI survey aligned with: "${req.prompt}"`,
+              is_active: false,
+              show_doctor_badge: true,
+              show_invoice_badge: true,
+              show_centre_badge: true,
+              show_procedures_badge: true,
+              accent_color: parsed.accent_color || '#0d9488',
+              fields: parsed.fields,
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Gemini API call failed or timed out, using fallback heuristics:', err)
+    }
+  }
+
+  // Fallback intelligent domain template engine
   const promptLower = req.prompt.toLowerCase()
   
   let selectedCategory: 'orthopedic' | 'sports' | 'neuro' | 'clinic_hygiene' = 'clinic_hygiene'
@@ -230,4 +296,5 @@ export async function generateFeedbackFormWithAI(req: AIGenerateFormRequest): Pr
     fields: dynamicFields,
   }
 }
+
 

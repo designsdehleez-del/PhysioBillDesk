@@ -72,7 +72,7 @@ export function Sidebar() {
         )}
       </div>
 
-      <div className="p-3 space-y-2">
+      <div className="p-3">
         <div className={cn("p-2.5 rounded-lg border text-xs flex items-center gap-2.5", isAdmin ? "bg-purple-50 border-purple-200 text-purple-900" : "bg-blue-50 border-blue-200 text-blue-900")}>
           {activeAvatar ? (
             <div className="w-8 h-8 rounded-full overflow-hidden border border-purple-300 flex-shrink-0 bg-white">
@@ -86,37 +86,6 @@ export function Sidebar() {
           <div className="min-w-0 flex-1">
             <p className="font-bold truncate">{profile?.name || (isAdmin ? 'Admin' : 'Staff')}</p>
             <p className="text-[10px] opacity-75 truncate">{isAdmin ? '👑 Master Admin (Financials)' : (profile?.centreName || 'Active Centre')}</p>
-          </div>
-        </div>
-
-        {/* Instant Role Switcher for Presentation */}
-        <div className="bg-gray-50 border rounded-lg p-1.5 space-y-1">
-          <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wider block px-1">Switch View / Role</span>
-          <div className="grid grid-cols-2 gap-1 text-[10px] font-semibold">
-            <button
-              onClick={() => loginAsRole('admin')}
-              className={cn("px-1.5 py-1 rounded text-left truncate transition-colors", isAdmin ? "bg-purple-600 text-white" : "bg-white text-gray-700 hover:bg-purple-50")}
-            >
-              👑 Admin
-            </button>
-            <button
-              onClick={() => loginAsRole('centre1')}
-              className={cn("px-1.5 py-1 rounded text-left truncate transition-colors", profile?.email === 'nfc@physionautics.com' ? "bg-blue-600 text-white" : "bg-white text-gray-700 hover:bg-blue-50")}
-            >
-              🏥 NFC
-            </button>
-            <button
-              onClick={() => loginAsRole('centre2')}
-              className={cn("px-1.5 py-1 rounded text-left truncate transition-colors", profile?.email === 'vasantvihar@physionautics.com' ? "bg-emerald-600 text-white" : "bg-white text-gray-700 hover:bg-emerald-50")}
-            >
-              🏥 Vasant V.
-            </button>
-            <button
-              onClick={() => loginAsRole('centre3')}
-              className={cn("px-1.5 py-1 rounded text-left truncate transition-colors", profile?.email === 'gurugram@physionautics.com' ? "bg-amber-600 text-white" : "bg-white text-gray-700 hover:bg-amber-50")}
-            >
-              🏥 Gurugram
-            </button>
           </div>
         </div>
       </div>

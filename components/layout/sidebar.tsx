@@ -44,7 +44,6 @@ export function Sidebar() {
     { label: 'Centre Doctors', href: '/doctors', icon: UserCog },
     { label: 'Clinic & Brand Settings', href: '/settings', icon: Settings },
     { label: 'WhatsApp Settings', href: '/settings/whatsapp', icon: MessageCircle },
-    { label: 'Data & Demo Tools', href: '/settings/data', icon: Database },
   ]
 
   const activeNav = isAdmin ? adminNav : clinicNav

@@ -212,7 +212,7 @@ Return ONLY valid JSON matching this exact structure:
           if (parsed && Array.isArray(parsed.fields) && parsed.fields.length > 0) {
             return {
               title: parsed.title || 'AI Clinical Patient Experience Form',
-              description: parsed.description || `Generated AI survey aligned with: "${req.prompt}"`,
+              description: parsed.description || 'We value your feedback! Please take a moment to share your experience with your treating doctor and our clinic team.',
               is_active: false,
               show_doctor_badge: true,
               show_invoice_badge: true,
@@ -286,7 +286,7 @@ Return ONLY valid JSON matching this exact structure:
 
   return {
     title: cleanTitle,
-    description: `Generated AI survey aligned with your clinical prompt: "${req.prompt}". Attributed directly to invoice and treating doctor.`,
+    description: 'We value your feedback! Please take a moment to share your experience with your treating doctor and our clinic team.',
     is_active: false,
     show_doctor_badge: true,
     show_invoice_badge: true,

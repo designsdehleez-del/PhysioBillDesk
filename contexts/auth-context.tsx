@@ -5,6 +5,7 @@ import type { User, Session, AuthError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
 import { getAdminProfileData, verifyAdminPassword, updateAdminPassword } from '@/lib/settings-store'
+import { logAuditEvent } from '@/lib/audit-logger'
 
 export type UserRole = 'admin' | 'centre_staff'
 
@@ -357,6 +358,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSessionCookies(p)
       setUser({ id: p.id, email: p.email } as unknown as User)
       localStorage.setItem('physio_active_profile', JSON.stringify(p))
+      logAuditEvent({
+        event_type: 'AUTH_LOGIN',
+        category: 'AUTH',
+        severity: 'INFO',
+        actor_name: p.name,
+        actor_email: p.email,
+        actor_role: p.role,
+        centre_name: p.centreName || 'All Centres',
+        details: `User signed in successfully as ${p.role === 'admin' ? 'Master Administrator' : p.name}.`,
+      })
     }
   }
 
@@ -369,10 +380,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const updatePassword = async (currentPassword: string, newPassword: string) => {
-    return updateAdminPassword(currentPassword, newPassword)
+    const res = updateAdminPassword(currentPassword, newPassword)
+    if (res.success) {
+      logAuditEvent({
+        event_type: 'SETTINGS_PASSWORD_CHANGED',
+        category: 'SECURITY',
+        severity: 'WARN',
+        actor_name: profile?.name || 'Administrator',
+        actor_email: profile?.email || 'admin@physionautics.com',
+        actor_role: profile?.role || 'admin',
+        centre_name: profile?.centreName || 'HQ',
+        details: 'Administrator password was changed successfully.',
+      })
+    }
+    return res
   }
 
   const signOut = async () => {
+    if (profile) {
+      logAuditEvent({
+        event_type: 'AUTH_LOGOUT',
+        category: 'AUTH',
+        severity: 'INFO',
+        actor_name: profile.name,
+        actor_email: profile.email,
+        actor_role: profile.role,
+        centre_name: profile.centreName || 'HQ',
+        details: 'User logged out and terminated session securely.',
+      })
+    }
     setUser(null)
     setProfile(null)
     setSession(null)

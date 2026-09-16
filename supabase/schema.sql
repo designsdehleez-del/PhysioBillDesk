@@ -305,4 +305,29 @@ VALUES
   ('a3333333-3333-3333-3333-333333333333', 'Reception Desk - Gurugram Phase 1', 'ggn@physionautics.com', 'ggn123', 'c3333333-3333-3333-3333-333333333333', 'Gurugram – DLF Phase 1', 'centre_staff', true)
 ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, role = EXCLUDED.role;
 
+-- 11. audit_logs (Healthcare Compliance & Tamper-Evident Access Trail)
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+  id            text        PRIMARY KEY,
+  timestamp     timestamptz NOT NULL DEFAULT now(),
+  event_type    text        NOT NULL,
+  category      text        NOT NULL CHECK (category IN ('AUTH','PATIENT','BILLING','STAFF','SYSTEM','SECURITY')),
+  severity      text        NOT NULL CHECK (severity IN ('INFO','WARN','CRITICAL')),
+  actor_name    text        NOT NULL,
+  actor_email   text        NOT NULL,
+  actor_role    text        NOT NULL,
+  centre_name   text,
+  resource_id   text,
+  resource_name text,
+  details       text        NOT NULL,
+  metadata      jsonb,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON public.audit_logs(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_category ON public.audit_logs(category);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_email ON public.audit_logs(actor_email);
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS audit_logs_all ON public.audit_logs;
+CREATE POLICY audit_logs_all ON public.audit_logs FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
+
 

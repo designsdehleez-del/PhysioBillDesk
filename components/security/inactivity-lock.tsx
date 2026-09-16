@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Lock, ShieldCheck, KeyRound, AlertCircle, RefreshCw, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding, verifyAdminPassword } from '@/lib/settings-store'
+import { logAuditEvent } from '@/lib/audit-logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -47,8 +48,18 @@ export function InactivityLock({ timeoutMinutes = 15 }: InactivityLockProps) {
     setSecondsRemaining(null)
     try {
       sessionStorage.setItem(AUTO_LOCK_STATE_KEY, 'true')
+      logAuditEvent({
+        event_type: 'WORKSTATION_LOCKED',
+        category: 'SECURITY',
+        severity: 'WARN',
+        actor_name: profile?.name || 'Clinic User',
+        actor_email: profile?.email || 'user@physionautics.com',
+        actor_role: profile?.role || 'staff',
+        centre_name: profile?.centreName || 'Clinic Terminal',
+        details: 'Workstation auto-locked to shield sensitive patient clinical notes and billing information.',
+      })
     } catch (_) {}
-  }, [])
+  }, [profile])
 
   const unlockScreen = useCallback(() => {
     setIsLocked(false)
@@ -58,8 +69,18 @@ export function InactivityLock({ timeoutMinutes = 15 }: InactivityLockProps) {
     lastActivityRef.current = Date.now()
     try {
       sessionStorage.removeItem(AUTO_LOCK_STATE_KEY)
+      logAuditEvent({
+        event_type: 'WORKSTATION_UNLOCKED',
+        category: 'SECURITY',
+        severity: 'INFO',
+        actor_name: profile?.name || 'Clinic User',
+        actor_email: profile?.email || 'user@physionautics.com',
+        actor_role: profile?.role || 'staff',
+        centre_name: profile?.centreName || 'Clinic Terminal',
+        details: 'Workstation resumed clinical session via credential verification.',
+      })
     } catch (_) {}
-  }, [])
+  }, [profile])
 
   // Handle unlock attempt
   const handleUnlock = (e: React.FormEvent) => {

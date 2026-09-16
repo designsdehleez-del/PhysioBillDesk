@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding, type ClinicBranding, type AdminProfileData } from '@/lib/settings-store'
+import { AuditTrailViewer } from '@/components/security/audit-trail-viewer'
 import { cn } from '@/lib/utils'
 
 const PRESET_AVATARS = [
@@ -215,7 +216,7 @@ export default function SettingsPage() {
 
       {/* Main Settings Tabs */}
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className={cn("grid bg-gray-100 p-1 rounded-xl", isAdmin ? "grid-cols-3 sm:w-[460px]" : "grid-cols-2 sm:w-[320px]")}>
+        <TabsList className={cn("grid bg-gray-100 p-1 rounded-xl", isAdmin ? "grid-cols-4 sm:w-[620px]" : "grid-cols-3 sm:w-[480px]")}>
           <TabsTrigger value="profile" className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-blue-900 data-[state=active]:shadow-xs rounded-lg gap-1.5">
             <User className="h-3.5 w-3.5" /> {isAdmin ? 'Admin Profile' : 'Staff Profile'}
           </TabsTrigger>
@@ -226,6 +227,9 @@ export default function SettingsPage() {
           )}
           <TabsTrigger value="branding" className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-blue-900 data-[state=active]:shadow-xs rounded-lg gap-1.5">
             <ImageIcon className="h-3.5 w-3.5" /> Clinic Logo & Bills
+          </TabsTrigger>
+          <TabsTrigger value="audit" className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-blue-900 data-[state=active]:shadow-xs rounded-lg gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-indigo-600" /> Audit Trail
           </TabsTrigger>
         </TabsList>
 
@@ -956,6 +960,11 @@ export default function SettingsPage() {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        {/* ================= TAB 4: COMPLIANCE & AUDIT TRAIL ================= */}
+        <TabsContent value="audit" className="space-y-6">
+          <AuditTrailViewer />
         </TabsContent>
       </Tabs>
     </div>

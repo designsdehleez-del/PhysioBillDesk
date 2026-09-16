@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { 
   Stethoscope, LayoutDashboard, Receipt, Users, Sparkles, UserCog, 
   Building2, Settings, MessageCircle, Database, ChevronDown, Lock, 
-  LogOut, HelpCircle, Shield, Plus, FileText, Tag, UserPlus, Sliders, Menu, X, ArrowRight
+  LogOut, HelpCircle, Plus, Sliders, Tag, UserPlus, Menu, X, ShieldCheck
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding } from '@/lib/settings-store'
@@ -19,10 +19,10 @@ export function TopHeaderNav() {
   const { profile, signOut } = useAuth()
   const { branding } = useClinicBranding()
 
-  const [workflowOpen, setWorkflowOpen] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [logoMenuOpen, setLogoMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -35,6 +35,7 @@ export function TopHeaderNav() {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setActiveDropdown(null)
         setProfileOpen(false)
+        setLogoMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -54,42 +55,46 @@ export function TopHeaderNav() {
   // Navigation Groups
   const navGroups = [
     {
-      label: '📋 Operations & Billing',
+      label: 'Operations & Billing',
+      icon: LayoutDashboard,
       items: [
-        { label: 'Financials & KPIs', href: '/dashboard', icon: LayoutDashboard, desc: 'Real-time revenue, sessions & ratings' },
+        { label: 'Financials & KPIs', href: '/dashboard', icon: LayoutDashboard, desc: 'Real-time revenue & CSAT' },
         ...(!isDoctor ? [
           { label: 'Register Patient', href: '/patients/register', icon: UserPlus, desc: 'Add new patient record' },
-          { label: 'Billing & Invoices', href: '/billing', icon: Receipt, desc: 'Create bills & view payment ledger' },
+          { label: 'Billing & Invoices', href: '/billing', icon: Receipt, desc: 'Create bills & ledger' },
         ] : []),
-        { label: 'AI Feedback Studio', href: '/feedback-builder', icon: Sparkles, desc: 'Build forms & view patient CSAT' },
+        { label: 'AI Feedback Studio', href: '/feedback-builder', icon: Sparkles, desc: 'Patient feedback forms' },
       ],
     },
     {
-      label: '📂 Practice Directory',
+      label: 'Practice Directory',
+      icon: Users,
       items: [
-        { label: 'Patient Directory', href: '/patients', icon: Users, desc: 'All registered clinic patients' },
-        { label: 'Doctors & Tagging', href: '/doctors', icon: Stethoscope, desc: 'Doctor directory & branch tags' },
+        { label: 'Patient Directory', href: '/patients', icon: Users, desc: 'All registered patients' },
+        { label: 'Doctors & Tagging', href: '/doctors', icon: Stethoscope, desc: 'Doctor directory & tags' },
         ...(isAdmin ? [
           { label: 'Clinic Centres', href: '/centres', icon: Building2, desc: 'Multi-branch locations' },
-          { label: 'Staff & Logins', href: '/staff', icon: UserCog, desc: 'Manage user access & passwords' },
+          { label: 'Staff & Logins', href: '/staff', icon: UserCog, desc: 'Manage access & passwords' },
         ] : []),
       ],
     },
     ...(!isDoctor ? [
       {
-        label: '🩺 Services & Pricing',
+        label: 'Services & Pricing',
+        icon: Sliders,
         items: [
-          { label: 'Services & Rates', href: '/services', icon: Sliders, desc: 'Physiotherapy procedures & prices' },
-          { label: 'Discount Rules', href: '/discounts', icon: Tag, desc: 'Senior citizen, referral & package rules' },
+          { label: 'Services & Rates', href: '/services', icon: Sliders, desc: 'Procedures & price list' },
+          { label: 'Discount Rules', href: '/discounts', icon: Tag, desc: 'Discount presets & rules' },
         ],
       },
       {
-        label: '⚙️ Settings & Tools',
+        label: 'Settings & Tools',
+        icon: Settings,
         items: [
-          { label: 'Brand & Clinic Settings', href: '/settings', icon: Settings, desc: 'Clinic logo, header & contacts' },
-          { label: 'WhatsApp Integration', href: '/settings/whatsapp', icon: MessageCircle, desc: 'Receipt templates & auto-share' },
+          { label: 'Brand & Clinic Settings', href: '/settings', icon: Settings, desc: 'Branding & contacts' },
+          { label: 'WhatsApp Settings', href: '/settings/whatsapp', icon: MessageCircle, desc: 'Message templates' },
           ...(isAdmin ? [
-            { label: 'Data & Demo Tools', href: '/settings/data', icon: Database, desc: 'Seed test data & reset options' },
+            { label: 'Data & Demo Tools', href: '/settings/data', icon: Database, desc: 'Seed & reset tools' },
           ] : []),
         ],
       },
@@ -100,37 +105,64 @@ export function TopHeaderNav() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-xs" ref={dropdownRef}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
-          {/* Brand Logo & Name */}
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="flex items-center gap-2.5">
+      <header className="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-2xs" ref={dropdownRef}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
+          
+          {/* Logo Section: Image ONLY if logoUrl exists + tagline below. Logo Click opens Menu with Lock & Guide */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setLogoMenuOpen(!logoMenuOpen)
+                setActiveDropdown(null)
+                setProfileOpen(false)
+              }}
+              className="flex flex-col text-left group cursor-pointer focus:outline-none py-1"
+              title="Click for Clinic Controls & Guide"
+            >
               {branding.logoUrl ? (
-                <img src={branding.logoUrl} alt={branding.clinicName || 'PhysioNautics'} className="h-8 max-w-[160px] object-contain" />
+                <div className="flex flex-col">
+                  <img src={branding.logoUrl} alt={branding.clinicName || 'PhysioNautics'} className="h-7 max-w-[170px] object-contain" />
+                  <span className="text-[9px] font-medium text-slate-400 -mt-0.5 leading-none">
+                    {branding.tagline || 'Physiotherapy & Pain Rehabilitation'}
+                  </span>
+                </div>
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-teal-500 flex items-center justify-center text-white shadow-xs">
-                  <Stethoscope className="w-5 h-5" />
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center text-white shadow-xs">
+                    <Stethoscope className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-sm text-slate-900 tracking-tight leading-none block">
+                      {branding.clinicName || 'Physionautics'}
+                    </span>
+                    <span className="text-[9px] font-medium text-slate-400">
+                      {branding.tagline || 'Physiotherapy & Pain Rehabilitation'}
+                    </span>
+                  </div>
                 </div>
               )}
-              <div className="hidden sm:block">
-                <span className="font-extrabold text-base text-gray-900 tracking-tight leading-none block">
-                  {branding.clinicName || 'Physionautics'}
-                </span>
-                <span className="text-[10px] text-muted-foreground font-medium">
-                  {profile?.centreName || 'Multispecialty Care'}
-                </span>
-              </div>
-            </Link>
+            </button>
 
-            {/* Quick Action Button */}
-            {!isDoctor && (
-              <Button size="xs" className="bg-blue-600 hover:bg-blue-700 text-white gap-1 rounded-full px-2.5 ml-2 shadow-xs hidden md:flex" onClick={() => router.push('/billing')}>
-                <Plus className="h-3 w-3" /> Quick Bill
-              </Button>
+            {/* Logo Dropdown: Lock Screen & Clinic Guide */}
+            {logoMenuOpen && (
+              <div className="absolute left-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-xl shadow-xl p-2 z-50 space-y-1 animate-in fade-in-50 zoom-in-95">
+                <div className="px-2 py-1 border-b text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Clinic Controls & Guide
+                </div>
+                <button
+                  onClick={handleLockNow}
+                  className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs hover:bg-slate-50 text-slate-700"
+                >
+                  <Lock className="h-4 w-4 text-slate-500" /> Lock Clinic Desk (Ctrl+Alt+L)
+                </button>
+                <div className="px-2 py-1 border-t text-[11px] font-bold text-slate-400">
+                  Assigned Branch: <span className="text-slate-700 font-semibold">{profile?.centreName || 'All Centres'}</span>
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Desktop Categorized Navigation Dropdowns */}
+          {/* Desktop Clean Categorized Navigation */}
           <nav className="hidden lg:flex items-center gap-1">
             {navGroups.map((group, gIdx) => {
               const isGroupActive = group.items.some(i => isActive(i.href))
@@ -138,22 +170,23 @@ export function TopHeaderNav() {
 
               return (
                 <div key={gIdx} className="relative">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className={`text-xs font-semibold gap-1 ${isGroupActive ? 'text-blue-700 bg-blue-50 font-bold' : 'text-gray-700 hover:bg-gray-100'}`}
+                  <button 
+                    className={`text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer ${
+                      isGroupActive ? 'text-blue-600 bg-blue-50 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
                     onClick={() => {
                       setActiveDropdown(isOpen ? null : gIdx)
                       setProfileOpen(false)
+                      setLogoMenuOpen(false)
                     }}
                   >
                     {group.label}
-                    <ChevronDown className={`h-3.5 w-3.5 opacity-60 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                  </Button>
+                    <ChevronDown className={`h-3 w-3 opacity-50 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
 
-                  {/* Dropdown Menu Box */}
+                  {/* Clean Dropdown Box */}
                   {isOpen && (
-                    <div className="absolute left-0 mt-1.5 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-1.5 z-50 space-y-1 animate-in fade-in-50 zoom-in-95">
+                    <div className="absolute left-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 z-50 space-y-0.5 animate-in fade-in-50 zoom-in-95">
                       {group.items.map((item, iIdx) => {
                         const Icon = item.icon
                         const active = isActive(item.href)
@@ -162,14 +195,14 @@ export function TopHeaderNav() {
                             key={iIdx}
                             href={item.href}
                             onClick={() => setActiveDropdown(null)}
-                            className={`flex items-start gap-2.5 p-2 rounded-lg transition-colors ${active ? 'bg-blue-50 text-blue-900 font-bold' : 'hover:bg-gray-50'}`}
+                            className={`flex items-start gap-2.5 p-2 rounded-lg transition-colors ${
+                              active ? 'bg-blue-50 text-blue-900 font-bold' : 'hover:bg-slate-50 text-slate-700'
+                            }`}
                           >
-                            <div className={`p-1.5 rounded-md mt-0.5 ${active ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
-                              <Icon className="h-4 w-4" />
-                            </div>
+                            <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${active ? 'text-blue-600' : 'text-slate-400'}`} />
                             <div>
-                              <div className="text-xs font-semibold text-gray-900">{item.label}</div>
-                              <div className="text-[10px] text-muted-foreground leading-tight">{item.desc}</div>
+                              <div className="text-xs font-semibold">{item.label}</div>
+                              <div className="text-[10px] text-slate-400 font-normal leading-tight">{item.desc}</div>
                             </div>
                           </Link>
                         )
@@ -181,31 +214,26 @@ export function TopHeaderNav() {
             })}
           </nav>
 
-          {/* Right Controls & Profile Menu */}
+          {/* Right Controls: Minimal Profile Menu Only */}
           <div className="flex items-center gap-2">
-            <div className="hidden sm:block">
-              <ClinicWorkflowGuide />
-            </div>
-
-            <Button 
-              size="xs" 
-              variant="ghost" 
-              className="text-[11px] gap-1 text-gray-600 hover:bg-gray-100 hidden sm:flex"
-              onClick={handleLockNow}
-              title="Lock Reception Desk (Ctrl+Alt+L)"
-            >
-              <Lock className="h-3.5 w-3.5 text-gray-500" /> Lock
-            </Button>
-
-            {/* Profile Menu Trigger */}
-            <div className="relative">
+            {!isDoctor && (
               <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-2 px-2 hover:bg-gray-100"
+                size="xs" 
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-1 rounded-lg px-2.5 shadow-xs hidden sm:flex text-[11px]" 
+                onClick={() => router.push('/billing')}
+              >
+                <Plus className="h-3 w-3" /> New Bill
+              </Button>
+            )}
+
+            {/* Profile Dropdown */}
+            <div className="relative">
+              <button 
+                className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                 onClick={() => {
                   setProfileOpen(!profileOpen)
                   setActiveDropdown(null)
+                  setLogoMenuOpen(false)
                 }}
               >
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-white ${
@@ -214,36 +242,30 @@ export function TopHeaderNav() {
                   {profile?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="text-left hidden md:block leading-tight">
-                  <div className="text-xs font-bold text-gray-900 truncate max-w-[110px]">{profile?.name || 'User'}</div>
-                  <div className="text-[10px] text-muted-foreground capitalize">{isAdmin ? 'Admin' : isDoctor ? 'Doctor' : 'Staff'}</div>
+                  <div className="text-xs font-bold text-slate-900 truncate max-w-[100px]">{profile?.name || 'User'}</div>
+                  <div className="text-[10px] text-slate-400 capitalize">{isAdmin ? 'Admin' : isDoctor ? 'Doctor' : 'Staff'}</div>
                 </div>
-                <ChevronDown className={`h-3.5 w-3.5 opacity-50 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
-              </Button>
+                <ChevronDown className={`h-3 w-3 opacity-40 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+              </button>
 
               {/* Profile Dropdown Box */}
               {profileOpen && (
-                <div className="absolute right-0 mt-1.5 w-56 bg-white border border-gray-200 rounded-xl shadow-xl p-2 z-50 space-y-1.5 animate-in fade-in-50 zoom-in-95">
-                  <div className="px-2 py-1.5 border-b text-xs font-bold text-gray-900">
+                <div className="absolute right-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 z-50 space-y-1 animate-in fade-in-50 zoom-in-95">
+                  <div className="px-2.5 py-1.5 border-b text-xs font-bold text-slate-900">
                     Signed in as <span className="text-blue-600 block text-[11px] font-mono truncate">{profile?.email}</span>
                   </div>
                   <button
-                    onClick={() => { setWorkflowOpen(true); setProfileOpen(false) }}
-                    className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs hover:bg-gray-50 text-gray-700"
-                  >
-                    <HelpCircle className="h-4 w-4 text-amber-600" /> Clinic Workflow Guide
-                  </button>
-                  <button
                     onClick={handleLockNow}
-                    className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs hover:bg-gray-50 text-gray-700"
+                    className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs hover:bg-slate-50 text-slate-700"
                   >
-                    <Lock className="h-4 w-4 text-slate-600" /> Lock Clinic Screen
+                    <Lock className="h-3.5 w-3.5 text-slate-500" /> Lock Screen
                   </button>
                   <div className="border-t pt-1">
                     <button
                       onClick={handleSignOut}
-                      className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs hover:bg-rose-50 text-rose-600 font-semibold"
+                      className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs hover:bg-rose-50 text-rose-600 font-semibold"
                     >
-                      <LogOut className="h-4 w-4" /> Sign Out
+                      <LogOut className="h-3.5 w-3.5" /> Sign Out
                     </button>
                   </div>
                 </div>
@@ -251,21 +273,21 @@ export function TopHeaderNav() {
             </div>
 
             {/* Mobile Menu Toggle */}
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
           </div>
         </div>
 
-        {/* Mobile Categorized Drawer */}
+        {/* Mobile Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-gray-200 bg-white p-4 space-y-4 shadow-lg">
+          <div className="lg:hidden border-t border-slate-200 bg-white p-4 space-y-3 shadow-lg">
             {navGroups.map((group, gIdx) => (
-              <div key={gIdx} className="space-y-1.5">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+              <div key={gIdx} className="space-y-1">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">
                   {group.label}
                 </div>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-2 gap-1">
                   {group.items.map((item, iIdx) => {
                     const Icon = item.icon
                     const active = isActive(item.href)
@@ -274,9 +296,11 @@ export function TopHeaderNav() {
                         key={iIdx}
                         href={item.href}
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center gap-2 p-2 rounded-lg text-xs font-medium ${active ? 'bg-blue-50 text-blue-900 font-bold border border-blue-200' : 'bg-gray-50 text-gray-800'}`}
+                        className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
+                          active ? 'bg-blue-50 text-blue-900 font-bold' : 'bg-slate-50 text-slate-700'
+                        }`}
                       >
-                        <Icon className="h-4 w-4 text-blue-600 shrink-0" />
+                        <Icon className="h-3.5 w-3.5 text-blue-600 shrink-0" />
                         <span className="truncate">{item.label}</span>
                       </Link>
                     )

@@ -215,26 +215,28 @@ function FeedbackFormContent() {
 
         {/* Doctor / Centre / Invoice Attribution Chips */}
         {(doctorNameParam || centreNameParam || billNumber || servicesParam) && (
-          <div className="flex flex-wrap gap-1.5 justify-center pt-1 text-xs">
+          <div className="flex flex-wrap gap-1.5 justify-center pt-1 text-xs max-w-full">
             {doctorNameParam && (
               <Badge variant="outline" className="bg-white text-teal-900 border-teal-300 font-semibold gap-1 shadow-xs">
-                <Stethoscope className="h-3 w-3 text-teal-600" /> Dr. {doctorNameParam}
+                <Stethoscope className="h-3 w-3 text-teal-600 shrink-0" /> Dr. {doctorNameParam}
               </Badge>
             )}
             {centreNameParam && (
               <Badge variant="outline" className="bg-white text-gray-700 border-gray-300 gap-1 shadow-xs">
-                <Building2 className="h-3 w-3 text-blue-600" /> {centreNameParam}
+                <Building2 className="h-3 w-3 text-blue-600 shrink-0" /> {centreNameParam}
               </Badge>
             )}
             {billNumber && (
               <Badge variant="outline" className="bg-white font-mono text-amber-800 border-amber-300 shadow-xs">
-                <Receipt className="h-3 w-3 text-amber-600 mr-1" /> {billNumber}
+                <Receipt className="h-3 w-3 text-amber-600 mr-1 shrink-0" /> {billNumber}
               </Badge>
             )}
             {servicesParam && (
-              <Badge variant="outline" className="bg-white text-purple-800 border-purple-200 shadow-xs">
-                <FileText className="h-3 w-3 text-purple-600 mr-1" /> {servicesParam}
-              </Badge>
+              servicesParam.split(',').map((svc, idx) => (
+                <Badge key={idx} variant="outline" className="bg-white text-purple-800 border-purple-200 shadow-xs max-w-full whitespace-normal text-left">
+                  <FileText className="h-3 w-3 text-purple-600 mr-1 shrink-0 inline" /> {svc.trim()}
+                </Badge>
+              ))
             )}
           </div>
         )}

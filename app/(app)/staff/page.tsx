@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, KeyRound, Building2, ShieldAlert, Users, Search, CheckCircle2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, KeyRound, Building2, ShieldAlert, Users, Search, CheckCircle2, Stethoscope } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,7 +13,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
-import type { Centre, StaffUser } from '@/lib/supabase/types'
+import { getDoctors } from '@/lib/data-store'
+import type { Centre, Doctor, StaffUser } from '@/lib/supabase/types'
 
 const DEFAULT_STAFF: StaffUser[] = [
   {
@@ -63,6 +64,7 @@ export default function StaffManagementPage() {
   const { profile } = useAuth()
   const [staffList, setStaffList] = useState<StaffUser[]>([])
   const [centres, setCentres] = useState<Centre[]>([])
+  const [doctorsList, setDoctorsList] = useState<Doctor[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -75,19 +77,22 @@ export default function StaffManagementPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [centreId, setCentreId] = useState<string>('')
-  const [role, setRole] = useState<'admin' | 'centre_staff'>('centre_staff')
+  const [doctorId, setDoctorId] = useState<string>('')
+  const [role, setRole] = useState<'admin' | 'centre_staff' | 'doctor'>('centre_staff')
   const [saving, setSaving] = useState(false)
 
   const loadData = async () => {
     setLoading(true)
     const supabase = createClient()
-    const [{ data: cData }, { data: sData }] = await Promise.all([
+    const [{ data: cData }, { data: sData }, docList] = await Promise.all([
       supabase.from('centres').select('*').order('name'),
       supabase.from('staff_users').select('*').order('created_at'),
+      getDoctors(),
     ])
 
     const centreList = (cData as unknown as Centre[]) ?? []
     setCentres(centreList)
+    setDoctorsList(docList)
 
     // Load from local storage or fallback to defaults
     const localSaved = localStorage.getItem('physio_custom_staff_users')
@@ -116,6 +121,7 @@ export default function StaffManagementPage() {
     localStorage.setItem('physio_custom_staff_users', JSON.stringify(updated))
     try {
       const supabase = createClient()
+      const selectedDoc = doctorsList.find(d => d.id === doctorId)
       if (editingStaff) {
         await supabase.from('staff_users').update({
           full_name: fullName.trim(),
@@ -124,6 +130,8 @@ export default function StaffManagementPage() {
           centre_id: role === 'admin' ? null : centreId || null,
           centre_name: centres.find(c => c.id === centreId)?.name || null,
           role,
+          doctor_id: role === 'doctor' ? doctorId || null : null,
+          doctor_name: role === 'doctor' ? selectedDoc?.name || null : null,
         }).eq('id', editingStaff.id)
       } else {
         await supabase.from('staff_users').insert({
@@ -133,6 +141,8 @@ export default function StaffManagementPage() {
           centre_id: role === 'admin' ? null : centreId || null,
           centre_name: centres.find(c => c.id === centreId)?.name || null,
           role,
+          doctor_id: role === 'doctor' ? doctorId || null : null,
+          doctor_name: role === 'doctor' ? selectedDoc?.name || null : null,
           is_active: true,
         })
       }
@@ -145,6 +155,7 @@ export default function StaffManagementPage() {
     setEmail('')
     setPassword('')
     setCentreId(centres[0]?.id || '')
+    setDoctorId(doctorsList[0]?.id || '')
     setRole('centre_staff')
     setDialogOpen(true)
   }
@@ -155,6 +166,7 @@ export default function StaffManagementPage() {
     setEmail(staff.email)
     setPassword(staff.password || '')
     setCentreId(staff.centre_id || centres[0]?.id || '')
+    setDoctorId(staff.doctor_id || doctorsList[0]?.id || '')
     setRole(staff.role)
     setDialogOpen(true)
   }
@@ -167,6 +179,7 @@ export default function StaffManagementPage() {
 
     setSaving(true)
     const selectedCentre = centres.find(c => c.id === centreId)
+    const selectedDoc = doctorsList.find(d => d.id === doctorId)
     const centreName = role === 'admin' ? 'All Centres (Global)' : (selectedCentre?.name || 'Clinic Branch')
 
     if (editingStaff) {
@@ -178,6 +191,8 @@ export default function StaffManagementPage() {
         centre_id: role === 'admin' ? null : (centreId || null),
         centre_name: centreName,
         role,
+        doctor_id: role === 'doctor' ? (doctorId || null) : null,
+        doctor_name: role === 'doctor' ? (selectedDoc?.name || null) : null,
       } : s)
       await saveStaffList(updated)
       toast({ title: 'Staff login updated successfully' })
@@ -190,6 +205,8 @@ export default function StaffManagementPage() {
         centre_id: role === 'admin' ? null : (centreId || null),
         centre_name: centreName,
         role,
+        doctor_id: role === 'doctor' ? (doctorId || null) : null,
+        doctor_name: role === 'doctor' ? (selectedDoc?.name || null) : null,
         is_active: true,
       }
       await saveStaffList([...staffList, newStaff])
@@ -297,18 +314,18 @@ export default function StaffManagementPage() {
                   {filteredStaff.map(staff => (
                     <tr key={staff.id} className="hover:bg-gray-50/80 transition-colors">
                       <td className="px-4 py-3 font-semibold text-gray-900 flex items-center gap-2">
-                        {staff.role === 'admin' ? <ShieldAlert className="h-4 w-4 text-purple-600" /> : <Building2 className="h-4 w-4 text-blue-600" />}
+                        {staff.role === 'admin' ? <ShieldAlert className="h-4 w-4 text-purple-600" /> : staff.role === 'doctor' ? <Stethoscope className="h-4 w-4 text-teal-600" /> : <Building2 className="h-4 w-4 text-blue-600" />}
                         {staff.full_name}
                       </td>
                       <td className="px-4 py-3 text-gray-600 font-mono text-xs">{staff.email}</td>
                       <td className="px-4 py-3">
-                        <Badge variant="outline" className={staff.role === 'admin' ? 'border-purple-200 text-purple-700 bg-purple-50' : 'border-blue-200 text-blue-700 bg-blue-50'}>
-                          {staff.centre_name || 'New Friends Colony, New Delhi'}
+                        <Badge variant="outline" className={staff.role === 'admin' ? 'border-purple-200 text-purple-700 bg-purple-50' : staff.role === 'doctor' ? 'border-teal-200 text-teal-700 bg-teal-50' : 'border-blue-200 text-blue-700 bg-blue-50'}>
+                          {staff.doctor_name ? `Dr. ${staff.doctor_name}` : (staff.centre_name || 'New Friends Colony, New Delhi')}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge className={staff.role === 'admin' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-800'}>
-                          {staff.role === 'admin' ? 'Admin' : 'Centre Staff'}
+                        <Badge className={staff.role === 'admin' ? 'bg-purple-600 text-white' : staff.role === 'doctor' ? 'bg-teal-600 text-white' : 'bg-gray-200 text-gray-800'}>
+                          {staff.role === 'admin' ? 'Admin' : staff.role === 'doctor' ? 'Doctor / Therapist' : 'Centre Staff'}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
@@ -366,14 +383,30 @@ export default function StaffManagementPage() {
 
             <div className="space-y-1">
               <Label>Role *</Label>
-              <Select value={role} onValueChange={(v: string | null) => setRole((v as 'admin' | 'centre_staff') || 'centre_staff')}>
+              <Select value={role} onValueChange={(v: string | null) => setRole((v as 'admin' | 'centre_staff' | 'doctor') || 'centre_staff')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="centre_staff">Centre Staff (Clinical Desk & Billing)</SelectItem>
+                  <SelectItem value="doctor">Doctor / Therapist (Personal Dashboard)</SelectItem>
                   <SelectItem value="admin">Admin (Financials & Governance)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {role === 'doctor' && (
+              <div className="space-y-1">
+                <Label>Link to Doctor Profile *</Label>
+                <Select value={doctorId} onValueChange={(v: string | null) => setDoctorId(v ?? '')}>
+                  <SelectTrigger><SelectValue placeholder="Select Doctor Profile" /></SelectTrigger>
+                  <SelectContent>
+                    {doctorsList.map(d => (
+                      <SelectItem key={d.id} value={d.id}>Dr. {d.name} ({d.specialization || 'Physiotherapist'})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">This links the login account to the doctor's visit logs, patients, and patient ratings.</p>
+              </div>
+            )}
 
             {role === 'centre_staff' && (
               <div className="space-y-1">

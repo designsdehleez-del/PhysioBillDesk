@@ -294,6 +294,276 @@ export default function DashboardPage() {
     )
   }
 
+  // ================= DOCTOR SELF-SERVICE PERFORMANCE DASHBOARD =================
+  if (profile?.role === 'doctor') {
+    const rawMyName = (profile.doctorName || profile.name || '').replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+    
+    // Find Doctor's visits
+    const myVisits = allVisits.filter(v => {
+      if (profile.doctorId && v.doctor_id === profile.doctorId) return true
+      if (v.doctor_name) {
+        const vDocName = v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+        return vDocName.includes(rawMyName) || rawMyName.includes(vDocName)
+      }
+      return false
+    })
+
+    const myPatientsCount = new Set(myVisits.map(v => v.patient_uid)).size
+    const mySessionsCount = myVisits.length
+
+    // Doctor's feedback
+    const myFeedbacks = feedbacks.filter(f => {
+      if (!f.doctor_name) return false
+      const fDocName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+      return fDocName.includes(rawMyName) || rawMyName.includes(fDocName)
+    })
+
+    const myAvgRating = myFeedbacks.length > 0 
+      ? (myFeedbacks.reduce((sum, f) => sum + f.rating, 0) / myFeedbacks.length).toFixed(1)
+      : '5.0'
+
+    // Anonymized Leaderboard across all doctors
+    const sortedDoctorsByScore = doctors.map(d => {
+      const dRaw = d.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+      const dFeedbacks = feedbacks.filter(f => f.doctor_name && f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase().includes(dRaw))
+      const score = dFeedbacks.length > 0 ? (dFeedbacks.reduce((sum, f) => sum + f.rating, 0) / dFeedbacks.length) : 5.0
+      const sessions = allVisits.filter(v => v.doctor_id === d.id || (v.doctor_name && v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase().includes(dRaw))).length
+      const isMe = (profile.doctorId && d.id === profile.doctorId) || dRaw.includes(rawMyName) || rawMyName.includes(dRaw)
+      return { id: d.id, name: d.name, score, sessions, isMe }
+    }).sort((a, b) => b.score - a.score || b.sessions - a.sessions)
+
+    const myRankIndex = sortedDoctorsByScore.findIndex(d => d.isMe)
+    const myRank = myRankIndex >= 0 ? myRankIndex + 1 : 1
+
+    return (
+      <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+        {/* Doctor Banner */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-teal-900 via-emerald-900 to-teal-800 text-white p-6 rounded-2xl shadow-lg">
+          <div>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-teal-700/80 text-teal-100 border border-teal-500/30">
+                🩺 Doctor Performance Portal
+              </Badge>
+              <span className="text-xs text-teal-200">Physionautics Clinical Care</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
+              Welcome, Dr. {profile.doctorName || profile.name}
+            </h1>
+            <p className="text-xs sm:text-sm text-teal-100/90">
+              Track your patient attendance, recovery satisfaction scores, and anonymized peer rankings.
+            </p>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 text-center">
+            <div className="text-[10px] uppercase font-bold text-teal-200">Clinical CSAT Rank</div>
+            <div className="text-xl font-extrabold text-amber-300">
+              Rank #{myRank} <span className="text-xs font-normal text-white">of {doctors.length || 1} Doctors</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Doctor KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-teal-200 bg-teal-50/40">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-teal-800">Patients Treated</p>
+                <p className="text-2xl font-bold text-teal-950 mt-1">{myPatientsCount}</p>
+                <p className="text-[11px] text-teal-700 mt-0.5">Unique clinical patients</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-md">
+                <Users className="w-6 h-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-200 bg-blue-50/40">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-blue-800">Total Therapy Sessions</p>
+                <p className="text-2xl font-bold text-blue-950 mt-1">{mySessionsCount}</p>
+                <p className="text-[11px] text-blue-700 mt-0.5">Consultations & treatments</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md">
+                <Activity className="w-6 h-6" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-amber-200 bg-amber-50/40">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-amber-900">Patient Rating</p>
+                <p className="text-2xl font-bold text-amber-950 mt-1 flex items-center gap-1">
+                  {myAvgRating} <Star className="w-5 h-5 fill-amber-500 text-amber-500" />
+                </p>
+                <p className="text-[11px] text-amber-800 mt-0.5">From {myFeedbacks.length} patient reviews</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md">
+                <Star className="w-6 h-6 fill-white" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-purple-200 bg-purple-50/40">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-purple-900">Quality Benchmark</p>
+                <p className="text-2xl font-bold text-purple-950 mt-1">Top {Math.max(1, Math.round((myRank / (doctors.length || 1)) * 100))}%</p>
+                <p className="text-[11px] text-purple-800 mt-0.5">Network satisfaction score</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md">
+                <Award className="w-6 h-6" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Anonymized Leaderboard */}
+          <Card className="lg:col-span-1 shadow-sm border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <Award className="w-5 h-5 text-amber-500" />
+                Anonymized Peer Quality Index
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Compares patient satisfaction ratings across doctor profiles without revealing identities.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y text-xs">
+                {sortedDoctorsByScore.map((doc, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`p-3.5 flex items-center justify-between ${doc.isMe ? 'bg-amber-50/80 font-bold border-l-4 border-l-amber-500' : 'hover:bg-gray-50'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        idx === 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 
+                        idx === 1 ? 'bg-slate-200 text-slate-800' : 
+                        idx === 2 ? 'bg-amber-700/20 text-amber-900' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        #{idx + 1}
+                      </span>
+                      <div>
+                        <p className={`text-sm ${doc.isMe ? 'text-amber-950 font-bold' : 'text-gray-700'}`}>
+                          {doc.isMe ? `Dr. ${doc.name} (You)` : `Peer Doctor #${idx + 1}`}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">{doc.sessions} session logs</p>
+                      </div>
+                    </div>
+                    <Badge className={doc.isMe ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-800 border-gray-200'}>
+                      {doc.score.toFixed(1)} ⭐
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Patient Reviews & Comments */}
+          <Card className="lg:col-span-2 shadow-sm border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                Patient Recovery Feedback & Reviews
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Direct feedback submitted by your patients for Dr. {profile.doctorName || profile.name}.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {myFeedbacks.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Star className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-semibold">No direct patient reviews yet</p>
+                  <p className="text-xs text-gray-400">Share your feedback link after session completion.</p>
+                </div>
+              ) : (
+                myFeedbacks.map((fb, idx) => (
+                  <div key={idx} className="bg-gray-50 p-3.5 rounded-xl border border-gray-100 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-gray-900">{fb.patient_name}</span>
+                      <div className="flex items-center gap-1 font-bold text-amber-700">
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        {fb.rating}/5
+                      </div>
+                    </div>
+                    {fb.comments && (
+                      <p className="text-xs text-gray-700 italic">"{fb.comments}"</p>
+                    )}
+                    <div className="text-[10px] text-muted-foreground">
+                      {new Date(fb.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* My Sessions & Patient History */}
+        <Card className="shadow-sm border-gray-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-teal-600" />
+              My Recent Patient Sessions ({myVisits.length})
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground">
+              History of therapy sessions and procedures administered under your care.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {myVisits.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground">
+                <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm font-semibold">No session logs found under your doctor ID</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto text-xs">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b text-gray-600">
+                    <tr className="text-left font-semibold">
+                      <th className="p-3">Visit Date</th>
+                      <th className="p-3">Patient Name</th>
+                      <th className="p-3">Patient UID</th>
+                      <th className="p-3">Centre Branch</th>
+                      <th className="p-3">Therapy / Procedures Rendered</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {myVisits.slice(0, 15).map((v, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="p-3 font-semibold text-gray-900">{formatDate(v.visit_date)}</td>
+                        <td className="p-3 font-bold text-teal-900">{(v as any).patients?.full_name || 'Patient'}</td>
+                        <td className="p-3 font-mono text-gray-500">{(v as any).patients?.uid || v.patient_id}</td>
+                        <td className="p-3 text-gray-700">{v.centre_name || 'Main Branch'}</td>
+                        <td className="p-3">
+                          <div className="flex flex-wrap gap-1">
+                            {v.items && v.items.length > 0 ? (
+                              v.items.map((i, iIdx) => (
+                                <Badge key={iIdx} variant="outline" className="bg-white text-xs border-teal-200 text-teal-800">
+                                  {i.service_name} (x{i.quantity})
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-gray-400 italic">General Consultation</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
       {/* ================= HEADER & TIMEFRAME FILTERS ================= */}

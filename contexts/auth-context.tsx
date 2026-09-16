@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getAdminProfileData, verifyAdminPassword, updateAdminPassword } from '@/lib/settings-store'
 import { logAuditEvent } from '@/lib/audit-logger'
 
-export type UserRole = 'admin' | 'centre_staff'
+export type UserRole = 'admin' | 'centre_staff' | 'doctor'
 
 export interface UserProfile {
   id: string
@@ -19,6 +19,8 @@ export interface UserProfile {
   avatarUrl?: string | null
   phone?: string
   roleTitle?: string
+  doctorId?: string | null
+  doctorName?: string | null
 }
 
 interface AuthContextType {
@@ -146,6 +148,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             centreName: found.centre_name || 'New Friends Colony, New Delhi',
             avatarUrl: found.avatarUrl,
             phone: found.phone,
+            doctorId: found.doctor_id || null,
+            doctorName: found.doctor_name || null,
+            roleTitle: found.role === 'doctor' ? 'Physiotherapist' : undefined,
           }
         }
       }

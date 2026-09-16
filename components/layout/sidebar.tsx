@@ -46,7 +46,16 @@ export function Sidebar() {
     { label: 'WhatsApp Settings', href: '/settings/whatsapp', icon: MessageCircle },
   ]
 
-  const activeNav = isAdmin ? adminNav : clinicNav
+  const doctorNav = [
+    { label: 'My Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'My Patients', href: '/patients', icon: Users },
+    { label: 'Patient Feedback', href: '/feedback-builder', icon: Sparkles },
+    { label: 'Doctors Directory', href: '/doctors', icon: Stethoscope },
+    { label: 'Settings', href: '/settings', icon: Settings },
+  ]
+
+  const isDoctor = profile?.role === 'doctor'
+  const activeNav = isAdmin ? adminNav : isDoctor ? doctorNav : clinicNav
 
   return (
     <aside className="w-64 h-screen bg-white border-r flex flex-col">

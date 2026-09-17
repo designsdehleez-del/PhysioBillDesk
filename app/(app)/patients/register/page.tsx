@@ -14,12 +14,16 @@ import { isValidPhone, isValidEmail } from '@/lib/utils'
 interface FormData {
   full_name: string; age: string; gender: string; phone: string
   email: string; address: string; blood_group: string; medical_notes: string
+  primary_complaint: string; pain_vas: string; mobility_score: string; functional_score: string
 }
 interface Errors { [k: string]: string }
 
 export default function RegisterPatientPage() {
   const router = useRouter()
-  const [form, setForm] = useState<FormData>({ full_name: '', age: '', gender: '', phone: '', email: '', address: '', blood_group: '', medical_notes: '' })
+  const [form, setForm] = useState<FormData>({ 
+    full_name: '', age: '', gender: '', phone: '', email: '', address: '', blood_group: '', medical_notes: '',
+    primary_complaint: '', pain_vas: '6', mobility_score: '60', functional_score: '65'
+  })
   const [errors, setErrors] = useState<Errors>({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState<{ uid: string; id: string } | null>(null)
@@ -51,6 +55,10 @@ export default function RegisterPatientPage() {
         address: form.address || null,
         blood_group: (form.blood_group || null) as any,
         medical_notes: form.medical_notes || null,
+        primary_complaint: form.primary_complaint || null,
+        pain_vas: form.pain_vas ? Number(form.pain_vas) : null,
+        mobility_score: form.mobility_score ? Number(form.mobility_score) : null,
+        functional_score: form.functional_score ? Number(form.functional_score) : null,
       })
       setSuccess({ uid: res.uid, id: res.id })
     } catch (err: unknown) {
@@ -65,7 +73,7 @@ export default function RegisterPatientPage() {
       <p className="text-muted-foreground text-sm mb-4">Patient ID: <span className="font-mono font-semibold text-blue-600 text-base">{success.uid}</span></p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Button onClick={() => router.push(`/billing?patientId=${success.id}`)}>Create Bill</Button>
-        <Button variant="outline" onClick={() => { setSuccess(null); setForm({ full_name: '', age: '', gender: '', phone: '', email: '', address: '', blood_group: '', medical_notes: '' }) }}>Register Another</Button>
+        <Button variant="outline" onClick={() => { setSuccess(null); setForm({ full_name: '', age: '', gender: '', phone: '', email: '', address: '', blood_group: '', medical_notes: '', primary_complaint: '', pain_vas: '6', mobility_score: '60', functional_score: '65' }) }}>Register Another</Button>
         <Button variant="ghost" onClick={() => router.push('/patients')}>View Patient List</Button>
       </div>
     </div>
@@ -75,7 +83,7 @@ export default function RegisterPatientPage() {
     <div className="p-6 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Register New Patient</h1>
       <Card>
-        <CardHeader><CardTitle className="text-base">Patient Information</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Patient Information & Baseline Assessment</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {errors._ && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{errors._}</div>}
@@ -125,14 +133,39 @@ export default function RegisterPatientPage() {
                 <Label htmlFor="address">Address</Label>
                 <Input id="address" value={form.address} onChange={e => set('address')(e.target.value)} placeholder="Optional" />
               </div>
+
+              {/* Baseline Clinical Assessment Section */}
+              <div className="sm:col-span-2 pt-2 border-t mt-2">
+                <h3 className="text-xs font-bold text-blue-900 uppercase tracking-wider mb-2">Initial Clinical Assessment & VAS Scores</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="pain_vas" className="text-xs">Pain Level (VAS 0–10)</Label>
+                    <Input id="pain_vas" type="number" min={0} max={10} value={form.pain_vas} onChange={e => set('pain_vas')(e.target.value)} placeholder="e.g. 6" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="mobility_score" className="text-xs">Mobility Score (0–100)</Label>
+                    <Input id="mobility_score" type="number" min={0} max={100} value={form.mobility_score} onChange={e => set('mobility_score')(e.target.value)} placeholder="e.g. 60" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="functional_score" className="text-xs">Functional Score (0–100)</Label>
+                    <Input id="functional_score" type="number" min={0} max={100} value={form.functional_score} onChange={e => set('functional_score')(e.target.value)} placeholder="e.g. 65" />
+                  </div>
+                </div>
+              </div>
+
               <div className="sm:col-span-2 space-y-1">
-                <Label htmlFor="medical_notes">Medical Notes</Label>
-                <Textarea id="medical_notes" value={form.medical_notes} onChange={e => set('medical_notes')(e.target.value)} placeholder="Any relevant medical history..." rows={3} />
+                <Label htmlFor="primary_complaint">Primary Complaint / Symptom</Label>
+                <Input id="primary_complaint" value={form.primary_complaint} onChange={e => set('primary_complaint')(e.target.value)} placeholder="e.g. Lower Back Pain, Neck Stiffness, Knee Joint Pain" />
+              </div>
+
+              <div className="sm:col-span-2 space-y-1">
+                <Label htmlFor="medical_notes">Medical & Assessment Notes</Label>
+                <Textarea id="medical_notes" value={form.medical_notes} onChange={e => set('medical_notes')(e.target.value)} placeholder="Any relevant medical history or initial physical observations..." rows={3} />
               </div>
             </div>
             <div className="flex gap-3 pt-2">
               <Button type="submit" disabled={loading} className="flex-1 sm:flex-none">
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Register Patient
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Register Patient & Log Baseline
               </Button>
               <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
             </div>

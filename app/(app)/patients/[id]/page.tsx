@@ -1,27 +1,35 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Printer, Receipt, User, FileText } from 'lucide-react'
+import { ArrowLeft, Printer, Receipt, User, FileText, Activity, Plus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import type { Patient, VisitWithServices } from '@/lib/supabase/types'
 
 import { PrintableInvoiceModal } from '@/components/billing/printable-invoice-modal'
-import { StoredVisit, getPatients, getVisits } from '@/lib/data-store'
-import { PatientProfileView } from '@/components/patients/patient-profile-view'
+import { StoredVisit, getPatients, getVisits, getPatientAssessments, addPatientAssessment, type PatientAssessment } from '@/lib/data-store'
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [patient, setPatient] = useState<Patient | null>(null)
   const [visits, setVisits] = useState<VisitWithServices[]>([])
+  const [assessments, setAssessments] = useState<PatientAssessment[]>([])
   const [loading, setLoading] = useState(true)
   const [modalVisit, setModalVisit] = useState<StoredVisit | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+
+  // Assessment Modal State
+  const [assessmentModalOpen, setAssessmentModalOpen] = useState(false)
+  const [assForm, setAssForm] = useState({ pain_vas: '6', mobility_score: '65', functional_score: '70', primary_complaint: '', notes: '' })
+  const [assSaving, setAssSaving] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -105,13 +113,41 @@ export default function PatientDetailPage() {
 
       setPatient(patientData)
       setVisits(visitList)
+      
+      const assList = await getPatientAssessments(id)
+      setAssessments(assList)
       setLoading(false)
     }
     load()
   }, [id])
 
+  const handleSaveAssessment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!patient) return
+    setAssSaving(true)
+    try {
+      await addPatientAssessment({
+        patient_id: patient.id,
+        pain_vas: Number(assForm.pain_vas),
+        mobility_score: Number(assForm.mobility_score),
+        functional_score: Number(assForm.functional_score),
+        primary_complaint: assForm.primary_complaint || 'Physical Therapy Evaluation',
+        notes: assForm.notes || null,
+      })
+      const updated = await getPatientAssessments(patient.id)
+      setAssessments(updated)
+      setAssessmentModalOpen(false)
+    } catch (err) {
+      console.error('Failed to save assessment:', err)
+    } finally {
+      setAssSaving(false)
+    }
+  }
+
   if (loading) return <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" /></div>
   if (!patient) return <div className="p-6 text-center text-muted-foreground">Patient not found</div>
+
+  const latestAssessment = assessments[0]
 
   const infoRows = [
     ['Patient ID', patient.uid], ['Full Name', patient.full_name], ['Age', `${patient.age} years`],
@@ -130,21 +166,20 @@ export default function PatientDetailPage() {
       patient_phone: patient.phone,
       patient_age: patient.age,
       patient_gender: patient.gender,
-      patient_address: patient.address || undefined,
-      doctor_id: v.doctor_id,
-      doctor_name: v.doctor_name,
+      doctor_id: v.doctor_id || undefined,
+      doctor_name: v.doctor_name || undefined,
       doctor_specialization: null,
-      centre_id: v.centre_id,
-      centre_name: v.centre_name,
+      centre_id: v.centre_id || undefined,
+      centre_name: v.centre_name || undefined,
       centre_address: null,
       centre_phone: null,
-      items: (v.visit_services || []).map(s => ({
+      items: (v.visit_services || []).map((s: any) => ({
         id: s.id,
         service_id: s.service_id,
         service_name: s.service_name,
         price: Number(s.price) || 0,
         quantity: Number(s.quantity) || 1,
-        total: (Number(s.price) || 0) * (Number(s.quantity) || 1),
+        total: Number(s.total) || 0,
       })),
       subtotal: Number(v.subtotal) || 0,
       discount: Number(v.discount) || 0,
@@ -168,12 +203,15 @@ export default function PatientDetailPage() {
             <p className="text-sm text-muted-foreground font-mono">{patient.uid}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" className="border-blue-300 text-blue-700 bg-blue-50/50" onClick={() => setAssessmentModalOpen(true)}>
+            <Activity className="h-4 w-4 mr-1.5 text-blue-600" /> Log Assessment / VAS Score
+          </Button>
           <Button variant="outline" onClick={() => router.push(`/patients/${patient.id}/report`)}>
-            <FileText className="h-4 w-4 mr-2 text-blue-600" /> View Report Card
+            <FileText className="h-4 w-4 mr-1.5 text-blue-600" /> View Report Card
           </Button>
           <Button onClick={() => router.push(`/billing?patientId=${patient.id}`)}>
-            <Receipt className="h-4 w-4 mr-2" /> New Bill
+            <Receipt className="h-4 w-4 mr-1.5" /> New Bill
           </Button>
         </div>
       </div>
@@ -249,6 +287,88 @@ export default function PatientDetailPage() {
         open={modalOpen}
         onOpenChange={setModalOpen}
       />
+
+      {/* Log / Update Assessment Modal */}
+      <Dialog open={assessmentModalOpen} onOpenChange={setAssessmentModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
+              <Activity className="w-5 h-5 text-blue-600" />
+              Log Clinical Assessment & VAS Score
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveAssessment} className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label htmlFor="complaint" className="text-xs">Primary Complaint / Symptom</Label>
+              <Input
+                id="complaint"
+                value={assForm.primary_complaint}
+                onChange={e => setAssForm(p => ({ ...p, primary_complaint: e.target.value }))}
+                placeholder="e.g. Lower Back Pain, Cervical Spondylosis"
+                className="text-xs"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="vas" className="text-xs font-semibold">Pain (VAS 0-10)</Label>
+                <Input
+                  id="vas"
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={assForm.pain_vas}
+                  onChange={e => setAssForm(p => ({ ...p, pain_vas: e.target.value }))}
+                  className="text-xs font-bold text-blue-600"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="mob" className="text-xs font-semibold">Mobility (0-100)</Label>
+                <Input
+                  id="mob"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={assForm.mobility_score}
+                  onChange={e => setAssForm(p => ({ ...p, mobility_score: e.target.value }))}
+                  className="text-xs font-bold text-emerald-600"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="func" className="text-xs font-semibold">Func. (0-100)</Label>
+                <Input
+                  id="func"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={assForm.functional_score}
+                  onChange={e => setAssForm(p => ({ ...p, functional_score: e.target.value }))}
+                  className="text-xs font-bold text-indigo-600"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="ass_notes" className="text-xs">Clinical Evaluation Notes</Label>
+              <Textarea
+                id="ass_notes"
+                value={assForm.notes}
+                onChange={e => setAssForm(p => ({ ...p, notes: e.target.value }))}
+                placeholder="Observations, range of motion improvements, or therapy notes..."
+                rows={3}
+                className="text-xs"
+              />
+            </div>
+
+            <DialogFooter className="gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setAssessmentModalOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={assSaving} className="bg-blue-600 hover:bg-blue-700 text-white text-xs">
+                {assSaving ? 'Saving...' : 'Save Assessment Scores'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

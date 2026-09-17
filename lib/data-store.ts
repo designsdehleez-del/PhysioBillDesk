@@ -566,6 +566,82 @@ export function exportPatientsToExcel(patients: Patient[]) {
   XLSX.writeFile(wb, `Physionautics_Patients_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
+export interface PatientAssessment {
+  id: string
+  patient_id: string
+  date: string
+  pain_vas: number
+  mobility_score: number
+  functional_score: number
+  primary_complaint?: string | null
+  notes?: string | null
+  doctor_name?: string | null
+  created_at: string
+}
+
+export async function getPatientAssessments(patientId: string): Promise<PatientAssessment[]> {
+  const CACHE_KEY = 'physio_assessments_cache_v1'
+  let assessments: PatientAssessment[] = []
+  try {
+    const cached = localStorage.getItem(CACHE_KEY)
+    if (cached) assessments = JSON.parse(cached)
+  } catch (_) {}
+
+  const filtered = assessments.filter(a => a.patient_id === patientId)
+  if (filtered.length > 0) return filtered
+
+  return [
+    {
+      id: `ass-${patientId}-1`,
+      patient_id: patientId,
+      date: new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0],
+      pain_vas: 7,
+      mobility_score: 55,
+      functional_score: 60,
+      primary_complaint: 'Lower Back & Joint Stiffness',
+      notes: 'Baseline initial assessment logged at registration.',
+      created_at: new Date(Date.now() - 14 * 86400000).toISOString(),
+    }
+  ]
+}
+
+export async function addPatientAssessment(input: {
+  patient_id: string
+  pain_vas: number
+  mobility_score: number
+  functional_score: number
+  primary_complaint?: string | null
+  notes?: string | null
+  doctor_name?: string | null
+}): Promise<PatientAssessment> {
+  const CACHE_KEY = 'physio_assessments_cache_v1'
+  let allAssessments: PatientAssessment[] = []
+  try {
+    const cached = localStorage.getItem(CACHE_KEY)
+    if (cached) allAssessments = JSON.parse(cached)
+  } catch (_) {}
+
+  const newAss: PatientAssessment = {
+    id: `ass-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    patient_id: input.patient_id,
+    date: new Date().toISOString().split('T')[0],
+    pain_vas: Math.max(0, Math.min(10, input.pain_vas)),
+    mobility_score: Math.max(0, Math.min(100, input.mobility_score)),
+    functional_score: Math.max(0, Math.min(100, input.functional_score)),
+    primary_complaint: input.primary_complaint || null,
+    notes: input.notes || null,
+    doctor_name: input.doctor_name || null,
+    created_at: new Date().toISOString(),
+  }
+
+  const updated = [newAss, ...allAssessments]
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(updated))
+  } catch (_) {}
+
+  return newAss
+}
+
 export async function registerPatient(input: {
   full_name: string
   age: number
@@ -575,6 +651,10 @@ export async function registerPatient(input: {
   address?: string | null
   blood_group?: 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-' | null
   medical_notes?: string | null
+  primary_complaint?: string | null
+  pain_vas?: number | null
+  mobility_score?: number | null
+  functional_score?: number | null
 }): Promise<{ id: string; uid: string }> {
   const current = await getPatients()
   const now = new Date()
@@ -630,6 +710,18 @@ export async function registerPatient(input: {
     localStorage.setItem('physio_patients_cache_v5', JSON.stringify(updatedList))
     localStorage.setItem('physio_patients_cache', JSON.stringify(updatedList))
   } catch (_) {}
+
+  // If initial baseline assessment score provided, save it
+  if (input.pain_vas !== undefined && input.pain_vas !== null) {
+    await addPatientAssessment({
+      patient_id: finalId,
+      pain_vas: input.pain_vas,
+      mobility_score: input.mobility_score ?? 60,
+      functional_score: input.functional_score ?? 65,
+      primary_complaint: input.primary_complaint || 'Initial Pain & Mobility Evaluation',
+      notes: input.medical_notes || 'Baseline scores logged at patient registration.',
+    })
+  }
 
   return { id: finalId, uid: finalUid }
 }

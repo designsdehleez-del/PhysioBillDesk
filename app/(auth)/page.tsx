@@ -1,9 +1,10 @@
 'use client'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Stethoscope, Loader2, Award, HeartPulse, 
-  Building2, ArrowRight, Sparkles, User, Lock
+  Building2, ArrowRight, Sparkles, User, Lock, Activity, CheckCircle2, ShieldCheck
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding } from '@/lib/settings-store'
@@ -50,9 +51,8 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between font-sans">
       {/* Top Clean Header */}
-      <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-md px-6 py-3.5 sticky top-0 z-20">
+      <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur-md px-6 py-3.5 sticky top-0 z-20 shadow-xs">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          {/* Logo & Tagline only - NO duplicate text next to image logo */}
           <div className="flex items-center gap-3">
             {branding.logoUrl ? (
               <div className="flex flex-col">
@@ -86,10 +86,11 @@ export default function AuthPage() {
         </div>
       </header>
 
-      {/* Main Content: Minimal Light Design */}
-      <main className="max-w-6xl mx-auto px-6 py-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-        {/* Left Column: Brand Vision & Minimal Facts */}
-        <div className="lg:col-span-7 space-y-7">
+      {/* Main Content: Top-Aligned Grid Layout */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+        
+        {/* Left Column: Brand Overview & Clinical Information */}
+        <div className="lg:col-span-7 space-y-6">
           <div className="space-y-3">
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-amber-500" /> Welcome to Physionautics
@@ -104,7 +105,7 @@ export default function AuthPage() {
             </p>
           </div>
 
-          {/* Mission & Vision: Minimal Light Cards */}
+          {/* Clinical Mission & Vision Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div className="bg-white border border-slate-200/80 p-4 rounded-xl space-y-1.5 shadow-xs hover:border-blue-300 transition-colors">
               <div className="flex items-center gap-1.5 text-blue-700 font-bold text-xs">
@@ -125,196 +126,172 @@ export default function AuthPage() {
             </div>
           </div>
 
-          {/* Biomechanical Pain & Musculoskeletal Focus Vector Diagram */}
-          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs space-y-3">
+          {/* Professional Medical Photography & Focal Points */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs space-y-4 p-4 sm:p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
-                  <Stethoscope className="w-3.5 h-3.5" />
+                <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+                  <Stethoscope className="w-4 h-4" />
                 </div>
-                <h3 className="text-xs font-bold text-slate-800">Biomechanical Rehabilitation & Spine/Joint Focal Points</h3>
+                <h3 className="text-sm font-bold text-slate-900">Spine & Joint Focal Point Rehabilitation</h3>
               </div>
-              <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
-                Non-Surgical Focus
-              </span>
+              <Badge className="bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-semibold px-2.5 py-0.5 rounded-full">
+                Non-Surgical Care
+              </Badge>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
-              {/* Spine/Joint Musculoskeletal SVG Diagram */}
-              <div className="sm:col-span-5 bg-slate-50 border border-slate-100 rounded-lg p-3 flex flex-col items-center justify-center relative min-h-[160px]">
-                <svg viewBox="0 0 160 200" className="w-32 h-40 drop-shadow-xs">
-                  {/* Head & Neck */}
-                  <circle cx="80" cy="25" r="14" className="fill-slate-200 stroke-slate-400" strokeWidth="1.5" />
-                  
-                  {/* Spine Segment lines (Cervical, Thoracic, Lumbar) */}
-                  <path d="M 80 40 L 80 65" className="stroke-blue-500" strokeWidth="3" strokeDasharray="3 2" />
-                  <path d="M 80 65 L 80 115" className="stroke-slate-400" strokeWidth="3" strokeDasharray="4 2" />
-                  <path d="M 80 115 L 80 145" className="stroke-amber-500" strokeWidth="4" strokeDasharray="3 2" />
-                  
-                  {/* Shoulder girdle */}
-                  <path d="M 50 65 Q 80 58 110 65" className="fill-none stroke-slate-400" strokeWidth="2.5" />
-                  <circle cx="48" cy="66" r="6" className="fill-blue-100 stroke-blue-500" strokeWidth="1.5" />
-                  <circle cx="112" cy="66" r="6" className="fill-blue-100 stroke-blue-500" strokeWidth="1.5" />
-
-                  {/* Pelvic girdle */}
-                  <path d="M 60 145 Q 80 140 100 145" className="fill-none stroke-slate-500" strokeWidth="3" />
-
-                  {/* Lower Extremity (Knees) */}
-                  <path d="M 65 145 L 62 185" className="stroke-slate-400" strokeWidth="2.5" />
-                  <path d="M 95 145 L 98 185" className="stroke-slate-400" strokeWidth="2.5" />
-                  <circle cx="62" cy="185" r="5" className="fill-emerald-100 stroke-emerald-600" strokeWidth="1.5" />
-                  <circle cx="98" cy="185" r="5" className="fill-emerald-100 stroke-emerald-600" strokeWidth="1.5" />
-
-                  {/* Focal Pain Indicators */}
-                  {/* C5-C6 Cervical Pain pulse */}
-                  <circle cx="80" cy="52" r="4" className="fill-blue-600 animate-pulse" />
-                  <line x1="80" y1="52" x2="135" y2="45" className="stroke-blue-400" strokeWidth="1" strokeDasharray="2 2" />
-                  
-                  {/* L4-L5 Disc Herniation pulse */}
-                  <circle cx="80" cy="130" r="4.5" className="fill-amber-600 animate-pulse" />
-                  <line x1="80" y1="130" x2="140" y2="125" className="stroke-amber-400" strokeWidth="1" strokeDasharray="2 2" />
-
-                  {/* Knee OA Joint Space pulse */}
-                  <circle cx="98" cy="185" r="3.5" className="fill-emerald-600 animate-pulse" />
-                  <line x1="98" y1="185" x2="138" y2="175" className="stroke-emerald-400" strokeWidth="1" strokeDasharray="2 2" />
-                </svg>
+              {/* Real Human Rehabilitation Image */}
+              <div className="sm:col-span-5 relative h-40 rounded-xl overflow-hidden shadow-xs border border-slate-200">
+                <img
+                  src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=500"
+                  alt="Physiotherapy Patient Care"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent flex items-end p-2.5">
+                  <span className="text-[10px] font-bold text-white flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" /> Doctor-Guided Protocols
+                  </span>
+                </div>
               </div>
 
-              {/* Focal Annotations Grid */}
+              {/* Treatment Focus Points */}
               <div className="sm:col-span-7 space-y-2">
-                <div className="p-2 rounded-lg bg-blue-50/60 border border-blue-100 flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-600 mt-1 shrink-0" />
+                <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-start gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-600 mt-1.5 shrink-0" />
                   <div>
-                    <span className="text-[11px] font-bold text-slate-800 block">Cervical Spine (C5-C6 Decompression)</span>
-                    <span className="text-[10px] text-slate-500">Radiculopathy, neck stiffness & nerve root tension release</span>
+                    <span className="text-xs font-bold text-slate-900 block">Cervical Spine (C5–C6 Decompression)</span>
+                    <span className="text-[11px] text-slate-500">Radiculopathy, neck stiffness & nerve root tension release</span>
                   </div>
                 </div>
 
-                <div className="p-2 rounded-lg bg-amber-50/60 border border-amber-100 flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-amber-600 mt-1 shrink-0" />
+                <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-100 flex items-start gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-600 mt-1.5 shrink-0" />
                   <div>
-                    <span className="text-[11px] font-bold text-slate-800 block">Lumbar Spine (L4-L5 Disc Rehab)</span>
-                    <span className="text-[10px] text-slate-500">Sciatica relief, spinal traction & core postural stability</span>
+                    <span className="text-xs font-bold text-slate-900 block">Lumbar Spine (L4–L5 Disc Rehab)</span>
+                    <span className="text-[11px] text-slate-500">Sciatica relief, spinal traction & core postural stability</span>
                   </div>
                 </div>
 
-                <div className="p-2 rounded-lg bg-emerald-50/60 border border-emerald-100 flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-600 mt-1 shrink-0" />
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-start gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
                   <div>
-                    <span className="text-[11px] font-bold text-slate-800 block">Tibiofemoral Knee OA & Shoulder Mobility</span>
-                    <span className="text-[10px] text-slate-500">Cartilage loading protocol & capsular range expansion</span>
+                    <span className="text-xs font-bold text-slate-900 block">Knee OA & Shoulder Mobility</span>
+                    <span className="text-[11px] text-slate-500">Cartilage loading protocol & capsular range expansion</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Visual Treatment Modality Cards with SVG Icons */}
-          <div className="space-y-2">
+          {/* Evidence-Based Therapy Modalities */}
+          <div className="space-y-2.5">
             <p className="text-[11px] uppercase font-bold tracking-wider text-slate-400">
               Evidence-Based Therapy Modalities
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {/* Electrotherapy Waveform */}
-              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1.5 shadow-xs hover:border-blue-300 transition-colors">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M2 12h4l2-8 4 16 3-10 2 4h5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1 shadow-xs hover:border-blue-300 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+                  ⚡
                 </div>
-                <span className="text-[11px] font-bold text-slate-800 leading-tight">IFT & Electrotherapy</span>
-                <span className="text-[9px] text-slate-500 leading-tight">Interferential pain block</span>
+                <span className="text-xs font-bold text-slate-800">IFT & Electrotherapy</span>
+                <span className="text-[10px] text-slate-500">Pain block therapy</span>
               </div>
 
-              {/* Dry Needling & Trigger Point */}
-              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1.5 shadow-xs hover:border-blue-300 transition-colors">
-                <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="9" />
-                    <circle cx="12" cy="12" r="3" fill="currentColor" />
-                    <line x1="12" y1="3" x2="12" y2="6" />
-                    <line x1="12" y1="18" x2="12" y2="21" />
-                    <line x1="3" y1="12" x2="6" y2="12" />
-                    <line x1="18" y1="12" x2="21" y2="12" />
-                  </svg>
+              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1 shadow-xs hover:border-blue-300 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-xs">
+                  🎯
                 </div>
-                <span className="text-[11px] font-bold text-slate-800 leading-tight">Dry Needling</span>
-                <span className="text-[9px] text-slate-500 leading-tight">Myofascial trigger release</span>
+                <span className="text-xs font-bold text-slate-800">Dry Needling</span>
+                <span className="text-[10px] text-slate-500">Trigger point release</span>
               </div>
 
-              {/* Spinal Decompression Traction */}
-              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1.5 shadow-xs hover:border-blue-300 transition-colors">
-                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="5" y="4" width="14" height="4" rx="1" />
-                    <rect x="5" y="10" width="14" height="4" rx="1" />
-                    <rect x="5" y="16" width="14" height="4" rx="1" />
-                    <path d="M12 8v2M12 14v2" strokeDasharray="1 1" />
-                  </svg>
+              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1 shadow-xs hover:border-blue-300 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs">
+                   Spine
                 </div>
-                <span className="text-[11px] font-bold text-slate-800 leading-tight">Spinal Traction</span>
-                <span className="text-[9px] text-slate-500 leading-tight">Intervertebral spacing</span>
+                <span className="text-xs font-bold text-slate-800">Spinal Traction</span>
+                <span className="text-[10px] text-slate-500">Disc decompression</span>
               </div>
 
-              {/* Kinesiology Taping */}
-              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1.5 shadow-xs hover:border-blue-300 transition-colors">
-                <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 8l16-4M4 16l16-4M4 20l16-4" strokeLinecap="round" />
-                  </svg>
+              <div className="bg-white border border-slate-200/80 p-3 rounded-xl flex flex-col items-center text-center space-y-1 shadow-xs hover:border-blue-300 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center font-bold text-xs">
+                  🩹
                 </div>
-                <span className="text-[11px] font-bold text-slate-800 leading-tight">Kinesio Taping</span>
-                <span className="text-[9px] text-slate-500 leading-tight">Biomechanical support</span>
+                <span className="text-xs font-bold text-slate-800">Kinesio Taping</span>
+                <span className="text-[10px] text-slate-500">Joint stabilization</span>
               </div>
             </div>
           </div>
 
-          {/* Clinical Insights */}
-          <div className="space-y-2.5 pt-1">
+          {/* Clinical Recovery Statistics */}
+          <div className="space-y-2 pt-1">
             <p className="text-[11px] uppercase font-bold tracking-wider text-slate-400">
               Clinical Recovery Statistics
             </p>
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white border border-slate-200/80 p-3 rounded-xl text-center shadow-xs">
+              <div className="bg-white border border-slate-200/80 p-3.5 rounded-xl text-center shadow-xs">
                 <div className="text-xl font-extrabold text-blue-600">84%</div>
-                <div className="text-[11px] font-semibold text-slate-700 mt-0.5">Surgery Avoidance</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">Chronic lumbar & knee OA</div>
+                <div className="text-[11px] font-bold text-slate-800 mt-0.5">Surgery Avoidance</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Chronic lumbar & knee cases</div>
               </div>
 
-              <div className="bg-white border border-slate-200/80 p-3 rounded-xl text-center shadow-xs">
+              <div className="bg-white border border-slate-200/80 p-3.5 rounded-xl text-center shadow-xs">
                 <div className="text-xl font-extrabold text-emerald-600">3.2x</div>
-                <div className="text-[11px] font-semibold text-slate-700 mt-0.5">Faster Recovery</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">Targeted electrotherapy</div>
+                <div className="text-[11px] font-bold text-slate-800 mt-0.5">Faster Recovery</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Targeted rehab protocols</div>
               </div>
 
-              <div className="bg-white border border-slate-200/80 p-3 rounded-xl text-center shadow-xs">
+              <div className="bg-white border border-slate-200/80 p-3.5 rounded-xl text-center shadow-xs">
                 <div className="text-xl font-extrabold text-amber-600">98.4%</div>
-                <div className="text-[11px] font-semibold text-slate-700 mt-0.5">Patient CSAT</div>
+                <div className="text-[11px] font-bold text-slate-800 mt-0.5">Patient CSAT</div>
                 <div className="text-[10px] text-slate-400 mt-0.5">Verified NCR patient reviews</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Clean Minimal Sign In Card */}
-        <div className="lg:col-span-5">
-          <Card className="shadow-lg border-slate-200/90 bg-white rounded-2xl">
+        {/* Right Column: Clean Top-Aligned Sign In Card */}
+        <div className="lg:col-span-5 w-full">
+          <Card className="shadow-md border-slate-200/90 bg-white rounded-2xl">
             <CardHeader className="space-y-1 pb-3 pt-5 border-b border-slate-100">
               <div className="flex items-center justify-between">
-                <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 text-[10px] font-semibold">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-semibold">
                   Authorized Access
                 </Badge>
-                <span className="text-[10px] text-slate-400 font-mono">v0.1.0</span>
+                <span className="text-[10px] text-slate-400 font-mono">Physionautics v1.0</span>
               </div>
               <CardTitle className="text-lg font-bold text-slate-900">
                 {isSignUp ? 'Create Staff Account' : 'Portal Sign In'}
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                Enter your credentials to access the clinic system.
+                Enter your clinic credentials to access the system.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4 pt-4 pb-5">
+              {/* Quick Fill Demo Shortcuts */}
+              <div className="p-2.5 bg-slate-50 border border-slate-200/60 rounded-xl space-y-1.5">
+                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
+                  Quick Login Demo Credentials
+                </span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => fillQuickLogin('admin@physionautics.com', 'admin123')}
+                    className="px-2 py-1 bg-white border border-slate-200 hover:border-blue-400 rounded-lg text-[11px] font-semibold text-slate-700 text-left transition-colors"
+                  >
+                    👑 Master Admin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fillQuickLogin('sarah@physionautics.com', 'doctor123')}
+                    className="px-2 py-1 bg-white border border-slate-200 hover:border-blue-400 rounded-lg text-[11px] font-semibold text-slate-700 text-left transition-colors"
+                  >
+                    🩺 Doctor Desk
+                  </button>
+                </div>
+              </div>
 
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 <div className="space-y-1">
@@ -329,7 +306,7 @@ export default function AuthPage() {
                       onChange={e => setEmail(e.target.value)}
                       required
                       disabled={loading}
-                      className="pl-9 h-10 bg-white text-xs border-slate-200"
+                      className="pl-9 h-10 bg-white text-xs border-slate-200 focus-visible:ring-blue-600"
                     />
                   </div>
                 </div>
@@ -346,18 +323,18 @@ export default function AuthPage() {
                       onChange={e => setPassword(e.target.value)}
                       required
                       disabled={loading}
-                      className="pl-9 h-10 bg-white text-xs border-slate-200"
+                      className="pl-9 h-10 bg-white text-xs border-slate-200 focus-visible:ring-blue-600"
                     />
                   </div>
                 </div>
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 shadow-xs text-xs gap-1.5 mt-1" 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 shadow-xs text-xs gap-1.5 mt-1 rounded-xl" 
                   disabled={loading}
                 >
                   {loading ? (
-                    <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Verifying...</>
+                    <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Verifying Credentials...</>
                   ) : (
                     <>{isSignUp ? 'Create Account' : 'Sign In'} <ArrowRight className="w-3.5 h-3.5" /></>
                   )}
@@ -380,7 +357,7 @@ export default function AuthPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200/80 bg-white px-6 py-3 text-xs text-slate-500">
+      <footer className="border-t border-slate-200/80 bg-white px-6 py-3.5 text-xs text-slate-500">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div>
             © {new Date().getFullYear()} Physionautics Physical Therapy & Pain Rehabilitation Centre.

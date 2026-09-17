@@ -9,11 +9,10 @@ export function BottomNav() {
 
   const navItems = [
     { label: 'Home', href: '/dashboard', icon: Home },
-    { label: 'Self Assessment', href: '/assessment', icon: Sparkles },
-    { label: 'My Sessions', href: '/patients', icon: Calendar },
-    { label: 'Videos', href: '/feedback-builder', icon: Video },
-    { label: 'Profile', href: '/doctors', icon: User },
-    { label: 'More', href: '/settings', icon: MoreHorizontal },
+    { label: 'Patients', href: '/patients', icon: Calendar },
+    { label: 'Team', href: '/doctors', icon: User },
+    { label: 'Feedback', href: '/feedback-builder', icon: Video },
+    { label: 'Settings', href: '/settings', icon: MoreHorizontal },
   ]
 
   return (

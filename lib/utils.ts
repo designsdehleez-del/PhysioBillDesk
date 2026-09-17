@@ -1,4 +1,4 @@
-﻿import { type ClassValue, clsx } from 'clsx'
+import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
 export function cn(...inputs: ClassValue[]) {
@@ -14,22 +14,28 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-export function formatDate(dateStr: string): string {
+export function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return '-'
   return new Intl.DateTimeFormat('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  }).format(new Date(dateStr))
+  }).format(d)
 }
 
-export function formatDateTime(dateStr: string): string {
+export function formatDateTime(dateStr?: string | null): string {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return '-'
   return new Intl.DateTimeFormat('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(dateStr))
+  }).format(d)
 }
 
 export function isValidPhone(phone: string): boolean {

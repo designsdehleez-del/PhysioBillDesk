@@ -61,7 +61,7 @@ export function middleware(request: NextRequest) {
 
   // Admin-only route protection
   const isAdminOnly = ADMIN_ONLY_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
-  if (isAdminOnly && userRole && userRole !== 'admin') {
+  if (isAdminOnly && (!userRole || userRole !== 'admin')) {
     const dashboardUrl = new URL('/dashboard', request.url)
     dashboardUrl.searchParams.set('error', 'unauthorized_admin_area')
     return NextResponse.redirect(dashboardUrl)

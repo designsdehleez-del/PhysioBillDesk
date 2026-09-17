@@ -567,7 +567,6 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
-      <FinancialTrackingView />
 
       {/* ================= HEADER & TIMEFRAME FILTERS ================= */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 text-white p-5 rounded-2xl shadow-md">

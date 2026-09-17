@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { Pencil, Trash2, Plus, UserCog, Upload, Download, Building2, Search, Filter } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Pencil, Trash2, Plus, UserCog, Upload, Download, Building2, Search, Filter, User } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,6 +35,7 @@ const DOCTOR_IMPORT_COLUMNS: ColumnDefinition[] = [
 ]
 
 export default function DoctorsPage() {
+  const router = useRouter()
   const { toast } = useToast()
   const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
@@ -59,47 +61,38 @@ export default function DoctorsPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const effectiveFilter = !isAdmin && staffCentreId ? staffCentreId : centreFilter
-    const [cList, dList, vList, fbList] = await Promise.all([
-      getCentres(),
-      getDoctors(effectiveFilter),
-      getVisits(),
-      getPatientFeedback(),
-    ])
-    setCentres(cList)
+    try {
+      const [dData, cData, vData, fbData] = await Promise.all([
+        getDoctors(),
+        getCentres(),
+        getVisits(),
+        getPatientFeedback(),
+      ])
 
-    const cMap = new Map(cList.map(c => [c.id, c.name]))
-    setDoctors(dList.map(d => {
-      const docRawName = d.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
-      const docVisits = vList.filter(v => {
-        if (v.doctor_id && v.doctor_id === d.id) return true
-        if (v.doctor_name) {
-          const vDocName = v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
-          return vDocName.includes(docRawName) || docRawName.includes(vDocName)
+      const docRows: DoctorRow[] = dData.map(d => {
+        const c = cData.find(centre => centre.id === d.centre_id)
+        const dVisits = vData.filter(v => v.doctor_id === d.id || (v.doctor_name && v.doctor_name.toLowerCase().includes(d.name.toLowerCase())))
+        const rev = dVisits.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
+        
+        const dFb = fbData.filter(f => f.doctor_name && f.doctor_name.toLowerCase().includes(d.name.toLowerCase()))
+        const avgR = dFb.length > 0 ? (dFb.reduce((s, f) => s + f.rating, 0) / dFb.length).toFixed(1) : '4.8'
+
+        return {
+          ...d,
+          centreName: c?.name ?? null,
+          revenue: rev,
+          visitCount: dVisits.length,
+          avgRating: avgR,
         }
-        return false
       })
-      const revenue = docVisits.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
 
-      const docFeedbacks = fbList.filter(f => {
-        if (!f.doctor_name) return false
-        const fDocName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
-        return fDocName.includes(docRawName) || docRawName.includes(fDocName)
-      })
-      const avgRating = docFeedbacks.length > 0 
-        ? (docFeedbacks.reduce((s, f) => s + f.rating, 0) / docFeedbacks.length).toFixed(1)
-        : '5.0'
-
-      return {
-        ...d,
-        centreName: d.centre_id ? cMap.get(d.centre_id) ?? null : null,
-        revenue,
-        visitCount: docVisits.length,
-        avgRating,
-      }
-    }))
+      setDoctors(docRows)
+      setCentres(cData)
+    } catch (err) {
+      console.error('Failed to load doctors:', err)
+    }
     setLoading(false)
-  }, [centreFilter, isAdmin, staffCentreId])
+  }, [])
 
   useEffect(() => { load() }, [load])
 
@@ -142,41 +135,48 @@ export default function DoctorsPage() {
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
         centre_id: form.centre_id || null,
+        is_active: editing ? editing.is_active : true,
       })
-      toast({ title: editing ? 'Doctor updated' : 'Doctor created' })
+      toast({ title: editing ? 'Doctor profile updated' : 'New Doctor added & tagged to clinic centre' })
       setDialogOpen(false)
       load()
-    } catch (err: unknown) {
-      toast({ title: 'Failed to save doctor', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' })
-    } finally {
-      setSaving(false)
+    } catch (err: any) {
+      toast({ title: 'Failed to save doctor', description: err?.message, variant: 'destructive' })
     }
+    setSaving(false)
   }
 
   const toggleActive = async (d: Doctor) => {
-    await toggleDoctorActive(d.id)
-    toast({ title: `Doctor marked as ${!d.is_active ? 'active' : 'inactive'}` })
-    load()
+    try {
+      await toggleDoctorActive(d.id)
+      toast({ title: `Doctor status toggled` })
+      load()
+    } catch (err: any) {
+      toast({ title: 'Failed to update status', description: err?.message, variant: 'destructive' })
+    }
   }
 
-  const doDelete = async () => {
+  const handleDelete = async () => {
     if (!deleteId) return
-    await deleteDoctor(deleteId)
-    toast({ title: 'Doctor deleted' })
-    setDeleteId(null)
-    load()
+    try {
+      await deleteDoctor(deleteId)
+      toast({ title: 'Doctor removed from directory' })
+      setDeleteId(null)
+      load()
+    } catch (err: any) {
+      toast({ title: 'Failed to delete doctor', description: err?.message, variant: 'destructive' })
+    }
   }
 
   const handleBulkImport = async (rows: Record<string, any>[]) => {
-    const validDoctors: Partial<Doctor>[] = rows.map(r => {
-      let matchedCentreId: string | null = null
-      if (r.centre_name) {
-        const found = centres.find(c => c.name.toLowerCase().includes(String(r.centre_name).toLowerCase().trim()))
-        if (found) matchedCentreId = found.id
-      }
+    const validDoctors = rows.map(r => {
+      const centreNameStr = r.centre_name ? String(r.centre_name).trim().toLowerCase() : ''
+      const matchedCentre = centres.find(c => c.name.toLowerCase().includes(centreNameStr) || centreNameStr.includes(c.name.toLowerCase()))
+      const matchedCentreId = matchedCentre?.id || null
+
       return {
-        name: String(r.name || '').trim(),
-        specialization: String(r.specialization || '').trim(),
+        name: String(r.name).trim(),
+        specialization: String(r.specialization).trim(),
         phone: r.phone ? String(r.phone).trim() : null,
         email: r.email ? String(r.email).trim() : null,
         centre_id: matchedCentreId || centres[0]?.id || null,
@@ -195,7 +195,6 @@ export default function DoctorsPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
-      <DoctorProfileView />
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -416,7 +415,7 @@ export default function DoctorsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={doDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

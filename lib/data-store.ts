@@ -253,7 +253,7 @@ export async function saveCentre(c: Partial<Centre>): Promise<Centre> {
     updated = [...current, savedCentre]
   }
 
-  localStorage.setItem('physio_centres_cache', JSON.stringify(updated))
+  localStorage.setItem('physio_centres_cache_v5', JSON.stringify(updated))
 
   try {
     const supabase = createClient()
@@ -360,7 +360,7 @@ export async function saveDoctor(d: Partial<Doctor>): Promise<Doctor> {
     updated = [...current, savedDoc]
   }
 
-  localStorage.setItem('physio_doctors_cache', JSON.stringify(updated))
+  localStorage.setItem('physio_doctors_cache_v5', JSON.stringify(updated))
   try {
     const supabase = createClient()
     if (d.id) {

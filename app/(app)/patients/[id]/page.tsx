@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Printer, Receipt, User } from 'lucide-react'
+import { ArrowLeft, Printer, Receipt, User, FileText } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -160,8 +160,6 @@ export default function PatientDetailPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
-      <PatientProfileView />
-
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /></Button>
@@ -170,7 +168,14 @@ export default function PatientDetailPage() {
             <p className="text-sm text-muted-foreground font-mono">{patient.uid}</p>
           </div>
         </div>
-        <Button onClick={() => router.push(`/billing?patientId=${patient.id}`)}><Receipt className="h-4 w-4 mr-2" />New Bill</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => router.push(`/patients/${patient.id}/report`)}>
+            <FileText className="h-4 w-4 mr-2 text-blue-600" /> View Report Card
+          </Button>
+          <Button onClick={() => router.push(`/billing?patientId=${patient.id}`)}>
+            <Receipt className="h-4 w-4 mr-2" /> New Bill
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -15,6 +15,7 @@ import { ExcelImporter, type ColumnDefinition } from '@/components/import/excel-
 import type { Doctor, Centre, PatientFeedback } from '@/lib/supabase/types'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
+import { DoctorProfileView } from '@/components/doctors/doctor-profile-view'
 import { formatCurrency } from '@/lib/utils'
 
 interface DoctorRow extends Doctor { 
@@ -193,7 +194,8 @@ export default function DoctorsPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+      <DoctorProfileView />
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

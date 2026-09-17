@@ -12,6 +12,7 @@ import type { Patient, VisitWithServices } from '@/lib/supabase/types'
 
 import { PrintableInvoiceModal } from '@/components/billing/printable-invoice-modal'
 import { StoredVisit, getPatients, getVisits } from '@/lib/data-store'
+import { PatientProfileView } from '@/components/patients/patient-profile-view'
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -158,7 +159,9 @@ export default function PatientDetailPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+      <PatientProfileView />
+
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /></Button>

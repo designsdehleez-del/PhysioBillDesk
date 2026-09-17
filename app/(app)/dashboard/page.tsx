@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 import { getVisits, getCentres, getPatientFeedback, getDoctors, exportBillsToExcel, type StoredVisit } from '@/lib/data-store'
-import type { Centre, Doctor, PatientFeedback } from '@/lib/supabase/types'
+import { FinancialTrackingView } from '@/components/dashboard/financial-tracking-view'
+import { Centre, Doctor, PatientFeedback } from '@/lib/supabase/types'
 
 interface DoctorStat {
   id: string
@@ -566,6 +567,8 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+      <FinancialTrackingView />
+
       {/* ================= HEADER & TIMEFRAME FILTERS ================= */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 text-white p-5 rounded-2xl shadow-md">
         <div>

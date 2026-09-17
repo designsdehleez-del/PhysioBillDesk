@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { TopHeaderNav } from '@/components/layout/top-header-nav'
+import { BottomNav } from '@/components/layout/bottom-nav'
 import { InactivityLock } from '@/components/security/inactivity-lock'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -26,10 +27,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!user) return null
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50/80">
+    <div className="min-h-screen flex flex-col bg-gray-50/80 pb-16 md:pb-0">
       <InactivityLock />
       <TopHeaderNav />
       <main className="flex-1 w-full bg-gray-50">{children}</main>
+      <BottomNav />
     </div>
   )
 }

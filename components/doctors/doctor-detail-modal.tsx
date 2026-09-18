@@ -17,6 +17,9 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Doctor, PatientFeedback } from '@/lib/supabase/types'
 import type { StoredVisit } from '@/lib/data-store'
 
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
 interface DoctorDetailModalProps {
   doctor: Doctor | null
   open: boolean
@@ -34,6 +37,7 @@ export function DoctorDetailModal({
   feedbacks,
   centreName
 }: DoctorDetailModalProps) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<'patients' | 'reviews'>('patients')
 
   if (!doctor) return null
@@ -66,7 +70,7 @@ export function DoctorDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-50 p-0 rounded-2xl border-slate-200">
+      <DialogContent className="sm:max-w-5xl md:max-w-6xl w-[95vw] max-h-[92vh] overflow-y-auto bg-slate-50 p-0 rounded-2xl border-slate-200 shadow-2xl">
         
         {/* Top Doctor Profile Banner */}
         <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-6 relative">
@@ -110,13 +114,25 @@ export function DoctorDetailModal({
               </div>
             </div>
 
-            {/* Quick Rating Badge */}
-            <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/20 text-right shrink-0">
-              <div className="text-[10px] uppercase font-bold text-blue-200">Patient CSAT Rating</div>
-              <div className="text-2xl font-black text-amber-300 flex items-center justify-end gap-1.5">
-                {avgRating} <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+            {/* Quick Rating Badge & Dedicated Report Card Navigation */}
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 shrink-0">
+              <div className="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/20 text-right">
+                <div className="text-[10px] uppercase font-bold text-blue-200">Patient CSAT Rating</div>
+                <div className="text-2xl font-black text-amber-300 flex items-center justify-end gap-1.5">
+                  {avgRating} <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+                </div>
+                <div className="text-[10px] text-slate-300 font-medium mt-0.5">{docFeedbacks.length} verified reviews</div>
               </div>
-              <div className="text-[10px] text-slate-300 font-medium mt-0.5">From {docFeedbacks.length} verified reviews</div>
+
+              <Button
+                onClick={() => {
+                  onOpenChange(false)
+                  router.push(`/doctors/${doctor.id}`)
+                }}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-1.5 border border-white/20"
+              >
+                Open Report Card Page <ChevronRight className="w-4 h-4" />
+              </Button>
             </div>
           </div>
 

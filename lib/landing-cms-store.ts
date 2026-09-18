@@ -21,8 +21,11 @@ export interface ServiceCardItem {
 export interface BranchContactItem {
   id: string
   name: string
-  tagline: string
+  area: string
+  address: string
   phone: string
+  hours: string
+  googleMapsUrl: string
 }
 
 export interface LandingPageCMSData {
@@ -179,9 +182,33 @@ export const DEFAULT_LANDING_CMS: LandingPageCMSData = {
   portalSubtitle: 'From appointment scheduling to home exercise plans and digital bill receipts, Physionautics keeps patients connected to their recovery journey.',
 
   branches: [
-    { id: 'b-1', name: 'New Friends Colony', tagline: 'Flagship Centre, South Delhi', phone: '+91 98100 12345' },
-    { id: 'b-2', name: 'Vasant Vihar', tagline: 'Spine & Joint Centre, South Delhi', phone: '+91 98100 67890' },
-    { id: 'b-3', name: 'Gurugram DLF Phase 1', tagline: 'Sports & Spine Rehab, HR', phone: '+91 98100 54321' },
+    {
+      id: 'b-1',
+      name: 'New Friends Colony (Flagship)',
+      area: 'South Delhi',
+      address: 'D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025',
+      phone: '+91 83839 36905',
+      hours: '8:00 AM – 8:30 PM (Mon-Sat)',
+      googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=CV+Raman+Marg+New+Friends+Colony+New+Delhi',
+    },
+    {
+      id: 'b-2',
+      name: 'Vasant Vihar Spine & Joint',
+      area: 'South Delhi',
+      address: 'C-4/18, Vasant Vihar, Outer Ring Road, New Delhi – 110057',
+      phone: '+91 98100 67890',
+      hours: '8:30 AM – 8:00 PM (Mon-Sat)',
+      googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=Vasant+Vihar+Outer+Ring+Road+New+Delhi',
+    },
+    {
+      id: 'b-3',
+      name: 'Gurugram DLF Phase 1',
+      area: 'Gurugram, Haryana',
+      address: 'A-26/12, Golf Course Road, DLF Phase 1, Gurugram – 122002',
+      phone: '+91 98100 54321',
+      hours: '9:00 AM – 8:00 PM (Mon-Sat)',
+      googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=Golf+Course+Road+DLF+Phase+1+Gurugram',
+    },
   ],
 }
 

@@ -294,15 +294,15 @@ export default function BillingPage() {
             <Button
               size="sm"
               variant={activeTab === 'create' ? 'default' : 'ghost'}
-              className={activeTab === 'create' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-700 text-xs'}
+              className={activeTab === 'create' ? 'bg-blue-600 text-white shadow-sm font-semibold' : 'text-gray-700 text-xs font-medium'}
               onClick={() => setActiveTab('create')}
             >
-              <Plus className="h-3.5 w-3.5 mr-1.5" /> Create New Bill
+              <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" /> New Bill Form
             </Button>
             <Button
               size="sm"
               variant={activeTab === 'ledger' ? 'default' : 'ghost'}
-              className={activeTab === 'ledger' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-700 text-xs'}
+              className={activeTab === 'ledger' ? 'bg-blue-600 text-white shadow-sm font-semibold' : 'text-gray-700 text-xs font-medium'}
               onClick={() => setActiveTab('ledger')}
             >
               <Receipt className="h-3.5 w-3.5 mr-1.5" /> Invoices & Ledger ({visits.length})

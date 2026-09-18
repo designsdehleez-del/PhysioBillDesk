@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
-  Sparkles, Save, RefreshCw, Upload, Image as ImageIcon, Trash2, 
-  CheckCircle2, ArrowLeft, Layers, Stethoscope, FileText, LayoutGrid, HeartPulse, ShieldCheck
+  Sparkles, Save, RefreshCw, Upload, Image as ImageIcon, Trash2, Plus, Pencil,
+  CheckCircle2, ArrowLeft, Layers, Stethoscope, FileText, LayoutGrid, HeartPulse,
+  Building2, MapPin, Phone, Clock, ExternalLink, ShieldCheck
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,7 +16,13 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
-import { useLandingCMS, type LandingPageCMSData, type ProcedureCardItem, type ServiceCardItem } from '@/lib/landing-cms-store'
+import { 
+  useLandingCMS, 
+  type LandingPageCMSData, 
+  type ProcedureCardItem, 
+  type ServiceCardItem, 
+  type BranchContactItem 
+} from '@/lib/landing-cms-store'
 
 export default function LandingCMSEditorPage() {
   const { toast } = useToast()
@@ -37,7 +44,7 @@ export default function LandingCMSEditorPage() {
       setSaving(false)
       toast({
         title: 'Landing Page CMS Updated!',
-        description: 'All text box changes and image URLs have been saved and are now live on the landing page.',
+        description: 'All text box changes, images, and clinic branch locations have been saved and are now live.',
       })
     }, 400)
   }
@@ -53,7 +60,7 @@ export default function LandingCMSEditorPage() {
     }
   }
 
-  // Image Upload helper converting local files to base64
+  // Helper for image upload (base64)
   const handleImageFileUpload = (
     e: React.ChangeEvent<HTMLInputElement>, 
     onSuccess: (url: string) => void
@@ -74,6 +81,56 @@ export default function LandingCMSEditorPage() {
     reader.readAsDataURL(file)
   }
 
+  // Handlers for Procedures
+  const handleAddProcedure = () => {
+    const newProc: ProcedureCardItem = {
+      id: `proc-${Date.now()}`,
+      title: 'New Clinical Procedure',
+      description: 'Describe the new treatment procedure and targeted recovery outcomes.',
+      imageUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=600',
+      badge: 'Specialized Care',
+    }
+    setForm(f => ({ ...f, procedures: [...f.procedures, newProc] }))
+  }
+
+  const handleDeleteProcedure = (index: number) => {
+    setForm(f => ({ ...f, procedures: f.procedures.filter((_, i) => i !== index) }))
+  }
+
+  // Handlers for Services
+  const handleAddService = () => {
+    const newSrv: ServiceCardItem = {
+      id: `srv-${Date.now()}`,
+      title: 'New Therapy Service',
+      description: 'Enter modality details and patient recovery goals.',
+      imageUrl: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=500',
+      badge: 'New Therapy',
+    }
+    setForm(f => ({ ...f, services: [...f.services, newSrv] }))
+  }
+
+  const handleDeleteService = (index: number) => {
+    setForm(f => ({ ...f, services: f.services.filter((_, i) => i !== index) }))
+  }
+
+  // Handlers for Clinic Branches
+  const handleAddBranch = () => {
+    const newBranch: BranchContactItem = {
+      id: `b-${Date.now()}`,
+      name: 'New Delhi Clinic Branch',
+      area: 'Delhi-NCR',
+      address: 'Enter full street address, landmark, and pincode',
+      phone: '+91 98100 00000',
+      hours: '9:00 AM – 8:00 PM (Mon-Sat)',
+      googleMapsUrl: 'https://maps.google.com',
+    }
+    setForm(f => ({ ...f, branches: [...(f.branches || []), newBranch] }))
+  }
+
+  const handleDeleteBranch = (index: number) => {
+    setForm(f => ({ ...f, branches: (f.branches || []).filter((_, i) => i !== index) }))
+  }
+
   return (
     <div className="space-y-6 pb-16">
       
@@ -89,10 +146,10 @@ export default function LandingCMSEditorPage() {
             </Badge>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Landing Page Content & Image Editor
+            Landing Page CMS & Clinic Editor
           </h1>
           <p className="text-slate-500 text-xs sm:text-sm">
-            Edit text boxes, headings, clinical stats, and image URLs box-by-box for your public landing page.
+            Visual box-by-box editor for hero text, procedure images, clinical services, and NCR branch clinic details.
           </p>
         </div>
 
@@ -110,7 +167,7 @@ export default function LandingCMSEditorPage() {
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-10 px-5 rounded-xl shadow-sm gap-2"
           >
             {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save CMS Changes
+            Save All Live Changes
           </Button>
         </div>
       </div>
@@ -124,16 +181,19 @@ export default function LandingCMSEditorPage() {
       <Tabs defaultValue="hero" className="space-y-6">
         <TabsList className="bg-slate-100 p-1 rounded-xl flex flex-wrap gap-1">
           <TabsTrigger value="hero" className="rounded-lg text-xs font-bold gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" /> Hero & Stats Box
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" /> Hero & Stats
           </TabsTrigger>
           <TabsTrigger value="procedures" className="rounded-lg text-xs font-bold gap-1.5">
-            <HeartPulse className="w-3.5 h-3.5 text-rose-600" /> Procedures Cards (4)
+            <HeartPulse className="w-3.5 h-3.5 text-rose-600" /> Procedures ({form.procedures.length})
           </TabsTrigger>
           <TabsTrigger value="services" className="rounded-lg text-xs font-bold gap-1.5">
-            <LayoutGrid className="w-3.5 h-3.5 text-indigo-600" /> Clinical Services (6)
+            <LayoutGrid className="w-3.5 h-3.5 text-indigo-600" /> Clinical Services ({form.services.length})
+          </TabsTrigger>
+          <TabsTrigger value="branches" className="rounded-lg text-xs font-bold gap-1.5">
+            <Building2 className="w-3.5 h-3.5 text-amber-600" /> Clinic Branches ({form.branches?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="showcase" className="rounded-lg text-xs font-bold gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-emerald-600" /> Platform Showcase
+            <Layers className="w-3.5 h-3.5 text-emerald-600" /> Showcase & Portal
           </TabsTrigger>
         </TabsList>
 
@@ -142,7 +202,7 @@ export default function LandingCMSEditorPage() {
           <Card className="shadow-xs border-slate-200/90 rounded-2xl">
             <CardHeader className="border-b border-slate-100 pb-4">
               <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-blue-600" /> Top Hero Section & Main Positioning
+                <Sparkles className="w-4 h-4 text-blue-600" /> Top Hero Section & Positioning
               </CardTitle>
               <CardDescription className="text-xs">
                 Edit main headline, subtext description, and right-column procedure image.
@@ -151,7 +211,9 @@ export default function LandingCMSEditorPage() {
             <CardContent className="p-6 space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-700">Top Badge Text</Label>
+                  <Label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <Pencil className="w-3 h-3 text-blue-600" /> Top Badge Text
+                  </Label>
                   <Input 
                     value={form.heroBadgeText}
                     onChange={e => setForm(f => ({ ...f, heroBadgeText: e.target.value }))}
@@ -159,7 +221,9 @@ export default function LandingCMSEditorPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-700">Headline Highlight Text (Blue Gradient)</Label>
+                  <Label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <Pencil className="w-3 h-3 text-blue-600" /> Headline Highlight (Gradient)
+                  </Label>
                   <Input 
                     value={form.heroTitleHighlight}
                     onChange={e => setForm(f => ({ ...f, heroTitleHighlight: e.target.value }))}
@@ -170,7 +234,7 @@ export default function LandingCMSEditorPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-700">Headline Prefix Text</Label>
+                  <Label className="text-xs font-bold text-slate-700">Headline Prefix</Label>
                   <Input 
                     value={form.heroTitlePrefix}
                     onChange={e => setForm(f => ({ ...f, heroTitlePrefix: e.target.value }))}
@@ -178,7 +242,7 @@ export default function LandingCMSEditorPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-700">Headline Suffix Text</Label>
+                  <Label className="text-xs font-bold text-slate-700">Headline Suffix</Label>
                   <Input 
                     value={form.heroTitleSuffix}
                     onChange={e => setForm(f => ({ ...f, heroTitleSuffix: e.target.value }))}
@@ -197,12 +261,12 @@ export default function LandingCMSEditorPage() {
               </div>
 
               {/* Stats Box */}
-              <div className="pt-2 border-t border-slate-100 space-y-3">
+              <div className="pt-4 border-t border-slate-100 space-y-3">
                 <Label className="text-xs font-extrabold uppercase tracking-wider text-slate-500 block">
                   Clinical Recovery Statistics (3 Columns)
                 </Label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                     <Label className="text-[11px] font-bold text-slate-700">Stat 1 (Value / Label)</Label>
                     <Input 
                       value={form.stat1Value}
@@ -218,7 +282,7 @@ export default function LandingCMSEditorPage() {
                     />
                   </div>
 
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                     <Label className="text-[11px] font-bold text-slate-700">Stat 2 (Value / Label)</Label>
                     <Input 
                       value={form.stat2Value}
@@ -234,7 +298,7 @@ export default function LandingCMSEditorPage() {
                     />
                   </div>
 
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                     <Label className="text-[11px] font-bold text-slate-700">Stat 3 (Value / Label)</Label>
                     <Input 
                       value={form.stat3Value}
@@ -252,16 +316,16 @@ export default function LandingCMSEditorPage() {
                 </div>
               </div>
 
-              {/* Main Logged-In Hero Procedure Image */}
-              <div className="pt-2 border-t border-slate-100 space-y-3">
+              {/* Logged-In Hero Card Image */}
+              <div className="pt-4 border-t border-slate-100 space-y-3">
                 <Label className="text-xs font-extrabold uppercase tracking-wider text-slate-500 block">
-                  Logged-In Hero Card Image & Overlay Text
+                  Logged-In Hero Card Image & Overlay
                 </Label>
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                  <div className="md:col-span-4 h-36 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 relative">
+                  <div className="md:col-span-4 h-40 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 relative shadow-inner">
                     <img 
                       src={form.heroCardImageUrl} 
-                      alt="Hero Card Preview" 
+                      alt="Hero Preview" 
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -272,7 +336,6 @@ export default function LandingCMSEditorPage() {
                         value={form.heroCardImageUrl}
                         onChange={e => setForm(f => ({ ...f, heroCardImageUrl: e.target.value }))}
                         className="h-9 text-xs font-mono"
-                        placeholder="https://..."
                       />
                     </div>
                     <div>
@@ -297,17 +360,26 @@ export default function LandingCMSEditorPage() {
           </Card>
         </TabsContent>
 
-        {/* ================= TAB 2: PROCEDURES CARDS (4 CARDS) ================= */}
+        {/* ================= TAB 2: PROCEDURES CARDS ================= */}
         <TabsContent value="procedures" className="space-y-6">
           <Card className="shadow-xs border-slate-200/90 rounded-2xl">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <HeartPulse className="w-4 h-4 text-rose-600" /> Procedures & Therapies Box-by-Box Editor
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Edit the 4 primary procedure cards displayed under the Procedures section.
-              </CardDescription>
+            <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <HeartPulse className="w-4 h-4 text-rose-600" /> Clinical Procedures Section Cards
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Visually edit procedures shown on the landing page layout. Add, edit text/images, or delete procedure boxes.
+                </CardDescription>
+              </div>
+              <Button
+                onClick={handleAddProcedure}
+                className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs h-9 px-3 rounded-xl gap-1.5 shrink-0"
+              >
+                <Plus className="w-4 h-4" /> Add Procedure Box
+              </Button>
             </CardHeader>
+
             <CardContent className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b border-slate-100">
                 <div className="space-y-1">
@@ -328,27 +400,38 @@ export default function LandingCMSEditorPage() {
                 </div>
               </div>
 
-              {/* 4 Procedure Cards */}
+              {/* Dynamic Procedures Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {form.procedures.map((proc, pIdx) => (
-                  <div key={proc.id} className="bg-slate-50 border border-slate-200/90 rounded-xl p-4 space-y-3">
+                  <div key={proc.id} className="bg-slate-50 border border-slate-200/90 rounded-xl p-4 space-y-3 relative group">
                     <div className="flex items-center justify-between">
                       <Badge className="bg-slate-800 text-white text-[10px] font-bold">
                         Procedure Box #{pIdx + 1}
                       </Badge>
-                      <Input 
-                        value={proc.badge}
-                        onChange={e => {
-                          const newProcs = [...form.procedures]
-                          newProcs[pIdx].badge = e.target.value
-                          setForm(f => ({ ...f, procedures: newProcs }))
-                        }}
-                        className="h-7 w-28 text-[11px] font-bold text-blue-600 bg-white"
-                        placeholder="Badge tag"
-                      />
+                      <div className="flex items-center gap-2">
+                        <Input 
+                          value={proc.badge}
+                          onChange={e => {
+                            const newProcs = [...form.procedures]
+                            newProcs[pIdx].badge = e.target.value
+                            setForm(f => ({ ...f, procedures: newProcs }))
+                          }}
+                          className="h-7 w-28 text-[11px] font-bold text-blue-600 bg-white"
+                          placeholder="Badge tag"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteProcedure(pIdx)}
+                          className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          title="Delete Procedure"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
 
-                    <div className="h-32 w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-200 relative">
+                    <div className="h-36 w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-200 relative">
                       <img 
                         src={proc.imageUrl} 
                         alt={proc.title} 
@@ -358,7 +441,9 @@ export default function LandingCMSEditorPage() {
 
                     <div className="space-y-2">
                       <div className="space-y-1">
-                        <Label className="text-[11px] font-bold text-slate-700">Procedure Title</Label>
+                        <Label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                          <Pencil className="w-3 h-3 text-slate-400" /> Title
+                        </Label>
                         <Input 
                           value={proc.title}
                           onChange={e => {
@@ -384,7 +469,7 @@ export default function LandingCMSEditorPage() {
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-[11px] font-bold text-slate-700">Image URL</Label>
+                        <Label className="text-[11px] font-bold text-slate-700">Image URL & Upload</Label>
                         <div className="flex gap-2">
                           <Input 
                             value={proc.imageUrl}
@@ -408,7 +493,7 @@ export default function LandingCMSEditorPage() {
                           />
                           <label 
                             htmlFor={`proc-file-${pIdx}`}
-                            className="px-2 py-1 bg-white border border-slate-200 hover:bg-slate-100 text-[11px] font-semibold rounded cursor-pointer shrink-0 flex items-center gap-1"
+                            className="px-2.5 py-1 bg-white border border-slate-200 hover:bg-slate-100 text-[11px] font-semibold rounded-lg cursor-pointer shrink-0 flex items-center gap-1"
                           >
                             <Upload className="w-3 h-3" /> Upload
                           </label>
@@ -422,17 +507,26 @@ export default function LandingCMSEditorPage() {
           </Card>
         </TabsContent>
 
-        {/* ================= TAB 3: CLINICAL SERVICES (6 CARDS) ================= */}
+        {/* ================= TAB 3: CLINICAL SERVICES ================= */}
         <TabsContent value="services" className="space-y-6">
           <Card className="shadow-xs border-slate-200/90 rounded-2xl">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <LayoutGrid className="w-4 h-4 text-indigo-600" /> Clinical Services Grid Editor (6 Boxes)
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Edit the 6 service cards displayed in the Clinical Services grid.
-              </CardDescription>
+            <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <LayoutGrid className="w-4 h-4 text-indigo-600" /> Clinical Services Grid Editor
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Manage treatment modalities and services displayed in the Clinical Services grid.
+                </CardDescription>
+              </div>
+              <Button
+                onClick={handleAddService}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs h-9 px-3 rounded-xl gap-1.5 shrink-0"
+              >
+                <Plus className="w-4 h-4" /> Add Service Box
+              </Button>
             </CardHeader>
+            
             <CardContent className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b border-slate-100">
                 <div className="space-y-1">
@@ -453,27 +547,38 @@ export default function LandingCMSEditorPage() {
                 </div>
               </div>
 
-              {/* 6 Service Cards */}
+              {/* Dynamic Service Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {form.services.map((srv, sIdx) => (
-                  <div key={srv.id} className="bg-slate-50 border border-slate-200/90 rounded-xl p-4 space-y-3">
+                  <div key={srv.id} className="bg-slate-50 border border-slate-200/90 rounded-xl p-4 space-y-3 relative group">
                     <div className="flex items-center justify-between">
                       <Badge className="bg-indigo-700 text-white text-[10px] font-bold">
                         Service Box #{sIdx + 1}
                       </Badge>
-                      <Input 
-                        value={srv.badge}
-                        onChange={e => {
-                          const newSrvs = [...form.services]
-                          newSrvs[sIdx].badge = e.target.value
-                          setForm(f => ({ ...f, services: newSrvs }))
-                        }}
-                        className="h-7 w-24 text-[10px] font-bold text-indigo-600 bg-white"
-                        placeholder="Tag"
-                      />
+                      <div className="flex items-center gap-2">
+                        <Input 
+                          value={srv.badge}
+                          onChange={e => {
+                            const newSrvs = [...form.services]
+                            newSrvs[sIdx].badge = e.target.value
+                            setForm(f => ({ ...f, services: newSrvs }))
+                          }}
+                          className="h-7 w-24 text-[10px] font-bold text-indigo-600 bg-white"
+                          placeholder="Tag"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteService(sIdx)}
+                          className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          title="Delete Service"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
 
-                    <div className="h-28 w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-200 relative">
+                    <div className="h-32 w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-200 relative">
                       <img 
                         src={srv.imageUrl} 
                         alt={srv.title} 
@@ -547,12 +652,152 @@ export default function LandingCMSEditorPage() {
           </Card>
         </TabsContent>
 
-        {/* ================= TAB 4: PLATFORM SHOWCASE & PORTAL ================= */}
+        {/* ================= TAB 4: CLINIC BRANCHES DIRECTORY ================= */}
+        <TabsContent value="branches" className="space-y-6">
+          <Card className="shadow-xs border-slate-200/90 rounded-2xl">
+            <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-amber-600" /> Delhi-NCR Clinic Branches Directory
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Edit clinic location names, addresses, operating hours, contact phone numbers, and Google Maps URL links.
+                </CardDescription>
+              </div>
+              <Button
+                onClick={handleAddBranch}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs h-9 px-3 rounded-xl gap-1.5 shrink-0"
+              >
+                <Plus className="w-4 h-4" /> Add Clinic Branch
+              </Button>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {(form.branches || []).map((branch, bIdx) => (
+                  <div key={branch.id} className="bg-slate-50 border border-slate-200/90 rounded-xl p-4 space-y-3.5 relative">
+                    <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-amber-700 text-white text-[10px] font-bold">
+                          Branch #{bIdx + 1}
+                        </Badge>
+                        <Input 
+                          value={branch.area}
+                          onChange={e => {
+                            const newBranches = [...(form.branches || [])]
+                            newBranches[bIdx].area = e.target.value
+                            setForm(f => ({ ...f, branches: newBranches }))
+                          }}
+                          className="h-7 w-32 text-[10px] font-bold text-amber-700 bg-white"
+                          placeholder="Region / Area"
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteBranch(bIdx)}
+                        className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        title="Delete Branch"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                          <Building2 className="w-3 h-3 text-amber-600" /> Clinic Name
+                        </Label>
+                        <Input 
+                          value={branch.name}
+                          onChange={e => {
+                            const newBranches = [...(form.branches || [])]
+                            newBranches[bIdx].name = e.target.value
+                            setForm(f => ({ ...f, branches: newBranches }))
+                          }}
+                          className="h-9 text-xs font-bold bg-white"
+                          placeholder="e.g. New Friends Colony (Flagship)"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-slate-500" /> Full Street Address
+                        </Label>
+                        <Textarea 
+                          value={branch.address}
+                          onChange={e => {
+                            const newBranches = [...(form.branches || [])]
+                            newBranches[bIdx].address = e.target.value
+                            setForm(f => ({ ...f, branches: newBranches }))
+                          }}
+                          className="text-xs min-h-[55px] bg-white"
+                          placeholder="Street address, building, pincode"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-blue-600" /> Phone Number
+                          </Label>
+                          <Input 
+                            value={branch.phone}
+                            onChange={e => {
+                              const newBranches = [...(form.branches || [])]
+                              newBranches[bIdx].phone = e.target.value
+                              setForm(f => ({ ...f, branches: newBranches }))
+                            }}
+                            className="h-8 text-xs font-mono bg-white"
+                            placeholder="+91..."
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-600" /> Operating Hours
+                          </Label>
+                          <Input 
+                            value={branch.hours}
+                            onChange={e => {
+                              const newBranches = [...(form.branches || [])]
+                              newBranches[bIdx].hours = e.target.value
+                              setForm(f => ({ ...f, branches: newBranches }))
+                            }}
+                            className="h-8 text-xs bg-white"
+                            placeholder="8:00 AM – 8:00 PM"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3 text-blue-600" /> Google Maps URL
+                        </Label>
+                        <Input 
+                          value={branch.googleMapsUrl}
+                          onChange={e => {
+                            const newBranches = [...(form.branches || [])]
+                            newBranches[bIdx].googleMapsUrl = e.target.value
+                            setForm(f => ({ ...f, branches: newBranches }))
+                          }}
+                          className="h-8 text-[11px] font-mono bg-white"
+                          placeholder="https://www.google.com/maps/..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ================= TAB 5: PLATFORM SHOWCASE & PORTAL ================= */}
         <TabsContent value="showcase" className="space-y-6">
           <Card className="shadow-xs border-slate-200/90 rounded-2xl">
             <CardHeader className="border-b border-slate-100 pb-4">
               <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-emerald-600" /> Container Scroll & Patient Portal Text
+                <Layers className="w-4 h-4 text-emerald-600" /> Container Scroll & Patient Care Footer Text
               </CardTitle>
               <CardDescription className="text-xs">
                 Edit text content for the interactive scroll container and patient care section.
@@ -599,7 +844,7 @@ export default function LandingCMSEditorPage() {
               {/* Patient Portal Text */}
               <div className="pt-4 border-t border-slate-100 space-y-4">
                 <Label className="text-xs font-extrabold uppercase tracking-wider text-slate-500 block">
-                  Patient Portal Footer Section
+                  Patient Care Footer Section
                 </Label>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { MapPin, Navigation, Phone, Clock, ExternalLink, ShieldCheck, Sparkles, Building2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useLandingCMS, type BranchContactItem } from '@/lib/landing-cms-store'
 
 export interface NCRBranch {
   id: string
@@ -13,13 +14,35 @@ export interface NCRBranch {
   phone: string
   hours: string
   googleMapsUrl: string
-  coords: { x: number; y: number } // Percentage position on vector map
+  coords: { x: number; y: number }
   embedUrl: string
-  doctors: string
+  doctors?: string
 }
 
-export const NCR_BRANCHES: NCRBranch[] = [
-  {
+export const DEFAULT_NCR_BRANCH_COORDS = [
+  { x: 72, y: 48 },
+  { x: 45, y: 55 },
+  { x: 22, y: 78 },
+  { x: 60, y: 35 },
+  { x: 35, y: 65 },
+]
+
+export function NCRMapVisualizer() {
+  const { cms } = useLandingCMS()
+
+  const branches: NCRBranch[] = (cms.branches && cms.branches.length > 0 ? cms.branches : []).map((b, idx) => ({
+    id: b.id,
+    name: b.name,
+    area: b.area,
+    address: b.address,
+    phone: b.phone,
+    hours: b.hours,
+    googleMapsUrl: b.googleMapsUrl,
+    coords: DEFAULT_NCR_BRANCH_COORDS[idx % DEFAULT_NCR_BRANCH_COORDS.length],
+    embedUrl: `https://maps.google.com/maps?q=${encodeURIComponent(b.address || b.name)}&t=&z=13&ie=UTF8&iwloc=&output=embed`,
+  }))
+
+  const [selectedBranch, setSelectedBranch] = useState<NCRBranch>(branches[0] || {
     id: 'nfc',
     name: 'New Friends Colony (Flagship)',
     area: 'South Delhi',
@@ -29,36 +52,9 @@ export const NCR_BRANCHES: NCRBranch[] = [
     googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=CV+Raman+Marg+New+Friends+Colony+New+Delhi',
     coords: { x: 72, y: 48 },
     embedUrl: 'https://maps.google.com/maps?q=New%20Friends%20Colony%20New%20Delhi&t=&z=13&ie=UTF8&iwloc=&output=embed',
-    doctors: 'Dr. Sarah Jenkins (PT) & Senior Spine Team',
-  },
-  {
-    id: 'vasantvihar',
-    name: 'Vasant Vihar Spine & Joint',
-    area: 'South Delhi',
-    address: 'C-4/18, Vasant Vihar, Outer Ring Road, New Delhi – 110057',
-    phone: '+91 98100 67890',
-    hours: '8:30 AM – 8:00 PM (Mon-Sat)',
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=Vasant+Vihar+Outer+Ring+Road+New+Delhi',
-    coords: { x: 45, y: 55 },
-    embedUrl: 'https://maps.google.com/maps?q=Vasant%20Vihar%20New%20Delhi&t=&z=13&ie=UTF8&iwloc=&output=embed',
-    doctors: 'Dr. Rahul Mehta (PT) • Decompression Specialist',
-  },
-  {
-    id: 'gurugram',
-    name: 'Gurugram DLF Phase 1',
-    area: 'Gurugram, Haryana',
-    address: 'A-26/12, Golf Course Road, DLF Phase 1, Gurugram – 122002',
-    phone: '+91 98100 54321',
-    hours: '9:00 AM – 8:00 PM (Mon-Sat)',
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=Golf+Course+Road+DLF+Phase+1+Gurugram',
-    coords: { x: 22, y: 78 },
-    embedUrl: 'https://maps.google.com/maps?q=DLF%20Phase%201%20Gurugram&t=&z=13&ie=UTF8&iwloc=&output=embed',
-    doctors: 'Dr. Ananya Roy (PT) • Sports Medicine Lead',
-  },
-]
+  })
 
-export function NCRMapVisualizer() {
-  const [selectedBranch, setSelectedBranch] = useState<NCRBranch>(NCR_BRANCHES[0])
+  const currentBranch = branches.find(b => b.id === selectedBranch.id) || branches[0] || selectedBranch
   const [viewMode, setViewMode] = useState<'vector' | 'google'>('vector')
 
   return (
@@ -108,12 +104,12 @@ export function NCRMapVisualizer() {
         {/* Left Column: Interactive Branch Cards List */}
         <div className="lg:col-span-5 p-4 border-r border-slate-200/80 bg-slate-50/60 space-y-3">
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 px-1">
-            Physionautics NCR Centres ({NCR_BRANCHES.length})
+            Physionautics NCR Centres ({branches.length})
           </div>
 
           <div className="space-y-2.5">
-            {NCR_BRANCHES.map((b) => {
-              const isSelected = selectedBranch.id === b.id
+            {branches.map((b) => {
+              const isSelected = currentBranch.id === b.id
               return (
                 <div
                   key={b.id}
@@ -169,11 +165,11 @@ export function NCRMapVisualizer() {
           {viewMode === 'google' ? (
             /* Live Google Maps Embed */
             <iframe
-              src={selectedBranch.embedUrl}
+              src={currentBranch.embedUrl}
               className="w-full h-full min-h-[420px] border-0"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-              title={`Google Map - ${selectedBranch.name}`}
+              title={`Google Map - ${currentBranch.name}`}
             />
           ) : (
             /* Custom Styled Interactive NCR Map Graphic with Pins */
@@ -197,14 +193,14 @@ export function NCRMapVisualizer() {
                   <span className="text-xs font-bold text-slate-200">Delhi-NCR Regional Map</span>
                 </div>
                 <Badge className="bg-blue-600/30 text-blue-300 border-blue-500/40 text-[10px]">
-                  3 Active Flagships
+                  {branches.length} Active Flagships
                 </Badge>
               </div>
 
               {/* Animated Map Pointers */}
               <div className="absolute inset-0 pointer-events-auto">
-                {NCR_BRANCHES.map((b) => {
-                  const isSelected = selectedBranch.id === b.id
+                {branches.map((b) => {
+                  const isSelected = currentBranch.id === b.id
                   return (
                     <div
                       key={b.id}
@@ -244,7 +240,7 @@ export function NCRMapVisualizer() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-xs font-bold text-white">{selectedBranch.name}</span>
+                    <span className="text-xs font-bold text-white">{currentBranch.name}</span>
                   </div>
                   <Badge className="bg-emerald-500/20 text-emerald-300 border-none text-[10px]">
                     Open Now
@@ -252,15 +248,15 @@ export function NCRMapVisualizer() {
                 </div>
                 
                 <p className="text-[11px] text-slate-300">
-                  {selectedBranch.address}
+                  {currentBranch.address}
                 </p>
 
                 <div className="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[11px]">
                   <span className="text-slate-400 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-amber-400" /> {selectedBranch.hours}
+                    <Clock className="w-3 h-3 text-amber-400" /> {currentBranch.hours}
                   </span>
                   <a
-                    href={selectedBranch.googleMapsUrl}
+                    href={currentBranch.googleMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg flex items-center gap-1 transition-colors"

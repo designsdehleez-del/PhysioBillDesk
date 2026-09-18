@@ -131,7 +131,7 @@ export function DoctorDetailModal({
                 }}
                 className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-1.5 border border-white/20"
               >
-                Open Report Card Page <ChevronRight className="w-4 h-4" />
+                Open Full Doctor Profile <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
           </div>

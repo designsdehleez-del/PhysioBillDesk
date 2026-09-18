@@ -23,6 +23,7 @@ import { FinancialTrackingView } from '@/components/dashboard/financial-tracking
 import { ExpenseLoggingModal } from '@/components/dashboard/expense-logging-modal'
 import { DoctorDetailModal } from '@/components/doctors/doctor-detail-modal'
 import { Centre, Doctor, PatientFeedback, ClinicExpense, ExpenseCategory } from '@/lib/supabase/types'
+import { motion } from 'motion/react'
 
 interface DoctorStat {
   id: string
@@ -399,18 +400,23 @@ export default function DashboardPage() {
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
 
       {/* ================= HEADER & TIMEFRAME FILTERS ================= */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 text-white p-5 rounded-2xl shadow-md">
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-slate-900/95 border border-slate-800 text-white p-6 rounded-3xl shadow-xl backdrop-blur-md"
+      >
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-xs border border-white/20">
+            <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-xs font-bold px-2.5 py-0.5">
               {isAdmin ? '👑 Master Admin & Financial Command' : `🏥 ${profile?.centreName || 'Clinic Reception Desk'}`}
             </Badge>
-            <span className="text-xs text-blue-200">Physionautics Multispecialty Network</span>
+            <span className="text-xs text-slate-400">Physionautics Multispecialty Network</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1.5">
             {isAdmin ? 'Executive Financial & Clinical Intelligence' : 'Clinic Operations & Expense Desk'}
           </h1>
-          <p className="text-xs sm:text-sm text-blue-100/80">
+          <p className="text-xs sm:text-sm text-slate-300">
             {isAdmin 
               ? 'Gross & Net revenue analytics, operational expenses, doctor performance & CSAT ratings' 
               : `Live patient attendance, daily clinic expenses & verified ratings for ${profile?.centreName || 'this branch'}`}
@@ -418,11 +424,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Global Filter Bar */}
-        <div className="flex flex-wrap items-center gap-2 bg-white/10 p-2 rounded-xl border border-white/15 backdrop-blur-md">
+        <div className="flex flex-wrap items-center gap-2 bg-slate-800/80 p-2 rounded-2xl border border-slate-700/80 backdrop-blur-md">
           {/* Branch Filter (Admin Only) */}
           {isAdmin && (
             <Select value={selectedFilterCentre} onValueChange={(v: string | null) => setSelectedFilterCentre(v ?? 'all')}>
-              <SelectTrigger className="w-52 bg-white text-gray-900 text-xs font-semibold h-9">
+              <SelectTrigger className="w-52 bg-white text-slate-900 text-xs font-bold h-9 rounded-xl border-none">
                 <SelectValue placeholder="All Branches" />
               </SelectTrigger>
               <SelectContent>
@@ -435,28 +441,28 @@ export default function DashboardPage() {
           )}
 
           {/* Timeframe Filter */}
-          <div className="flex bg-white/20 p-0.5 rounded-lg border border-white/20 text-xs font-semibold">
+          <div className="flex bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 text-xs font-bold">
             <button
               onClick={() => setSelectedTimeframe('today')}
-              className={`px-3 py-1.5 rounded-md transition-all ${selectedTimeframe === 'today' ? 'bg-white text-blue-900 shadow-xs' : 'text-white/80 hover:text-white'}`}
+              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === 'today' ? 'bg-cyan-500 text-slate-950 font-black shadow-xs' : 'text-slate-300 hover:text-white'}`}
             >
               Today
             </button>
             <button
               onClick={() => setSelectedTimeframe('7days')}
-              className={`px-3 py-1.5 rounded-md transition-all ${selectedTimeframe === '7days' ? 'bg-white text-blue-900 shadow-xs' : 'text-white/80 hover:text-white'}`}
+              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === '7days' ? 'bg-cyan-500 text-slate-950 font-black shadow-xs' : 'text-slate-300 hover:text-white'}`}
             >
               7 Days
             </button>
             <button
               onClick={() => setSelectedTimeframe('30days')}
-              className={`px-3 py-1.5 rounded-md transition-all ${selectedTimeframe === '30days' ? 'bg-white text-blue-900 shadow-xs' : 'text-white/80 hover:text-white'}`}
+              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === '30days' ? 'bg-cyan-500 text-slate-950 font-black shadow-xs' : 'text-slate-300 hover:text-white'}`}
             >
               30 Days
             </button>
             <button
               onClick={() => setSelectedTimeframe('all')}
-              className={`px-3 py-1.5 rounded-md transition-all ${selectedTimeframe === 'all' ? 'bg-white text-blue-900 shadow-xs' : 'text-white/80 hover:text-white'}`}
+              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === 'all' ? 'bg-cyan-500 text-slate-950 font-black shadow-xs' : 'text-slate-300 hover:text-white'}`}
             >
               All Time
             </button>
@@ -475,14 +481,14 @@ export default function DashboardPage() {
             <Button
               size="sm"
               variant="outline"
-              className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-xs gap-1.5 h-9"
+              className="bg-slate-800 hover:bg-slate-700 text-white border-slate-700 text-xs gap-1.5 h-9 rounded-xl font-bold"
               onClick={() => exportBillsToExcel(filteredVisits)}
             >
-              <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-300" /> Export Excel
+              <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-400" /> Export Excel
             </Button>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* ================= ADMIN & STAFF VIEW: FINANCIAL INTELLIGENCE ================= */}
       {isAdmin ? (
@@ -490,75 +496,83 @@ export default function DashboardPage() {
           {/* Top Financial KPI Cards: GROSS REVENUE, EXPENSES, NET PROFIT, CSAT */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Gross Revenue */}
-            <Card className="border shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-blue-50/40">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gross Billed Revenue</p>
-                  <p className="text-2xl font-black text-blue-950">{formatCurrency(filteredRevenue)}</p>
-                  <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3" /> {filteredVisits.length} billed visits
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-sm">
-                  <DollarSign className="h-6 w-6" />
-                </div>
-              </CardContent>
-            </Card>
+            <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}>
+              <Card className="border border-blue-200/90 shadow-xs hover:shadow-md transition-shadow bg-white rounded-2xl h-full">
+                <CardContent className="p-5 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gross Billed Revenue</p>
+                    <p className="text-2xl font-black text-blue-950">{formatCurrency(filteredRevenue)}</p>
+                    <p className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" /> {filteredVisits.length} billed visits
+                    </p>
+                  </div>
+                  <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-sm">
+                    <DollarSign className="h-6 w-6" />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
             {/* Card 2: Operational Expenses */}
-            <Card className="border shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-rose-50/40">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Clinic Expenses</p>
-                  <p className="text-2xl font-black text-rose-700">{formatCurrency(totalExpenses)}</p>
-                  <p className="text-[11px] text-rose-600 font-semibold flex items-center gap-1">
-                    <ArrowDownRight className="h-3 w-3" /> {filteredExpenses.length} expense logs
-                  </p>
-                </div>
-                <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-sm">
-                  <Wallet className="h-6 w-6" />
-                </div>
-              </CardContent>
-            </Card>
+            <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}>
+              <Card className="border border-rose-200/90 shadow-xs hover:shadow-md transition-shadow bg-white rounded-2xl h-full">
+                <CardContent className="p-5 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Clinic Expenses</p>
+                    <p className="text-2xl font-black text-rose-700">{formatCurrency(totalExpenses)}</p>
+                    <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1">
+                      <ArrowDownRight className="h-3 w-3" /> {filteredExpenses.length} expense logs
+                    </p>
+                  </div>
+                  <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-sm">
+                    <Wallet className="h-6 w-6" />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
             {/* Card 3: Net Revenue / Profit & Margin */}
-            <Card className="border shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-emerald-50/40">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Net Profit / Revenue</p>
-                  <p className="text-2xl font-black text-emerald-950">{formatCurrency(netRevenue)}</p>
-                  <p className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-amber-500" /> {netMarginPct}% Net Margin
-                  </p>
-                </div>
-                <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-sm">
-                  <TrendingUp className="h-6 w-6" />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Card 4: CSAT Rating (Filtered strictly by selected branch) */}
-            <Card className="border shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-amber-50/40">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    {selectedFilterCentre !== 'all' ? 'Branch CSAT Rating' : 'Network CSAT Rating'}
-                  </p>
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-2xl font-black text-amber-950">{avgFeedbackScore}</p>
-                    <div className="flex text-amber-500 text-xs">
-                      {'★'.repeat(5)}
-                    </div>
+            <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}>
+              <Card className="border border-emerald-200/90 shadow-xs hover:shadow-md transition-shadow bg-white rounded-2xl h-full">
+                <CardContent className="p-5 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Net Profit / Revenue</p>
+                    <p className="text-2xl font-black text-emerald-950">{formatCurrency(netRevenue)}</p>
+                    <p className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                      <Sparkles className="h-3 w-3 text-amber-500" /> {netMarginPct}% Net Margin
+                    </p>
                   </div>
-                  <p className="text-[11px] text-amber-800 font-semibold flex items-center gap-1">
-                    <HeartHandshake className="h-3 w-3" /> {relevantFeedbacks.length} verified reviews
-                  </p>
-                </div>
-                <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-sm">
-                  <Star className="h-6 w-6 fill-white" />
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-sm">
+                    <TrendingUp className="h-6 w-6" />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Card 4: CSAT Rating */}
+            <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}>
+              <Card className="border border-amber-200/90 shadow-xs hover:shadow-md transition-shadow bg-white rounded-2xl h-full">
+                <CardContent className="p-5 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {selectedFilterCentre !== 'all' ? 'Branch CSAT Rating' : 'Network CSAT Rating'}
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-2xl font-black text-amber-950">{avgFeedbackScore}</p>
+                      <div className="flex text-amber-500 text-xs">
+                        {'★'.repeat(5)}
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-amber-800 font-bold flex items-center gap-1">
+                      <HeartHandshake className="h-3 w-3" /> {relevantFeedbacks.length} verified reviews
+                    </p>
+                  </div>
+                  <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-sm">
+                    <Star className="h-6 w-6 fill-white" />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
 
           {/* ================= DOCTOR-WISE FINANCIALS & CUSTOMER FEEDBACK HUB ================= */}
@@ -584,8 +598,10 @@ export default function DashboardPage() {
                   const revPct = Math.min(Math.round((doc.revenue / maxDocRev) * 100), 100)
 
                   return (
-                    <div 
+                    <motion.div 
                       key={doc.id}
+                      whileHover={{ y: -3, scale: 1.005 }}
+                      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                       className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group hover:border-indigo-300"
                     >
                       <div className="space-y-3">
@@ -705,7 +721,7 @@ export default function DashboardPage() {
                         View Profile, Patients & Financials
                         <ChevronRight className="h-3.5 w-3.5 ml-auto" />
                       </Button>
-                    </div>
+                    </motion.div>
                   )
                 })}
               </div>

@@ -75,7 +75,7 @@ export default function DoctorDetailPage() {
     return (
       <div className="p-16 flex flex-col justify-center items-center gap-3">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-        <p className="text-xs text-muted-foreground font-medium">Loading Doctor Report Card...</p>
+        <p className="text-xs text-muted-foreground font-medium">Loading Doctor Profile...</p>
       </div>
     )
   }
@@ -111,7 +111,7 @@ export default function DoctorDetailPage() {
             <ArrowLeft className="w-4 h-4" /> Back to Directory
           </Button>
           <span className="text-xs font-bold text-slate-400">/</span>
-          <span className="text-xs font-bold text-slate-700">Doctor Performance Report Card</span>
+          <span className="text-xs font-bold text-slate-700">Doctor Profile & Clinical Performance</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export default function DoctorDetailPage() {
             onClick={() => window.print()} 
             className="border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold gap-1.5 h-9 rounded-xl"
           >
-            <Printer className="w-3.5 h-3.5 text-slate-500" /> Print Report Card
+            <Printer className="w-3.5 h-3.5 text-slate-500" /> Print Doctor Profile
           </Button>
         </div>
       </div>

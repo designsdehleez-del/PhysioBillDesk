@@ -530,7 +530,12 @@ export default function AuthPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {cms.services.map((srv) => (
-            <div key={srv.id} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all">
+            <motion.div 
+              key={srv.id} 
+              whileHover={{ y: -4, scale: 1.01 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
+            >
               <div className="h-40 w-full relative bg-slate-100">
                 <img 
                   src={srv.imageUrl} 
@@ -547,7 +552,7 @@ export default function AuthPage() {
                   {srv.description}
                 </p>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>

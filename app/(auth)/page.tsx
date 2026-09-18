@@ -43,7 +43,7 @@ export default function AuthPage() {
       } else {
         const { error } = await signIn(email, password)
         if (error) setError(error.message)
-        // Keep user on the landing page in logged in state
+        // Keep user on landing page in logged in state
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unexpected error')
@@ -55,11 +55,11 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between font-sans selection:bg-blue-100 selection:text-blue-900">
       
-      {/* 1. Header / Navigation Bar */}
+      {/* 1. Header Navigation Bar */}
       <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 sm:px-8 py-3.5 sticky top-0 z-30 shadow-xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
-          {/* Left: Clickable Brand Logo & Clinic Name */}
+          {/* Left: Clickable Brand Logo */}
           <Link href="/" className="flex items-center gap-3 group cursor-pointer">
             {branding.logoUrl ? (
               <div className="flex flex-col">
@@ -138,10 +138,10 @@ export default function AuthPage() {
         </div>
       </header>
 
-      {/* 2. Hero Section: Split Grid Layout (Consuming CMS Store) */}
-      <section id="overview" className="max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-14 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+      {/* 2. Hero Section: Perfectly Balanced Side-by-Side Split */}
+      <section id="overview" className="max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-14 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         
-        {/* Left Column: Brand & Clinical Positioning */}
+        {/* Left Column: Specific Clinical Positioning */}
         <div className="lg:col-span-7 space-y-6">
           <div className="space-y-4">
             <Badge variant="outline" className="bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-200 text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-2 shadow-2xs">
@@ -161,78 +161,51 @@ export default function AuthPage() {
             </p>
           </div>
 
-          {/* Quick Stats Banner */}
-          <div className="grid grid-cols-3 gap-3 p-4 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
-            <div className="text-center border-r border-slate-100 pr-2">
-              <div className="text-2xl font-black text-blue-600">{cms.stat1Value}</div>
-              <div className="text-xs font-bold text-slate-800 mt-0.5">{cms.stat1Label}</div>
-              <div className="text-[10px] text-slate-400">{cms.stat1Subtext}</div>
+          {/* Specific Clinical Care Highlights */}
+          <div className="space-y-2.5 bg-white border border-slate-200/80 p-4 rounded-2xl shadow-2xs">
+            <div className="flex items-center gap-3 text-xs font-bold text-slate-800">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Computerized C5–C6 Cervical & L4–L5 Lumbar Disc Decompression
             </div>
-            <div className="text-center border-r border-slate-100 px-2">
-              <div className="text-2xl font-black text-emerald-600">{cms.stat2Value}</div>
-              <div className="text-xs font-bold text-slate-800 mt-0.5">{cms.stat2Label}</div>
-              <div className="text-[10px] text-slate-400">{cms.stat2Subtext}</div>
+            <div className="flex items-center gap-3 text-xs font-bold text-slate-800">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Targeted Myofascial Dry Needling & 4-Channel Electrotherapy
             </div>
-            <div className="text-center pl-2">
-              <div className="text-2xl font-black text-amber-600">{cms.stat3Value}</div>
-              <div className="text-xs font-bold text-slate-800 mt-0.5">{cms.stat3Label}</div>
-              <div className="text-[10px] text-slate-400">{cms.stat3Subtext}</div>
+            <div className="flex items-center gap-3 text-xs font-bold text-slate-800">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Specialized Physical Therapists in New Friends Colony & Vasant Vihar
             </div>
           </div>
 
-          {/* Clinical Mission & Vision */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white border border-slate-200/80 p-4 rounded-xl space-y-2 shadow-xs hover:border-blue-300 transition-all">
-              <div className="flex items-center gap-2 text-blue-700 font-bold text-xs">
-                <HeartPulse className="w-4 h-4 text-blue-600" /> Clinical Mission
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Eliminating pain and movement dysfunction with individualized targeted therapy protocols and transparent recovery tracking.
-              </p>
-            </div>
-
-            <div className="bg-white border border-slate-200/80 p-4 rounded-xl space-y-2 shadow-xs hover:border-blue-300 transition-all">
-              <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
-                <Award className="w-4 h-4 text-amber-500" /> Excellence Vision
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Setting India's benchmark for physical rehabilitation where biomechanical technology and clinical research converge.
-              </p>
-            </div>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
+          {/* Action CTA Buttons */}
+          <div className="flex flex-wrap items-center gap-3 pt-1">
             <a 
               href="#patient-portal" 
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow flex items-center gap-2 transition-all"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow flex items-center gap-2 transition-all"
             >
-              <Calendar className="w-4 h-4" /> Book Patient Session <ArrowRight className="w-3.5 h-3.5" />
+              <Calendar className="w-4 h-4" /> Book Patient Consultation <ArrowRight className="w-3.5 h-3.5" />
             </a>
             <a 
               href="#procedures" 
-              className="px-5 py-2.5 bg-white border border-slate-200 hover:border-blue-300 text-slate-700 font-bold text-xs rounded-xl shadow-2xs hover:bg-slate-50 transition-all"
+              className="px-6 py-3 bg-white border border-slate-200 hover:border-blue-300 text-slate-700 font-bold text-xs rounded-xl shadow-2xs hover:bg-slate-50 transition-all"
             >
-              View Therapy Procedures
+              Explore Therapy Procedures
             </a>
           </div>
         </div>
 
-        {/* Right Column: Conditional Auth State OR Dynamic Hero Procedure Image Card */}
+        {/* Right Column: Equal-Height Portal Sign-In or Procedure Showcase */}
         <div id="auth-panel" className="lg:col-span-5 w-full">
           {isLoggedIn ? (
-            /* Logged-In State: Dynamic Hero Procedure Image Card from CMS Store */
-            <Card className="shadow-lg border-blue-200/80 bg-white rounded-2xl overflow-hidden">
-              <div className="relative h-[420px] w-full overflow-hidden">
+            /* Logged-In State: High-Quality Procedure Care Image Card */
+            <Card className="shadow-lg border-blue-200/80 bg-white rounded-2xl overflow-hidden h-[460px] flex flex-col justify-between">
+              <div className="relative h-full w-full overflow-hidden">
                 <img 
                   src={cms.heroCardImageUrl} 
                   alt="Physiotherapy Patient Care" 
                   className="w-full h-full object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/35 to-transparent flex flex-col justify-end p-6">
-                  <div className="text-white space-y-2">
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent flex flex-col justify-end p-6">
+                  <div className="text-white space-y-3">
                     <div className="flex items-center justify-between">
-                      <Badge className="bg-emerald-500 text-white border-none text-[10px] font-bold px-2.5 py-0.5">
+                      <Badge className="bg-emerald-500 text-white border-none text-[10px] font-bold px-2.5 py-1">
                         Active Session • {profile?.name || 'Logged In'}
                       </Badge>
                       <button 
@@ -253,29 +226,29 @@ export default function AuthPage() {
               </div>
             </Card>
           ) : (
-            /* Logged-Out State: Portal Sign In Card */
-            <Card className="shadow-lg border-slate-200/90 bg-white rounded-2xl">
-              <CardHeader className="space-y-1 pb-3 pt-5 border-b border-slate-100">
+            /* Logged-Out State: Sleek, Height-Balanced Portal Sign In Card */
+            <Card className="shadow-lg border-slate-200/90 bg-white rounded-2xl h-[460px] flex flex-col justify-between">
+              <CardHeader className="space-y-1.5 pb-4 pt-6 px-6 border-b border-slate-100">
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-bold">
                     Authorized Access
                   </Badge>
                   <span className="text-[10px] text-slate-400 font-mono">Physionautics v1.0</span>
                 </div>
-                <CardTitle className="text-lg font-bold text-slate-900">
+                <CardTitle className="text-xl font-black text-slate-900">
                   {isSignUp ? 'Create Staff Account' : 'Portal Sign In'}
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-500">
-                  Enter your clinic credentials to access patient records and billing.
+                <CardDescription className="text-xs text-slate-500 leading-relaxed">
+                  Enter your assigned clinic credentials to access patient records, session logs, and billing.
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="space-y-4 pt-4 pb-5">
-                <form onSubmit={handleSubmit} className="space-y-3.5">
-                  <div className="space-y-1">
-                    <Label htmlFor="email" className="text-xs font-medium text-slate-700">Email or Username</Label>
+              <CardContent className="space-y-4 px-6 py-6 flex-1 flex flex-col justify-center">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className="text-xs font-semibold text-slate-700">Email or Username</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
                         id="email"
                         type="text"
@@ -284,15 +257,15 @@ export default function AuthPage() {
                         onChange={e => setEmail(e.target.value)}
                         required
                         disabled={loading}
-                        className="pl-9 h-10 bg-white text-xs border-slate-200 focus-visible:ring-blue-600"
+                        className="pl-10 h-11 bg-slate-50 text-xs border-slate-200 focus-visible:ring-blue-600 rounded-xl"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="password" className="text-xs font-medium text-slate-700">Password</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="password" className="text-xs font-semibold text-slate-700">Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
                         id="password"
                         type="password"
@@ -301,41 +274,79 @@ export default function AuthPage() {
                         onChange={e => setPassword(e.target.value)}
                         required
                         disabled={loading}
-                        className="pl-9 h-10 bg-white text-xs border-slate-200 focus-visible:ring-blue-600"
+                        className="pl-10 h-11 bg-slate-50 text-xs border-slate-200 focus-visible:ring-blue-600 rounded-xl"
                       />
                     </div>
                   </div>
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 shadow-xs text-xs gap-1.5 mt-1 rounded-xl" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 shadow-sm text-xs gap-2 mt-2 rounded-xl" 
                     disabled={loading}
                   >
                     {loading ? (
-                      <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Verifying Credentials...</>
+                      <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Verifying Credentials...</>
                     ) : (
-                      <>{isSignUp ? 'Create Account' : 'Sign In'} <ArrowRight className="w-3.5 h-3.5" /></>
+                      <>{isSignUp ? 'Create Account' : 'Sign In to Portal'} <ArrowRight className="w-4 h-4" /></>
                     )}
                   </Button>
                 </form>
 
                 {error && (
-                  <div className="rounded-lg bg-red-50 border border-red-200 p-2.5 text-xs text-red-700 font-medium">
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700 font-medium">
                     {error}
                   </div>
                 )}
                 {successMsg && (
-                  <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2.5 text-xs text-emerald-700 font-medium">
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-700 font-medium">
                     {successMsg}
                   </div>
                 )}
+
+                <div className="pt-2 text-center">
+                  <span className="text-[11px] text-slate-400">
+                    Protected by Physionautics Health Systems Security
+                  </span>
+                </div>
               </CardContent>
             </Card>
           )}
         </div>
       </section>
 
-      {/* 3. Aceternity Container Scroll Animation Section (Consuming CMS Store) */}
+      {/* 2.5 Structured Clinical Statistics & Mission Row */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-8 py-4 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-2xs text-center space-y-1">
+            <div className="text-3xl font-black text-blue-600">{cms.stat1Value}</div>
+            <div className="text-xs font-bold text-slate-900">{cms.stat1Label}</div>
+            <div className="text-[11px] text-slate-500">{cms.stat1Subtext}</div>
+          </div>
+
+          <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-2xs text-center space-y-1">
+            <div className="text-3xl font-black text-emerald-600">{cms.stat2Value}</div>
+            <div className="text-xs font-bold text-slate-900">{cms.stat2Label}</div>
+            <div className="text-[11px] text-slate-500">{cms.stat2Subtext}</div>
+          </div>
+
+          <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-2xs text-center space-y-1">
+            <div className="text-3xl font-black text-amber-600">{cms.stat3Value}</div>
+            <div className="text-xs font-bold text-slate-900">{cms.stat3Label}</div>
+            <div className="text-[11px] text-slate-500">{cms.stat3Subtext}</div>
+          </div>
+
+          <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-2xs flex flex-col justify-center space-y-1 text-left">
+            <div className="flex items-center gap-1.5 text-blue-700 font-bold text-xs">
+              <HeartPulse className="w-4 h-4 text-blue-600" /> Clinical Mission
+            </div>
+            <p className="text-[11px] text-slate-600 leading-snug">
+              Eliminating pain dysfunction through evidence-based biomechanical protocols.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Aceternity Container Scroll Animation Section */}
       <section className="bg-slate-900 text-white py-12 px-4 sm:px-8 overflow-hidden">
         <ContainerScroll
           titleComponent={
@@ -438,7 +449,7 @@ export default function AuthPage() {
           </p>
         </div>
 
-        {/* Procedure Image Cards Grid (Dynamic from CMS Store) */}
+        {/* Procedure Image Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {cms.procedures.map((proc) => (
             <div key={proc.id} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between">
@@ -509,7 +520,7 @@ export default function AuthPage() {
         </div>
       </section>
 
-      {/* 6. Section 3: Services & Specialized Therapies (Dynamic from CMS Store) */}
+      {/* 6. Section 3: Services & Specialized Therapies */}
       <section id="services" className="max-w-7xl mx-auto px-4 sm:px-8 py-16 w-full space-y-10">
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold px-3 py-1 rounded-full">

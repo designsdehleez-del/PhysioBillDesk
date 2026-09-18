@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert, MessageCircle, Database, Settings, Sparkles, Lock } from 'lucide-react'
+import { LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert, MessageCircle, Database, Settings, Sparkles, Lock, FileText } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding } from '@/lib/settings-store'
 import { Button } from '@/components/ui/button'
@@ -23,7 +23,7 @@ export function Sidebar() {
   const adminNav = [
     { label: 'Financials & KPIs', href: '/dashboard', icon: DollarSign },
     { label: 'Billing & Invoices', href: '/billing', icon: Receipt },
-    { label: 'AI Feedback Studio', href: '/feedback-builder', icon: Sparkles },
+    { label: 'Feedback Studio', href: '/feedback-builder', icon: FileText },
     { label: 'Patients Directory', href: '/patients', icon: Users },
     { label: 'Doctors & Tagging', href: '/doctors', icon: UserCog },
     { label: 'Centres Management', href: '/centres', icon: Building2 },
@@ -40,7 +40,7 @@ export function Sidebar() {
     { label: 'Register Patient', href: '/patients/register', icon: UserPlus },
     { label: 'Generate Bill', href: '/billing', icon: Receipt },
     { label: 'Patient Directory', href: '/patients', icon: Users },
-    { label: 'AI Patient Feedback', href: '/feedback-builder', icon: Sparkles },
+    { label: 'Patient Feedback Studio', href: '/feedback-builder', icon: FileText },
     { label: 'Centre Doctors', href: '/doctors', icon: UserCog },
     { label: 'Clinic & Brand Settings', href: '/settings', icon: Settings },
     { label: 'WhatsApp Settings', href: '/settings/whatsapp', icon: MessageCircle },

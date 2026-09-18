@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { 
   Stethoscope, LayoutDashboard, Receipt, Users, Sparkles, UserCog, 
   Building2, Settings, MessageCircle, Database, ChevronDown, Lock, 
-  LogOut, HelpCircle, Plus, Sliders, Tag, UserPlus, Menu, X, ShieldCheck
+  LogOut, HelpCircle, Plus, Sliders, Tag, UserPlus, Menu, X, ShieldCheck, FileText
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding } from '@/lib/settings-store'
@@ -63,7 +63,7 @@ export function TopHeaderNav() {
           { label: 'Register Patient', href: '/patients/register', icon: UserPlus, desc: 'Add new patient record' },
           { label: 'Billing & Invoices', href: '/billing', icon: Receipt, desc: 'Create bills & ledger' },
         ] : []),
-        { label: 'AI Feedback Studio', href: '/feedback-builder', icon: Sparkles, desc: 'Patient feedback forms' },
+        { label: 'Feedback Studio', href: '/feedback-builder', icon: FileText, desc: 'Patient feedback forms' },
       ],
     },
     {

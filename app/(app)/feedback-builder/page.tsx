@@ -234,17 +234,17 @@ export default function FeedbackBuilderPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-linear-to-r from-teal-900 via-teal-800 to-emerald-900 p-6 rounded-2xl text-white shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-teal-900 via-teal-800 to-emerald-900 p-6 rounded-2xl text-white shadow-xl">
         <div className="space-y-1.5">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-teal-700/60 rounded-full text-xs font-semibold text-teal-200 border border-teal-500/30">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-            AI Google-Forms Builder & Doctor Performance
+            <FileText className="w-3.5 h-3.5 text-emerald-300" />
+            Clinical Survey Builder & Doctor Performance
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-            AI Feedback Form Studio
+            Feedback Studio
           </h1>
           <p className="text-sm text-teal-100 max-w-2xl">
-            Design dynamic patient surveys with AI. Feedback links automatically display the treating doctor, clinic branch, invoice ID, and procedures.
+            Manually create and customize patient feedback surveys. Shared links automatically display the treating doctor, clinic branch, invoice ID, and procedures.
           </p>
         </div>
 
@@ -272,7 +272,7 @@ export default function FeedbackBuilderPage() {
       <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="space-y-6">
         <TabsList className="grid grid-cols-5 bg-gray-100 p-1 rounded-xl max-w-3xl">
           <TabsTrigger value="builder" className="rounded-lg font-medium flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-teal-600" />
+            <FileText className="w-4 h-4 text-teal-600" />
             Builder
           </TabsTrigger>
           <TabsTrigger value="templates" className="rounded-lg font-medium flex items-center gap-2">
@@ -295,58 +295,6 @@ export default function FeedbackBuilderPage() {
 
         {/* TAB 1: FORM BUILDER CANVAS */}
         <TabsContent value="builder" className="space-y-6">
-          <Card className="border-teal-200 bg-linear-to-br from-teal-50/70 via-emerald-50/40 to-white shadow-md">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-bold text-teal-950 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-teal-600" />
-                  Generate or Customize with AI
-                </CardTitle>
-                <Badge variant="secondary" className="bg-teal-100 text-teal-800 text-xs">
-                  Gemini Prompt Engine
-                </Badge>
-              </div>
-              <CardDescription className="text-xs text-teal-800">
-                Describe the patient condition or survey focus. AI will synthesize clinical questions, ratings, and scale metrics instantly.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex flex-col sm:flex-row gap-2.5">
-                <Input
-                  value={aiPrompt}
-                  onChange={e => setAiPrompt(e.target.value)}
-                  placeholder="e.g. Create a 5-question recovery assessment for post-surgery physiotherapy..."
-                  className="bg-white border-teal-200 focus:border-teal-500 text-sm"
-                  onKeyDown={e => e.key === 'Enter' && handleGenerateAI()}
-                />
-                <Button
-                  onClick={() => handleGenerateAI()}
-                  disabled={generating}
-                  className="bg-teal-700 hover:bg-teal-800 text-white font-semibold shrink-0"
-                >
-                  <Sparkles className={`w-4 h-4 mr-1.5 ${generating ? 'animate-spin' : ''}`} />
-                  {generating ? 'Synthesizing...' : 'Generate with AI'}
-                </Button>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-xs text-gray-500 font-medium">Quick Prompts:</span>
-                {PRESET_PROMPTS.map((p, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setAiPrompt(p)
-                      handleGenerateAI(p)
-                    }}
-                    className="text-xs bg-white hover:bg-teal-100 text-teal-800 border border-teal-200 px-2.5 py-1 rounded-full transition-colors cursor-pointer"
-                  >
-                    + {p}
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
 
           {currentTemplate && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

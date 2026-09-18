@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ContainerScroll } from '@/components/ui/container-scroll-animation'
+import { NCRMapVisualizer } from '@/components/ncr-map-visualizer'
 
 export default function AuthPage() {
   const router = useRouter()
@@ -476,46 +477,24 @@ export default function AuthPage() {
         </div>
       </section>
 
-      {/* 5. Section 2: Who We Are & Clinical Excellence */}
+      {/* 5. Section 2: Who We Are & Interactive Delhi-NCR Map Hub */}
       <section id="about" className="bg-slate-100/70 border-y border-slate-200/80 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-12">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-6 space-y-4">
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold px-3 py-1 rounded-full">
-                WHO WE ARE
-              </Badge>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                Delhi-NCR’s Leading Physical Therapy Network
-              </h2>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Founded by senior physical therapy specialists, Physionautics operates flagship rehabilitation centres across New Delhi and Gurugram. Every patient undergoes standardized biomechanical assessment and doctor-guided recovery pathways.
-              </p>
-              
-              <div className="space-y-2.5 pt-2">
-                <div className="flex items-center gap-3 text-xs font-bold text-slate-800">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Doctor of Physical Therapy Led Clinical Teams
-                </div>
-                <div className="flex items-center gap-3 text-xs font-bold text-slate-800">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Computerized Spinal Decompression Systems
-                </div>
-                <div className="flex items-center gap-3 text-xs font-bold text-slate-800">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Integrated Digital Patient Progress Portal
-                </div>
-              </div>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-10">
+          <div className="max-w-3xl space-y-3">
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold px-3 py-1 rounded-full">
+              WHO WE ARE & NCR CLINIC LOCATIONS
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              Delhi-NCR’s Leading Physical Therapy Network
+            </h2>
+            <p className="text-slate-600 text-sm leading-relaxed">
+              Physionautics operates doctor-guided flagship physical therapy centres across South Delhi and Gurugram. Select any location on the interactive map below for directions, contact info, and specialist availability.
+            </p>
+          </div>
 
-            {/* Branch Locations Directory */}
-            <div id="centers" className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {cms.branches.map((b) => (
-                <div key={b.id} className="bg-white border border-slate-200 p-4 rounded-xl space-y-2 shadow-2xs">
-                  <div className="flex items-center gap-1.5 text-blue-600 font-bold text-xs">
-                    <MapPin className="w-3.5 h-3.5" /> {b.name}
-                  </div>
-                  <p className="text-[11px] text-slate-500">{b.tagline}</p>
-                  <div className="text-[10px] text-slate-400 font-mono">{b.phone}</div>
-                </div>
-              ))}
-            </div>
+          {/* Interactive Delhi-NCR Vector & Google Maps Visualizer */}
+          <div id="centers" className="pt-2">
+            <NCRMapVisualizer />
           </div>
         </div>
       </section>

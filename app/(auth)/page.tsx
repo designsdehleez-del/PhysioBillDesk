@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ContainerScroll } from '@/components/ui/container-scroll-animation'
 import { NCRMapVisualizer } from '@/components/ncr-map-visualizer'
+import { motion } from 'motion/react'
 
 export default function AuthPage() {
   const router = useRouter()
@@ -143,7 +144,12 @@ export default function AuthPage() {
       <section id="overview" className="max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-14 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         
         {/* Left Column: Specific Clinical Positioning */}
-        <div className="lg:col-span-7 space-y-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          className="lg:col-span-7 space-y-6"
+        >
           <div className="space-y-4">
             <Badge variant="outline" className="bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-200 text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-2 shadow-2xs">
               <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> {cms.heroBadgeText}
@@ -177,20 +183,24 @@ export default function AuthPage() {
 
           {/* Action CTA Buttons */}
           <div className="flex flex-wrap items-center gap-3 pt-1">
-            <a 
+            <motion.a 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               href="#patient-portal" 
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow flex items-center gap-2 transition-all"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow flex items-center gap-2 transition-colors"
             >
               <Calendar className="w-4 h-4" /> Book Patient Consultation <ArrowRight className="w-3.5 h-3.5" />
-            </a>
-            <a 
+            </motion.a>
+            <motion.a 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               href="#procedures" 
-              className="px-6 py-3 bg-white border border-slate-200 hover:border-blue-300 text-slate-700 font-bold text-xs rounded-xl shadow-2xs hover:bg-slate-50 transition-all"
+              className="px-6 py-3 bg-white border border-slate-200 hover:border-blue-300 text-slate-700 font-bold text-xs rounded-xl shadow-2xs hover:bg-slate-50 transition-colors"
             >
               Explore Therapy Procedures
-            </a>
+            </motion.a>
           </div>
-        </div>
+        </motion.div>
 
         {/* Right Column: Equal-Height Portal Sign-In or Procedure Showcase */}
         <div id="auth-panel" className="lg:col-span-5 w-full">
@@ -453,7 +463,12 @@ export default function AuthPage() {
         {/* Procedure Image Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {cms.procedures.map((proc) => (
-            <div key={proc.id} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between">
+            <motion.div 
+              key={proc.id} 
+              whileHover={{ y: -4, scale: 1.01 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md hover:border-blue-300 transition-colors flex flex-col justify-between"
+            >
               <div>
                 <div className="h-44 w-full relative overflow-hidden bg-slate-100">
                   <img 
@@ -472,7 +487,7 @@ export default function AuthPage() {
                   </p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>

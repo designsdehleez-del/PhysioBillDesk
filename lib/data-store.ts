@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import type { Centre, Doctor, Patient, Service, DiscountPreset, PackagePreset, PatientPackageCredit, PatientFeedback, FeedbackFormTemplate, FormField } from '@/lib/supabase/types'
+import type { Centre, Doctor, Patient, Service, DiscountPreset, PackagePreset, PatientPackageCredit, PatientFeedback, FeedbackFormTemplate, FormField, ClinicExpense, ExpenseCategory } from '@/lib/supabase/types'
 import * as XLSX from 'xlsx'
 
 const DEFAULT_CENTRES: Centre[] = [
@@ -3822,4 +3822,126 @@ export async function exportFullDatabaseBackup() {
   XLSX.utils.book_append_sheet(wb, wsServices, 'Services')
 
   XLSX.writeFile(wb, `Physionautics_Complete_Backup_${new Date().toISOString().split('T')[0]}.xlsx`)
+}
+
+// ================= CLINIC OPERATIONAL EXPENSES STORE =================
+const EXPENSES_STORAGE_KEY = 'physio_expenses_v1'
+
+const DEFAULT_EXPENSES: ClinicExpense[] = [
+  {
+    id: 'exp-1',
+    expense_date: new Date().toISOString().split('T')[0],
+    category: 'Staff Salaries',
+    description: 'Physiotherapist & Front Desk Staff Monthly Allowance',
+    amount: 12500,
+    centre_id: 'c1111111-1111-1111-1111-111111111111',
+    centre_name: 'New Friends Colony, New Delhi',
+    logged_by_name: 'Clinic Manager',
+    payment_method: 'Bank Transfer',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'exp-2',
+    expense_date: new Date().toISOString().split('T')[0],
+    category: 'Rent & Lease',
+    description: 'Monthly Facility Rent & Maintenance Fee',
+    amount: 8000,
+    centre_id: 'c1111111-1111-1111-1111-111111111111',
+    centre_name: 'New Friends Colony, New Delhi',
+    logged_by_name: 'Clinic Manager',
+    payment_method: 'Bank Transfer',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'exp-3',
+    expense_date: new Date().toISOString().split('T')[0],
+    category: 'Equipment & Maintenance',
+    description: 'Spine Decompression Machine Calibration & IFT Gel Re-stock',
+    amount: 3500,
+    centre_id: 'c2222222-2222-2222-2222-222222222222',
+    centre_name: 'Vasant Vihar, New Delhi',
+    logged_by_name: 'Dr. Emily Watson',
+    payment_method: 'UPI',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'exp-4',
+    expense_date: new Date().toISOString().split('T')[0],
+    category: 'Medical Supplies',
+    description: 'Acupuncture Needles, Kinesio Tapes & Sanitizer Disinfectants',
+    amount: 2200,
+    centre_id: 'c3333333-3333-3333-3333-333333333333',
+    centre_name: 'Gurugram – DLF Phase 1',
+    logged_by_name: 'Front Desk Lead',
+    payment_method: 'Cash',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'exp-5',
+    expense_date: new Date().toISOString().split('T')[0],
+    category: 'Utilities & Bills',
+    description: 'Electricity & High Speed Fiber Internet Bill',
+    amount: 2800,
+    centre_id: 'c3333333-3333-3333-3333-333333333333',
+    centre_name: 'Gurugram – DLF Phase 1',
+    logged_by_name: 'Front Desk Lead',
+    payment_method: 'UPI',
+    created_at: new Date().toISOString(),
+  },
+]
+
+export async function getExpenses(): Promise<ClinicExpense[]> {
+  if (typeof window === 'undefined') return DEFAULT_EXPENSES
+  try {
+    const cached = localStorage.getItem(EXPENSES_STORAGE_KEY)
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch (_) {}
+  return DEFAULT_EXPENSES
+}
+
+export async function addExpense(expense: Omit<ClinicExpense, 'id' | 'created_at'>): Promise<ClinicExpense> {
+  const newExp: ClinicExpense = {
+    ...expense,
+    id: `exp-${Date.now()}`,
+    created_at: new Date().toISOString(),
+  }
+  try {
+    const current = await getExpenses()
+    const updated = [newExp, ...current]
+    localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(updated))
+    window.dispatchEvent(new CustomEvent('physio-expenses-updated', { detail: updated }))
+  } catch (err) {
+    console.error('Failed to add expense:', err)
+  }
+  return newExp
+}
+
+export async function deleteExpense(id: string): Promise<void> {
+  try {
+    const current = await getExpenses()
+    const updated = current.filter(e => e.id !== id)
+    localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(updated))
+    window.dispatchEvent(new CustomEvent('physio-expenses-updated', { detail: updated }))
+  } catch (err) {
+    console.error('Failed to delete expense:', err)
+  }
+}
+
+export function exportExpensesToExcel(expenses: ClinicExpense[]): void {
+  const wb = XLSX.utils.book_new()
+  const data = expenses.map(e => ({
+    'Date': e.expense_date,
+    'Category': e.category,
+    'Description': e.description,
+    'Amount (₹)': e.amount,
+    'Clinic Centre': e.centre_name || 'All Centres',
+    'Payment Method': e.payment_method || 'Cash',
+    'Logged By': e.logged_by_name || 'Staff',
+  }))
+  const ws = XLSX.utils.json_to_sheet(data)
+  XLSX.utils.book_append_sheet(wb, ws, 'Operational_Expenses')
+  XLSX.writeFile(wb, `Physionautics_Clinic_Expenses_${new Date().toISOString().split('T')[0]}.xlsx`)
 }

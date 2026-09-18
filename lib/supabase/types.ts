@@ -275,3 +275,25 @@ export interface FeedbackFormTemplate {
   show_procedures_badge: boolean
   accent_color?: string
 }
+
+export type ExpenseCategory = 
+  | 'Staff Salaries'
+  | 'Rent & Lease'
+  | 'Equipment & Maintenance'
+  | 'Medical Supplies'
+  | 'Utilities & Bills'
+  | 'Marketing & Admin'
+  | 'Miscellaneous'
+
+export interface ClinicExpense {
+  id: string
+  expense_date: string
+  category: ExpenseCategory
+  description: string
+  amount: number
+  centre_id?: string | null
+  centre_name?: string | null
+  logged_by_name?: string
+  payment_method?: 'Cash' | 'Bank Transfer' | 'UPI' | 'Card'
+  created_at: string
+}

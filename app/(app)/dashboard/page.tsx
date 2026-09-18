@@ -21,6 +21,7 @@ import {
 } from '@/lib/data-store'
 import { FinancialTrackingView } from '@/components/dashboard/financial-tracking-view'
 import { ExpenseLoggingModal } from '@/components/dashboard/expense-logging-modal'
+import { DoctorDetailModal } from '@/components/doctors/doctor-detail-modal'
 import { Centre, Doctor, PatientFeedback, ClinicExpense, ExpenseCategory } from '@/lib/supabase/types'
 
 interface DoctorStat {
@@ -55,7 +56,7 @@ export default function DashboardPage() {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'today' | '7days' | '30days' | 'all'>('all')
 
   // Selected doctor modal for deep financial & feedback drilldown
-  const [activeDoctorModal, setActiveDoctorModal] = useState<DoctorStat | null>(null)
+  const [selectedDoctorForModal, setSelectedDoctorForModal] = useState<Doctor | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -591,11 +592,32 @@ export default function DashboardPage() {
                         {/* Doctor Header */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
+                            <div 
+                              className="flex items-center gap-1.5 cursor-pointer group/name"
+                              onClick={() => {
+                                const fullDoc: Doctor = doctors.find(d => d.id === doc.id) || {
+                                  id: doc.id,
+                                  name: doc.name,
+                                  specialization: doc.specialization,
+                                  qualification: 'BPT, MPT',
+                                  photo_url: null,
+                                  experience_years: '5+ Years',
+                                  registration_number: null,
+                                  bio: null,
+                                  phone: null,
+                                  email: null,
+                                  centre_id: doc.rawCentreId || null,
+                                  is_active: true,
+                                  created_at: new Date().toISOString(),
+                                  updated_at: new Date().toISOString()
+                                }
+                                setSelectedDoctorForModal(fullDoc)
+                              }}
+                            >
                               <span className="h-5 w-5 rounded-full bg-indigo-100 text-indigo-800 font-extrabold flex items-center justify-center text-[10px]">
                                 #{idx + 1}
                               </span>
-                              <h3 className="font-bold text-gray-900 text-sm truncate">{doc.name}</h3>
+                              <h3 className="font-bold text-gray-900 text-sm truncate group-hover/name:text-blue-600 group-hover/name:underline">{doc.name}</h3>
                             </div>
                             <p className="text-[11px] text-muted-foreground truncate">{doc.specialization}</p>
                             <p className="text-[10px] text-indigo-700 font-medium truncate flex items-center gap-1 mt-0.5">
@@ -658,11 +680,29 @@ export default function DashboardPage() {
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="w-full mt-3 text-xs gap-1.5 border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100"
-                        onClick={() => setActiveDoctorModal(doc)}
+                        className="w-full mt-3 text-xs gap-1.5 border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100 font-semibold"
+                        onClick={() => {
+                          const fullDoc: Doctor = doctors.find(d => d.id === doc.id) || {
+                            id: doc.id,
+                            name: doc.name,
+                            specialization: doc.specialization,
+                            qualification: 'BPT, MPT',
+                            photo_url: null,
+                            experience_years: '5+ Years',
+                            registration_number: null,
+                            bio: null,
+                            phone: null,
+                            email: null,
+                            centre_id: doc.rawCentreId || null,
+                            is_active: true,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                          }
+                          setSelectedDoctorForModal(fullDoc)
+                        }}
                       >
                         <Receipt className="h-3.5 w-3.5 text-indigo-600" />
-                        View Invoices & All Reviews
+                        View Profile, Patients & Financials
                         <ChevronRight className="h-3.5 w-3.5 ml-auto" />
                       </Button>
                     </div>
@@ -866,6 +906,16 @@ export default function DashboardPage() {
           </Card>
         </div>
       )}
+
+      {/* Interactive Admin Doctor Profile & Performance Drilldown Modal */}
+      <DoctorDetailModal
+        doctor={selectedDoctorForModal}
+        open={!!selectedDoctorForModal}
+        onOpenChange={(open) => { if (!open) setSelectedDoctorForModal(null) }}
+        visits={allVisits}
+        feedbacks={feedbacks}
+        centreName={selectedDoctorForModal ? centres.find(c => c.id === selectedDoctorForModal.centre_id)?.name : undefined}
+      />
     </div>
   )
 }

@@ -137,6 +137,11 @@ export interface Doctor {
   id: string
   name: string
   specialization: string | null
+  qualification?: string | null
+  photo_url?: string | null
+  experience_years?: string | null
+  registration_number?: string | null
+  bio?: string | null
   phone: string | null
   email: string | null
   centre_id: string | null

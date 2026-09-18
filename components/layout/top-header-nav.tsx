@@ -108,31 +108,27 @@ export function TopHeaderNav() {
       <header className="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-2xs" ref={dropdownRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
           
-          {/* Logo Section: Image ONLY if logoUrl exists + tagline below. Logo Click opens Menu with Lock & Guide */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                setLogoMenuOpen(!logoMenuOpen)
-                setActiveDropdown(null)
-                setProfileOpen(false)
-              }}
+          {/* Logo Section: Clickable Link to Landing Page */}
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/"
               className="flex flex-col text-left group cursor-pointer focus:outline-none py-1"
-              title="Click for Clinic Controls & Guide"
+              title="Go to Home Landing Page"
             >
               {branding.logoUrl ? (
                 <div className="flex flex-col">
-                  <img src={branding.logoUrl} alt={branding.clinicName || 'PhysioNautics'} className="h-7 max-w-[170px] object-contain" />
+                  <img src={branding.logoUrl} alt={branding.clinicName || 'PhysioNautics'} className="h-7 max-w-[170px] object-contain group-hover:opacity-90 transition-opacity" />
                   <span className="text-[9px] font-medium text-slate-400 -mt-0.5 leading-none">
                     {branding.tagline || 'Physiotherapy & Pain Rehabilitation'}
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center text-white shadow-xs">
+                  <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center text-white shadow-xs group-hover:bg-blue-700 transition-colors">
                     <Stethoscope className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="font-bold text-sm text-slate-900 tracking-tight leading-none block">
+                    <span className="font-bold text-sm text-slate-900 tracking-tight leading-none block group-hover:text-blue-600 transition-colors">
                       {branding.clinicName || 'Physionautics'}
                     </span>
                     <span className="text-[9px] font-medium text-slate-400">
@@ -141,25 +137,7 @@ export function TopHeaderNav() {
                   </div>
                 </div>
               )}
-            </button>
-
-            {/* Logo Dropdown: Lock Screen & Clinic Guide */}
-            {logoMenuOpen && (
-              <div className="absolute left-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-xl shadow-xl p-2 z-50 space-y-1 animate-in fade-in-50 zoom-in-95">
-                <div className="px-2 py-1 border-b text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  Clinic Controls & Guide
-                </div>
-                <button
-                  onClick={handleLockNow}
-                  className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs hover:bg-slate-50 text-slate-700"
-                >
-                  <Lock className="h-4 w-4 text-slate-500" /> Lock Clinic Desk (Ctrl+Alt+L)
-                </button>
-                <div className="px-2 py-1 border-t text-[11px] font-bold text-slate-400">
-                  Assigned Branch: <span className="text-slate-700 font-semibold">{profile?.centreName || 'All Centres'}</span>
-                </div>
-              </div>
-            )}
+            </Link>
           </div>
 
           {/* Desktop Clean Categorized Navigation */}

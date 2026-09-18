@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { 
   Stethoscope, Loader2, Award, HeartPulse, 
   Building2, ArrowRight, Sparkles, User, Lock, Activity, CheckCircle2, ShieldCheck,
@@ -39,16 +40,11 @@ export default function AuthPage() {
       } else {
         const { error } = await signIn(email, password)
         if (error) setError(error.message)
-        else router.push('/dashboard')
+        // Keep user on the landing page in logged in state
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unexpected error')
     } finally { setLoading(false) }
-  }
-
-  const fillQuickLogin = (roleEmail: string, rolePass: string) => {
-    setEmail(roleEmail)
-    setPassword(rolePass)
   }
 
   const isLoggedIn = !!profile || !!user
@@ -60,23 +56,23 @@ export default function AuthPage() {
       <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 sm:px-8 py-3.5 sticky top-0 z-30 shadow-xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
-          {/* Left: Brand Logo & Clinic Name */}
-          <div className="flex items-center gap-3">
+          {/* Left: Clickable Brand Logo & Clinic Name */}
+          <Link href="/" className="flex items-center gap-3 group cursor-pointer">
             {branding.logoUrl ? (
               <div className="flex flex-col">
-                <img src={branding.logoUrl} alt={branding.clinicName || 'Physionautics'} className="h-9 max-w-[220px] object-contain" />
+                <img src={branding.logoUrl} alt={branding.clinicName || 'Physionautics'} className="h-9 max-w-[220px] object-contain transition-transform group-hover:scale-105" />
                 <span className="text-[10px] font-medium text-slate-500 mt-0.5">
                   {branding.tagline || 'Physiotherapy & Pain Rehabilitation Centre'}
                 </span>
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 transition-transform group-hover:scale-105">
                   <Stethoscope className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-black text-lg text-slate-900 tracking-tight leading-none">
+                    <span className="font-black text-lg text-slate-900 tracking-tight leading-none group-hover:text-blue-600 transition-colors">
                       {branding.clinicName || 'PHYSIONAUTICS'}
                     </span>
                     <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0 rounded">
@@ -89,12 +85,13 @@ export default function AuthPage() {
                 </div>
               </div>
             )}
-          </div>
+          </Link>
 
           {/* Center Navigation Links */}
           <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-600">
             <a href="#overview" className="hover:text-blue-600 transition-colors">Overview</a>
             <a href="#about" className="hover:text-blue-600 transition-colors">Who We Are</a>
+            <a href="#procedures" className="hover:text-blue-600 transition-colors">Procedures</a>
             <a href="#services" className="hover:text-blue-600 transition-colors">Services</a>
             <a href="#patient-portal" className="hover:text-blue-600 transition-colors">Patient Care</a>
             <a href="#centers" className="hover:text-blue-600 transition-colors">NCR Clinics</a>
@@ -206,90 +203,50 @@ export default function AuthPage() {
               <Calendar className="w-4 h-4" /> Book Patient Session <ArrowRight className="w-3.5 h-3.5" />
             </a>
             <a 
-              href="#services" 
+              href="#procedures" 
               className="px-5 py-2.5 bg-white border border-slate-200 hover:border-blue-300 text-slate-700 font-bold text-xs rounded-xl shadow-2xs hover:bg-slate-50 transition-all"
             >
-              Explore Treatment Modalities
+              View Therapy Procedures
             </a>
           </div>
         </div>
 
-        {/* Right Column: Conditional Auth State or Physiotherapy Showcase */}
+        {/* Right Column: Conditional Auth State OR Pure Physiotherapy Image Card */}
         <div id="auth-panel" className="lg:col-span-5 w-full">
           {isLoggedIn ? (
-            /* Logged-In State: Physiotherapy Care Showcase & Quick Workspace Access */
-            <Card className="shadow-lg border-blue-200/80 bg-gradient-to-b from-white to-blue-50/40 rounded-2xl overflow-hidden">
-              <div className="relative h-44 w-full overflow-hidden border-b border-slate-100">
+            /* Logged-In State: Pure Physiotherapy Care Procedure Image Showcase */
+            <Card className="shadow-lg border-blue-200/80 bg-white rounded-2xl overflow-hidden">
+              <div className="relative h-[420px] w-full overflow-hidden">
                 <img 
                   src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=800" 
                   alt="Physiotherapy Patient Care" 
                   className="w-full h-full object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/30 to-transparent flex items-end p-4">
-                  <div className="text-white space-y-1">
-                    <Badge className="bg-emerald-500 text-white border-none text-[10px] font-bold px-2 py-0.5">
-                      Doctor Guided Protocol
-                    </Badge>
-                    <h3 className="text-base font-extrabold text-white">Physionautics Clinical Care Portal</h3>
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/35 to-transparent flex flex-col justify-end p-6">
+                  <div className="text-white space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Badge className="bg-emerald-500 text-white border-none text-[10px] font-bold px-2.5 py-0.5">
+                        Active Session • {profile?.name || 'Logged In'}
+                      </Badge>
+                      <button 
+                        onClick={() => signOut()} 
+                        className="text-xs text-slate-300 hover:text-red-400 font-semibold flex items-center gap-1 transition-colors"
+                      >
+                        <LogOut className="w-3.5 h-3.5" /> Sign Out
+                      </button>
+                    </div>
+                    <h3 className="text-xl font-black text-white leading-snug">
+                      Doctor-Guided Physical Medicine & Spine Care
+                    </h3>
+                    <p className="text-xs text-slate-200 leading-relaxed">
+                      Welcome back to Physionautics. You are currently logged in to your clinic session.
+                    </p>
                   </div>
                 </div>
               </div>
-
-              <CardContent className="p-5 space-y-4">
-                <div className="flex items-center justify-between p-3 bg-white border border-slate-200/80 rounded-xl shadow-2xs">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-sm border border-blue-200">
-                      {profile?.name?.charAt(0) || 'U'}
-                    </div>
-                    <div>
-                      <div className="text-xs font-extrabold text-slate-900">{profile?.name || 'Authorized Staff'}</div>
-                      <div className="text-[11px] text-slate-500">{profile?.roleTitle || (profile?.role === 'admin' ? 'Master Administrator' : 'Clinic Specialist')}</div>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold">
-                    Active
-                  </Badge>
-                </div>
-
-                <div className="space-y-2">
-                  <Button 
-                    onClick={() => router.push('/dashboard')}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 text-xs rounded-xl shadow-md gap-2"
-                  >
-                    <LayoutDashboard className="w-4 h-4" /> Enter Staff Workspace <ArrowRight className="w-4 h-4" />
-                  </Button>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <Button 
-                      variant="outline"
-                      onClick={() => router.push('/patients/register')}
-                      className="bg-white hover:bg-slate-50 border-slate-200 text-slate-700 font-semibold text-xs h-9 rounded-xl gap-1.5"
-                    >
-                      <UserPlus className="w-3.5 h-3.5 text-blue-600" /> New Patient
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => router.push('/billing')}
-                      className="bg-white hover:bg-slate-50 border-slate-200 text-slate-700 font-semibold text-xs h-9 rounded-xl gap-1.5"
-                    >
-                      <CreditCard className="w-3.5 h-3.5 text-emerald-600" /> Billing
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                  <span className="text-slate-500 font-medium">Session ID: <span className="font-mono text-slate-700">{profile?.id || 'usr-active'}</span></span>
-                  <button 
-                    onClick={() => signOut()} 
-                    className="text-red-600 hover:text-red-700 font-bold flex items-center gap-1 hover:underline"
-                  >
-                    <LogOut className="w-3.5 h-3.5" /> Sign Out
-                  </button>
-                </div>
-              </CardContent>
             </Card>
           ) : (
-            /* Logged-Out State: Interactive Portal Sign In Card */
+            /* Logged-Out State: Portal Sign In Card */
             <Card className="shadow-lg border-slate-200/90 bg-white rounded-2xl">
               <CardHeader className="space-y-1 pb-3 pt-5 border-b border-slate-100">
                 <div className="flex items-center justify-between">
@@ -307,29 +264,6 @@ export default function AuthPage() {
               </CardHeader>
 
               <CardContent className="space-y-4 pt-4 pb-5">
-                {/* Demo Preset Credentials */}
-                <div className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl space-y-1.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
-                    Quick Login Demo Credentials
-                  </span>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => fillQuickLogin('admin@physionautics.com', 'admin123')}
-                      className="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-blue-400 rounded-lg text-[11px] font-semibold text-slate-700 text-left transition-colors"
-                    >
-                      👑 Master Admin
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fillQuickLogin('sarah@physionautics.com', 'doctor123')}
-                      className="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-blue-400 rounded-lg text-[11px] font-semibold text-slate-700 text-left transition-colors"
-                    >
-                      🩺 Doctor Desk
-                    </button>
-                  </div>
-                </div>
-
                 <form onSubmit={handleSubmit} className="space-y-3.5">
                   <div className="space-y-1">
                     <Label htmlFor="email" className="text-xs font-medium text-slate-700">Email or Username</Label>
@@ -338,7 +272,7 @@ export default function AuthPage() {
                       <Input
                         id="email"
                         type="text"
-                        placeholder="e.g. admin@physionautics.com"
+                        placeholder="e.g. doctor@physionautics.com"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         required
@@ -409,7 +343,7 @@ export default function AuthPage() {
                 </span>
               </h2>
               <p className="text-slate-400 text-xs sm:text-sm max-w-xl text-center leading-relaxed">
-                Experience seamless patient evaluation, digital session logging, real-time revenue tracking, and outcome monitoring in one unified platform.
+                Experience seamless patient evaluation, digital session logging, doctor-guided care plans, and outcome monitoring in one unified platform.
               </p>
             </div>
           }
@@ -450,9 +384,9 @@ export default function AuthPage() {
               </div>
 
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
-                <div className="text-[10px] font-bold text-slate-400 uppercase">Revenue & Collections</div>
-                <div className="text-2xl font-black text-amber-400">₹48,500 Today</div>
-                <div className="text-[11px] text-slate-400">Instant GST Invoicing Active</div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Active Therapy Sessions</div>
+                <div className="text-2xl font-black text-emerald-400">14 Sessions Today</div>
+                <div className="text-[11px] text-slate-400">Non-Invasive Care Active</div>
               </div>
             </div>
 
@@ -483,66 +417,111 @@ export default function AuthPage() {
         </ContainerScroll>
       </section>
 
-      {/* 4. Section 1: What is Physionautics */}
-      <section id="about" className="max-w-7xl mx-auto px-4 sm:px-8 py-16 w-full space-y-10">
+      {/* 4. Section 1: What is Physionautics + Procedure Visual Cards */}
+      <section id="procedures" className="max-w-7xl mx-auto px-4 sm:px-8 py-16 w-full space-y-12">
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold px-3 py-1 rounded-full">
-            WHAT IS PHYSIONAUTICS
+            PROCEDURES & THERAPIES
           </Badge>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Science-Backed Non-Invasive Physical Medicine
+            Advanced Clinical Rehabilitation Procedures
           </h2>
           <p className="text-slate-600 text-sm leading-relaxed">
-            Physionautics represents a modern approach to rehabilitation combining clinical biomechanics, precise targeted physical therapies, and digital recovery tracking.
+            Combining biomechanical assessment with targeted non-surgical physical medicine procedures for lasting recovery.
           </p>
         </div>
 
+        {/* Procedure Image Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white border border-slate-200/80 p-6 rounded-2xl space-y-3 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-              <Stethoscope className="w-5 h-5" />
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between">
+            <div>
+              <div className="h-44 w-full relative overflow-hidden bg-slate-100">
+                <img 
+                  src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=600" 
+                  alt="Spine Alignment & Traction" 
+                  className="w-full h-full object-cover"
+                />
+                <Badge className="absolute top-3 left-3 bg-blue-600 text-white border-none text-[10px] font-bold">
+                  Spine Care
+                </Badge>
+              </div>
+              <div className="p-5 space-y-2">
+                <h3 className="font-bold text-base text-slate-900">Spine Alignment & Decompression</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Computerized cervical and lumbar traction designed to relieve disc pressure, herniations, and nerve radiculopathy.
+                </p>
+              </div>
             </div>
-            <h3 className="font-bold text-base text-slate-900">Spine Alignment</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Targeted cervical and lumbar spinal decompression to relieve nerve root compression without surgery.
-            </p>
           </div>
 
-          <div className="bg-white border border-slate-200/80 p-6 rounded-2xl space-y-3 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-              <Zap className="w-5 h-5" />
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between">
+            <div>
+              <div className="h-44 w-full relative overflow-hidden bg-slate-100">
+                <img 
+                  src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=600" 
+                  alt="Advanced Electrophysiology" 
+                  className="w-full h-full object-cover"
+                />
+                <Badge className="absolute top-3 left-3 bg-emerald-600 text-white border-none text-[10px] font-bold">
+                  Electrotherapy
+                </Badge>
+              </div>
+              <div className="p-5 space-y-2">
+                <h3 className="font-bold text-base text-slate-900">Advanced Electrophysiology (IFT & US)</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Interferential current and therapeutic ultrasound targeting deep inflammation and rapid acute pain relief.
+                </p>
+              </div>
             </div>
-            <h3 className="font-bold text-base text-slate-900">Advanced Electrophysiology</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Interferential Therapy (IFT) and High-Frequency Ultrasound for deep tissue inflammation reduction.
-            </p>
           </div>
 
-          <div className="bg-white border border-slate-200/80 p-6 rounded-2xl space-y-3 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-              <Target className="w-5 h-5" />
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between">
+            <div>
+              <div className="h-44 w-full relative overflow-hidden bg-slate-100">
+                <img 
+                  src="https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&q=80&w=600" 
+                  alt="Myofascial Dry Needling" 
+                  className="w-full h-full object-cover"
+                />
+                <Badge className="absolute top-3 left-3 bg-rose-600 text-white border-none text-[10px] font-bold">
+                  Trigger Point
+                </Badge>
+              </div>
+              <div className="p-5 space-y-2">
+                <h3 className="font-bold text-base text-slate-900">Myofascial Dry Needling</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Precision needle therapy releasing deep muscle knots, localized ischemia, and chronic neuromuscular tightness.
+                </p>
+              </div>
             </div>
-            <h3 className="font-bold text-base text-slate-900">Myofascial Dry Needling</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Precision trigger point needle therapy for releasing deep muscle knots and restoring blood circulation.
-            </p>
           </div>
 
-          <div className="bg-white border border-slate-200/80 p-6 rounded-2xl space-y-3 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-              <Dumbbell className="w-5 h-5" />
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between">
+            <div>
+              <div className="h-44 w-full relative overflow-hidden bg-slate-100">
+                <img 
+                  src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&q=80&w=600" 
+                  alt="Functional Joint Rehab" 
+                  className="w-full h-full object-cover"
+                />
+                <Badge className="absolute top-3 left-3 bg-purple-600 text-white border-none text-[10px] font-bold">
+                  Rehabilitation
+                </Badge>
+              </div>
+              <div className="p-5 space-y-2">
+                <h3 className="font-bold text-base text-slate-900">Functional Joint Rehabilitation</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Custom targeted joint loading protocols and posture re-education for shoulder, knee, and hip joints.
+                </p>
+              </div>
             </div>
-            <h3 className="font-bold text-base text-slate-900">Functional Rehab</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Custom joint loading protocols and posture re-education for long-term pain prevention.
-            </p>
           </div>
         </div>
       </section>
 
       {/* 5. Section 2: Who We Are & Clinical Excellence */}
-      <section className="bg-slate-100/70 border-y border-slate-200/80 py-16">
-        <div id="centers" className="max-w-7xl mx-auto px-4 sm:px-8 space-y-12">
+      <section id="about" className="bg-slate-100/70 border-y border-slate-200/80 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-12">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-6 space-y-4">
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold px-3 py-1 rounded-full">
@@ -568,8 +547,8 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* Branch Locations Grid */}
-            <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Branch Locations Directory */}
+            <div id="centers" className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-2 shadow-2xs">
                 <div className="flex items-center gap-1.5 text-blue-600 font-bold text-xs">
                   <MapPin className="w-3.5 h-3.5" /> New Friends Colony
@@ -613,70 +592,118 @@ export default function AuthPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl space-y-3 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xl">⚡</span>
-              <Badge className="bg-blue-50 text-blue-700 border-none text-[10px]">Pain Management</Badge>
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all">
+            <div className="h-40 w-full relative bg-slate-100">
+              <img 
+                src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=500" 
+                alt="IFT & Electrotherapy" 
+                className="w-full h-full object-cover"
+              />
             </div>
-            <h3 className="font-bold text-sm text-slate-900">IFT & Ultrasound Therapy</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Dual-frequency interferential current to block pain nerve pathways and accelerate cellular healing.
-            </p>
+            <div className="p-5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-sm text-slate-900">IFT & Ultrasound Therapy</h3>
+                <Badge className="bg-blue-50 text-blue-700 border-none text-[10px]">Pain Block</Badge>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Dual-frequency interferential current to block pain nerve pathways and accelerate cellular healing.
+              </p>
+            </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl space-y-3 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xl">🎯</span>
-              <Badge className="bg-rose-50 text-rose-700 border-none text-[10px]">Targeted Muscle</Badge>
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all">
+            <div className="h-40 w-full relative bg-slate-100">
+              <img 
+                src="https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&q=80&w=500" 
+                alt="Dry Needling & Cupping" 
+                className="w-full h-full object-cover"
+              />
             </div>
-            <h3 className="font-bold text-sm text-slate-900">Dry Needling & Cupping</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Myofascial trigger point deactivation for persistent muscle tightness and chronic spasms.
-            </p>
+            <div className="p-5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-sm text-slate-900">Dry Needling & Cupping</h3>
+                <Badge className="bg-rose-50 text-rose-700 border-none text-[10px]">Trigger Point</Badge>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Myofascial trigger point deactivation for persistent muscle tightness and chronic muscle spasms.
+              </p>
+            </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl space-y-3 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xl"> Spine</span>
-              <Badge className="bg-indigo-50 text-indigo-700 border-none text-[10px]">Disc Decompression</Badge>
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all">
+            <div className="h-40 w-full relative bg-slate-100">
+              <img 
+                src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=500" 
+                alt="Spinal Traction" 
+                className="w-full h-full object-cover"
+              />
             </div>
-            <h3 className="font-bold text-sm text-slate-900">Computerized Spinal Traction</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Graduated lumbar and cervical distraction for herniated discs and sciatica nerve pressure.
-            </p>
+            <div className="p-5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-sm text-slate-900">Computerized Spinal Traction</h3>
+                <Badge className="bg-indigo-50 text-indigo-700 border-none text-[10px]">Disc Care</Badge>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Graduated lumbar and cervical distraction for herniated discs and sciatica nerve pressure.
+              </p>
+            </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl space-y-3 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xl">🩹</span>
-              <Badge className="bg-teal-50 text-teal-700 border-none text-[10px]">Joint Support</Badge>
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all">
+            <div className="h-40 w-full relative bg-slate-100">
+              <img 
+                src="https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&q=80&w=500" 
+                alt="Kinesio Taping" 
+                className="w-full h-full object-cover"
+              />
             </div>
-            <h3 className="font-bold text-sm text-slate-900">Kinesio Taping & Mobilization</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Proprioceptive taping protocols to stabilize ligaments and support dynamic movement during recovery.
-            </p>
+            <div className="p-5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-sm text-slate-900">Kinesio Taping & Mobilization</h3>
+                <Badge className="bg-teal-50 text-teal-700 border-none text-[10px]">Joint Support</Badge>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Proprioceptive taping protocols to stabilize ligaments and support dynamic movement during recovery.
+              </p>
+            </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl space-y-3 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xl">🏃</span>
-              <Badge className="bg-amber-50 text-amber-700 border-none text-[10px]">Sports Medicine</Badge>
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all">
+            <div className="h-40 w-full relative bg-slate-100">
+              <img 
+                src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&q=80&w=500" 
+                alt="Sports Rehab" 
+                className="w-full h-full object-cover"
+              />
             </div>
-            <h3 className="font-bold text-sm text-slate-900">Sports Injury Rehabilitation</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              ACL/MCL recovery, shoulder rotator cuff rehab, and return-to-sport athletic conditioning.
-            </p>
+            <div className="p-5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-sm text-slate-900">Sports Injury Rehabilitation</h3>
+                <Badge className="bg-amber-50 text-amber-700 border-none text-[10px]">Athletic Rehab</Badge>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                ACL/MCL recovery, shoulder rotator cuff rehab, and return-to-sport athletic conditioning.
+              </p>
+            </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl space-y-3 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xl">🦴</span>
-              <Badge className="bg-emerald-50 text-emerald-700 border-none text-[10px]">Post-Op Care</Badge>
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all">
+            <div className="h-40 w-full relative bg-slate-100">
+              <img 
+                src="https://images.unsplash.com/photo-1576091160291-2f080f55cfef?auto=format&fit=crop&q=80&w=500" 
+                alt="Post-Surgical Joint Restoration" 
+                className="w-full h-full object-cover"
+              />
             </div>
-            <h3 className="font-bold text-sm text-slate-900">Post-Surgical Joint Restoration</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Structured progressive loading after knee replacement, hip surgery, or spinal fixation.
-            </p>
+            <div className="p-5 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-sm text-slate-900">Post-Surgical Joint Restoration</h3>
+                <Badge className="bg-emerald-50 text-emerald-700 border-none text-[10px]">Post-Op Care</Badge>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Structured progressive loading after knee replacement, hip surgery, or spinal fixation.
+              </p>
+            </div>
           </div>
         </div>
       </section>

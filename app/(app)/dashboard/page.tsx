@@ -138,61 +138,73 @@ export default function DashboardPage() {
 
   // Doctor-Wise Financials & Performance Hub
   const doctorStats: DoctorStat[] = useMemo(() => {
-    return doctors.map(doc => {
-      const docRawName = doc.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
-      
-      const docVisits = filteredVisits.filter(v => {
-        if (v.doctor_id && v.doctor_id === doc.id) return true
-        if (v.doctor_name) {
-          const vDocName = v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
-          return vDocName.includes(docRawName) || docRawName.includes(vDocName)
-        }
-        return false
-      })
-
-      const revenue = docVisits.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
-      const patientCount = docVisits.length
-      const avgTicket = patientCount > 0 ? Math.round(revenue / patientCount) : 0
-
-      const docFeedbacks = feedbacks.filter(f => {
-        if (!f.doctor_name) return false
-        const fDocName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
-        return fDocName.includes(docRawName) || docRawName.includes(fDocName)
-      })
-
-      const avgRating = docFeedbacks.length > 0 
-        ? (docFeedbacks.reduce((sum, f) => sum + f.rating, 0) / docFeedbacks.length).toFixed(1)
-        : '5.0'
-
-      const serviceCounts: Record<string, number> = {}
-      docVisits.forEach(v => {
-        v.items?.forEach(i => {
-          serviceCounts[i.service_name] = (serviceCounts[i.service_name] || 0) + i.quantity
+    return doctors
+      .map(doc => {
+        const docRawName = doc.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+        
+        const docVisits = filteredVisits.filter(v => {
+          if (v.doctor_id && v.doctor_id === doc.id) return true
+          if (v.doctor_name) {
+            const vDocName = v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+            return vDocName.includes(docRawName) || docRawName.includes(vDocName)
+          }
+          return false
         })
+
+        const revenue = docVisits.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
+        const patientCount = docVisits.length
+        const avgTicket = patientCount > 0 ? Math.round(revenue / patientCount) : 0
+
+        const docFeedbacks = feedbacks.filter(f => {
+          if (!f.doctor_name) return false
+          const fDocName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+          return fDocName.includes(docRawName) || docRawName.includes(fDocName)
+        })
+
+        const avgRating = docFeedbacks.length > 0 
+          ? (docFeedbacks.reduce((sum, f) => sum + f.rating, 0) / docFeedbacks.length).toFixed(1)
+          : '5.0'
+
+        const serviceCounts: Record<string, number> = {}
+        docVisits.forEach(v => {
+          v.items?.forEach(i => {
+            serviceCounts[i.service_name] = (serviceCounts[i.service_name] || 0) + i.quantity
+          })
+        })
+        const topProcedures = Object.entries(serviceCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([name]) => name)
+
+        const centreObj = centres.find(c => c.id === doc.centre_id)
+
+        return {
+          id: doc.id,
+          name: doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`,
+          specialization: doc.specialization || 'Physiotherapy Specialist',
+          centre_name: centreObj ? centreObj.name : 'Physionautics Multispecialty',
+          revenue,
+          patientCount,
+          avgTicket,
+          avgRating,
+          feedbackCount: docFeedbacks.length,
+          feedbacks: docFeedbacks,
+          visits: docVisits,
+          topProcedures,
+          rawCentreId: doc.centre_id,
+        }
       })
-      const topProcedures = Object.entries(serviceCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([name]) => name)
-
-      const centreObj = centres.find(c => c.id === doc.centre_id)
-
-      return {
-        id: doc.id,
-        name: doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`,
-        specialization: doc.specialization || 'Physiotherapy Specialist',
-        centre_name: centreObj ? centreObj.name : 'Physionautics Multispecialty',
-        revenue,
-        patientCount,
-        avgTicket,
-        avgRating,
-        feedbackCount: docFeedbacks.length,
-        feedbacks: docFeedbacks,
-        visits: docVisits,
-        topProcedures,
-      }
-    }).sort((a, b) => b.revenue - a.revenue)
-  }, [doctors, filteredVisits, feedbacks, centres])
+      .filter(doc => {
+        if (selectedFilterCentre === 'all') return true
+        // Only include doctors who belong to the selected centre or have visits in this filtered context
+        const matchesCentreId = doc.rawCentreId === selectedFilterCentre
+        const selectedCentreObj = centres.find(c => c.id === selectedFilterCentre)
+        const matchesCentreName = selectedCentreObj && doc.centre_name.toLowerCase().includes(selectedCentreObj.name.toLowerCase())
+        const hasVisitsInFilter = doc.patientCount > 0
+        return matchesCentreId || matchesCentreName || hasVisitsInFilter
+      })
+      .sort((a, b) => b.revenue - a.revenue)
+  }, [doctors, filteredVisits, feedbacks, centres, selectedFilterCentre])
 
   // Payment Breakdown
   const paymentBreakdown = useMemo(() => {

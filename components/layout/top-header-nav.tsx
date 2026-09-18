@@ -92,6 +92,7 @@ export function TopHeaderNav() {
         icon: Settings,
         items: [
           { label: 'Brand & Clinic Settings', href: '/settings', icon: Settings, desc: 'Branding & contacts' },
+          { label: 'Landing Page CMS', href: '/settings/landing', icon: Sparkles, desc: 'Edit text & images' },
           { label: 'WhatsApp Settings', href: '/settings/whatsapp', icon: MessageCircle, desc: 'Message templates' },
           ...(isAdmin ? [
             { label: 'Data & Demo Tools', href: '/settings/data', icon: Database, desc: 'Seed & reset tools' },

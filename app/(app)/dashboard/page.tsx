@@ -404,19 +404,19 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-slate-900/95 border border-slate-800 text-white p-6 rounded-3xl shadow-xl backdrop-blur-md"
+        className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 border border-blue-800/80 text-white p-6 rounded-3xl shadow-xl backdrop-blur-md"
       >
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-xs font-bold px-2.5 py-0.5">
+            <Badge className="bg-blue-500/20 text-blue-200 border border-blue-400/30 text-xs font-bold px-2.5 py-0.5">
               {isAdmin ? '👑 Master Admin & Financial Command' : `🏥 ${profile?.centreName || 'Clinic Reception Desk'}`}
             </Badge>
-            <span className="text-xs text-slate-400">Physionautics Multispecialty Network</span>
+            <span className="text-xs text-blue-200/70">Physionautics Multispecialty Network</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1.5">
             {isAdmin ? 'Executive Financial & Clinical Intelligence' : 'Clinic Operations & Expense Desk'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300">
+          <p className="text-xs sm:text-sm text-blue-100/80">
             {isAdmin 
               ? 'Gross & Net revenue analytics, operational expenses, doctor performance & CSAT ratings' 
               : `Live patient attendance, daily clinic expenses & verified ratings for ${profile?.centreName || 'this branch'}`}
@@ -424,7 +424,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Global Filter Bar */}
-        <div className="flex flex-wrap items-center gap-2 bg-slate-800/80 p-2 rounded-2xl border border-slate-700/80 backdrop-blur-md">
+        <div className="flex flex-wrap items-center gap-2 bg-blue-900/60 p-2 rounded-2xl border border-blue-700/60 backdrop-blur-md">
           {/* Branch Filter (Admin Only) */}
           {isAdmin && (
             <Select value={selectedFilterCentre} onValueChange={(v: string | null) => setSelectedFilterCentre(v ?? 'all')}>
@@ -441,28 +441,28 @@ export default function DashboardPage() {
           )}
 
           {/* Timeframe Filter */}
-          <div className="flex bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 text-xs font-bold">
+          <div className="flex bg-blue-950/90 p-1 rounded-xl border border-blue-800/80 text-xs font-bold">
             <button
               onClick={() => setSelectedTimeframe('today')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === 'today' ? 'bg-cyan-500 text-slate-950 font-black shadow-xs' : 'text-slate-300 hover:text-white'}`}
+              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === 'today' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200 hover:text-white'}`}
             >
               Today
             </button>
             <button
               onClick={() => setSelectedTimeframe('7days')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === '7days' ? 'bg-cyan-500 text-slate-950 font-black shadow-xs' : 'text-slate-300 hover:text-white'}`}
+              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === '7days' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200 hover:text-white'}`}
             >
               7 Days
             </button>
             <button
               onClick={() => setSelectedTimeframe('30days')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === '30days' ? 'bg-cyan-500 text-slate-950 font-black shadow-xs' : 'text-slate-300 hover:text-white'}`}
+              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === '30days' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200 hover:text-white'}`}
             >
               30 Days
             </button>
             <button
               onClick={() => setSelectedTimeframe('all')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === 'all' ? 'bg-cyan-500 text-slate-950 font-black shadow-xs' : 'text-slate-300 hover:text-white'}`}
+              className={`px-3 py-1.5 rounded-lg transition-all ${selectedTimeframe === 'all' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'text-blue-200 hover:text-white'}`}
             >
               All Time
             </button>

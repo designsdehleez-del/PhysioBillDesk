@@ -195,8 +195,8 @@ export default function AuthPage() {
         {/* Right Column: Equal-Height Portal Sign-In or Procedure Showcase */}
         <div id="auth-panel" className="lg:col-span-5 w-full">
           {isLoggedIn ? (
-            /* Logged-In State: High-Quality Procedure Care Image Card */
-            <Card className="shadow-lg border-blue-200/80 bg-white rounded-2xl overflow-hidden h-[460px] flex flex-col justify-between">
+            /* Logged-In State: High-Quality Procedure Care Image Card (Full-Bleed Rounded) */
+            <div className="shadow-lg border border-slate-200/90 bg-white rounded-2xl overflow-hidden h-[460px] flex flex-col justify-between relative">
               <div className="relative h-full w-full overflow-hidden">
                 <img 
                   src={cms.heroCardImageUrl} 
@@ -225,26 +225,26 @@ export default function AuthPage() {
                   </div>
                 </div>
               </div>
-            </Card>
+            </div>
           ) : (
             /* Logged-Out State: Sleek, Height-Balanced Portal Sign In Card */
-            <Card className="shadow-lg border-slate-200/90 bg-white rounded-2xl h-[460px] flex flex-col justify-between">
-              <CardHeader className="space-y-1.5 pb-4 pt-6 px-6 border-b border-slate-100">
+            <div className="shadow-lg border border-slate-200/90 bg-white rounded-2xl h-[460px] flex flex-col justify-between overflow-hidden">
+              <div className="space-y-1.5 pb-4 pt-6 px-6 border-b border-slate-100">
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-bold">
                     Authorized Access
                   </Badge>
                   <span className="text-[10px] text-slate-400 font-mono">Physionautics v1.0</span>
                 </div>
-                <CardTitle className="text-xl font-black text-slate-900">
+                <h2 className="text-xl font-black text-slate-900">
                   {isSignUp ? 'Create Staff Account' : 'Portal Sign In'}
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-500 leading-relaxed">
+                </h2>
+                <p className="text-xs text-slate-500 leading-relaxed">
                   Enter your assigned clinic credentials to access patient records, session logs, and billing.
-                </CardDescription>
-              </CardHeader>
+                </p>
+              </div>
 
-              <CardContent className="space-y-4 px-6 py-6 flex-1 flex flex-col justify-center">
+              <div className="space-y-4 px-6 py-6 flex-1 flex flex-col justify-center">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="email" className="text-xs font-semibold text-slate-700">Email or Username</Label>
@@ -309,8 +309,8 @@ export default function AuthPage() {
                     Protected by Physionautics Health Systems Security
                   </span>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
         </div>
       </section>

@@ -3975,3 +3975,237 @@ export function exportExpensesToExcel(expenses: ClinicExpense[]): void {
   XLSX.utils.book_append_sheet(wb, ws, 'Operational_Expenses')
   XLSX.writeFile(wb, `Physionautics_Clinic_Expenses_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
+
+// ================= CLINIC ATTENDANCE SYSTEM =================
+export interface AttendanceRecord {
+  id: string
+  date: string // YYYY-MM-DD
+  staff_id: string
+  staff_name: string
+  role: 'admin' | 'centre_staff' | 'doctor'
+  centre_id: string
+  centre_name: string
+  status: 'Present' | 'Absent' | 'Half-Day' | 'On Leave' | 'Late'
+  check_in_time?: string
+  check_out_time?: string
+  notes?: string
+  updated_at: string
+}
+
+const ATTENDANCE_STORAGE_KEY = 'physio_attendance_cache_v1'
+
+const todayDateStr = new Date().toISOString().split('T')[0]
+
+const DEFAULT_ATTENDANCE: AttendanceRecord[] = [
+  // Today's attendance defaults for New Friends Colony
+  {
+    id: `att-today-1`,
+    date: todayDateStr,
+    staff_id: 'usr-centre1-01',
+    staff_name: 'New Friends Colony Reception',
+    role: 'centre_staff',
+    centre_id: 'c1111111-1111-1111-1111-111111111111',
+    centre_name: 'New Friends Colony, New Delhi',
+    status: 'Present',
+    check_in_time: '09:00 AM',
+    check_out_time: '06:00 PM',
+    notes: 'Morning shift check-in',
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: `att-today-2`,
+    date: todayDateStr,
+    staff_id: 'doc-101',
+    staff_name: 'Dr. Sarah Jenkins',
+    role: 'doctor',
+    centre_id: 'c1111111-1111-1111-1111-111111111111',
+    centre_name: 'New Friends Colony, New Delhi',
+    status: 'Present',
+    check_in_time: '09:15 AM',
+    check_out_time: '05:30 PM',
+    notes: 'In-person consultations',
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: `att-today-3`,
+    date: todayDateStr,
+    staff_id: 'doc-102',
+    staff_name: 'Dr. Rajesh Sharma',
+    role: 'doctor',
+    centre_id: 'c1111111-1111-1111-1111-111111111111',
+    centre_name: 'New Friends Colony, New Delhi',
+    status: 'Late',
+    check_in_time: '10:05 AM',
+    check_out_time: '06:30 PM',
+    notes: 'Traffic delay on DND Flyway',
+    updated_at: new Date().toISOString(),
+  },
+
+  // Today's attendance defaults for Vasant Vihar
+  {
+    id: `att-today-4`,
+    date: todayDateStr,
+    staff_id: 'usr-centre2-01',
+    staff_name: 'Vasant Vihar Reception',
+    role: 'centre_staff',
+    centre_id: 'c2222222-2222-2222-2222-222222222222',
+    centre_name: 'Vasant Vihar, New Delhi',
+    status: 'Present',
+    check_in_time: '08:50 AM',
+    check_out_time: '05:45 PM',
+    notes: 'On duty',
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: `att-today-5`,
+    date: todayDateStr,
+    staff_id: 'doc-201',
+    staff_name: 'Dr. Emily Watson',
+    role: 'doctor',
+    centre_id: 'c2222222-2222-2222-2222-222222222222',
+    centre_name: 'Vasant Vihar, New Delhi',
+    status: 'Present',
+    check_in_time: '09:00 AM',
+    check_out_time: '05:00 PM',
+    notes: 'Neuro Rehab Specialist',
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: `att-today-6`,
+    date: todayDateStr,
+    staff_id: 'doc-202',
+    staff_name: 'Dr. Michael Chang',
+    role: 'doctor',
+    centre_id: 'c2222222-2222-2222-2222-222222222222',
+    centre_name: 'Vasant Vihar, New Delhi',
+    status: 'On Leave',
+    notes: 'Approved personal leave',
+    updated_at: new Date().toISOString(),
+  },
+
+  // Today's attendance defaults for Gurugram
+  {
+    id: `att-today-7`,
+    date: todayDateStr,
+    staff_id: 'usr-centre3-01',
+    staff_name: 'Gurugram DLF Phase 1 Desk',
+    role: 'centre_staff',
+    centre_id: 'c3333333-3333-3333-3333-333333333333',
+    centre_name: 'Gurugram – DLF Phase 1',
+    status: 'Present',
+    check_in_time: '09:10 AM',
+    check_out_time: '06:00 PM',
+    notes: 'Desk active',
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: `att-today-8`,
+    date: todayDateStr,
+    staff_id: 'doc-301',
+    staff_name: 'Dr. Priya Nair',
+    role: 'doctor',
+    centre_id: 'c3333333-3333-3333-3333-333333333333',
+    centre_name: 'Gurugram – DLF Phase 1',
+    status: 'Present',
+    check_in_time: '09:00 AM',
+    check_out_time: '05:30 PM',
+    notes: 'Cardio rehab sessions',
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: `att-today-9`,
+    date: todayDateStr,
+    staff_id: 'doc-302',
+    staff_name: 'Dr. David Kim',
+    role: 'doctor',
+    centre_id: 'c3333333-3333-3333-3333-333333333333',
+    centre_name: 'Gurugram – DLF Phase 1',
+    status: 'Half-Day',
+    check_in_time: '09:00 AM',
+    check_out_time: '01:30 PM',
+    notes: 'Morning shift only',
+    updated_at: new Date().toISOString(),
+  },
+]
+
+export async function getAttendance(date?: string, centreId?: string): Promise<AttendanceRecord[]> {
+  if (typeof window === 'undefined') return DEFAULT_ATTENDANCE
+  let records: AttendanceRecord[] = DEFAULT_ATTENDANCE
+  try {
+    const cached = localStorage.getItem(ATTENDANCE_STORAGE_KEY)
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length > 0) records = parsed
+    }
+  } catch (_) {}
+
+  return records.filter(r => {
+    if (date && r.date !== date) return false
+    if (centreId && centreId !== 'all' && r.centre_id !== centreId) return false
+    return true
+  })
+}
+
+export async function saveAttendanceRecord(record: Partial<AttendanceRecord>): Promise<AttendanceRecord> {
+  const current = await getAttendance()
+  const targetDate = record.date || new Date().toISOString().split('T')[0]
+  const targetStaffId = record.staff_id || 'unknown'
+  
+  const existingIdx = current.findIndex(r => r.date === targetDate && r.staff_id === targetStaffId)
+  
+  let updatedRecord: AttendanceRecord
+  if (existingIdx >= 0) {
+    updatedRecord = {
+      ...current[existingIdx],
+      ...record,
+      updated_at: new Date().toISOString(),
+    } as AttendanceRecord
+    current[existingIdx] = updatedRecord
+  } else {
+    updatedRecord = {
+      id: `att-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      date: targetDate,
+      staff_id: targetStaffId,
+      staff_name: record.staff_name || 'Staff Member',
+      role: record.role || 'centre_staff',
+      centre_id: record.centre_id || 'c1111111-1111-1111-1111-111111111111',
+      centre_name: record.centre_name || 'New Friends Colony, New Delhi',
+      status: record.status || 'Present',
+      check_in_time: record.check_in_time || '09:00 AM',
+      check_out_time: record.check_out_time || '06:00 PM',
+      notes: record.notes || '',
+      updated_at: new Date().toISOString(),
+    }
+    current.unshift(updatedRecord)
+  }
+
+  localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(current))
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('physio-attendance-updated', { detail: current }))
+  }
+  return updatedRecord
+}
+
+export async function markBulkAttendance(records: Partial<AttendanceRecord>[]): Promise<void> {
+  for (const r of records) {
+    await saveAttendanceRecord(r)
+  }
+}
+
+export function exportAttendanceToExcel(records: AttendanceRecord[]): void {
+  const wb = XLSX.utils.book_new()
+  const data = records.map(r => ({
+    'Date': r.date,
+    'Employee Name': r.staff_name,
+    'Role': r.role === 'doctor' ? 'Doctor / Therapist' : r.role === 'admin' ? 'Administrator' : 'Clinic Staff',
+    'Clinic Centre': r.centre_name,
+    'Attendance Status': r.status,
+    'Check-In Time': r.check_in_time || '—',
+    'Check-Out Time': r.check_out_time || '—',
+    'Notes / Shift Log': r.notes || '—',
+    'Last Updated': new Date(r.updated_at).toLocaleString(),
+  }))
+  const ws = XLSX.utils.json_to_sheet(data)
+  XLSX.utils.book_append_sheet(wb, ws, 'Attendance_Register')
+  XLSX.writeFile(wb, `Physionautics_Attendance_Report_${new Date().toISOString().split('T')[0]}.xlsx`)
+}

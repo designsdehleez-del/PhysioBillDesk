@@ -8,7 +8,7 @@ import {
   Building2, ArrowRight, Sparkles, User, Lock, Activity, CheckCircle2, ShieldCheck,
   Calendar, FileText, Phone, MapPin, ChevronRight, LogOut, LayoutDashboard, Dumbbell,
   Zap, Target, RefreshCw, UserPlus, CreditCard, Clock, Check, Star, ArrowUpRight,
-  Users, DollarSign, TrendingUp, Filter, Shield, Settings, FileSpreadsheet, MessageCircle
+  Users, DollarSign, TrendingUp, Filter, Shield, Settings, FileSpreadsheet, MessageCircle, UserCheck
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding } from '@/lib/settings-store'
@@ -556,6 +556,19 @@ export default function AuthPage() {
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
+                </Link>
+
+                <Link href="/attendance" className="p-4 bg-white border border-slate-200/90 rounded-2xl shadow-2xs hover:border-purple-400 hover:shadow-xs transition-all flex items-center justify-between group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                      <UserCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 group-hover:text-purple-600 transition-colors">Clinic Staff Attendance Roster</div>
+                      <div className="text-[11px] text-slate-500">Track daily check-ins, leaves & shift status clinic-wise</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
                 </Link>
 
                 <Link href="/settings/whatsapp" className="p-4 bg-white border border-slate-200/90 rounded-2xl shadow-2xs hover:border-emerald-400 hover:shadow-xs transition-all flex items-center justify-between group">

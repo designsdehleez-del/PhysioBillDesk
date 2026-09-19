@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { 
   Stethoscope, LayoutDashboard, Receipt, Users, Sparkles, UserCog, 
   Building2, Settings, MessageCircle, Database, ChevronDown, Lock, 
-  LogOut, HelpCircle, Plus, Sliders, Tag, UserPlus, Menu, X, ShieldCheck, FileText
+  LogOut, HelpCircle, Plus, Sliders, Tag, UserPlus, Menu, X, ShieldCheck, FileText, UserCheck
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding } from '@/lib/settings-store'
@@ -71,6 +71,7 @@ export function TopHeaderNav() {
       icon: Users,
       items: [
         { label: 'Patient Directory', href: '/patients', icon: Users, desc: 'All registered patients' },
+        { label: 'Staff Attendance', href: '/attendance', icon: UserCheck, desc: 'Clinic-wise roster & shift logs' },
         { label: 'Doctors & Tagging', href: '/doctors', icon: Stethoscope, desc: 'Doctor directory & tags' },
         ...(isAdmin ? [
           { label: 'Clinic Centres', href: '/centres', icon: Building2, desc: 'Multi-branch locations' },

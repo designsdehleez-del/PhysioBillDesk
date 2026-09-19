@@ -196,16 +196,6 @@ export function TopHeaderNav() {
 
           {/* Right Controls: Minimal Profile Menu Only */}
           <div className="flex items-center gap-2">
-            {!isDoctor && (
-              <Button 
-                size="xs" 
-                className="bg-blue-600 hover:bg-blue-700 text-white gap-1 rounded-lg px-2.5 shadow-xs hidden sm:flex text-[11px]" 
-                onClick={() => router.push('/billing')}
-              >
-                <Plus className="h-3 w-3" /> New Bill
-              </Button>
-            )}
-
             {/* Profile Dropdown */}
             <div className="relative">
               <button 

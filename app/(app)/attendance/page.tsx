@@ -295,7 +295,7 @@ export default function AttendancePage() {
       </div>
 
       {/* Structured Filter Controls Bar */}
-      <Card className="border-slate-200 shadow-2xs bg-white rounded-2xl overflow-hidden">
+      <Card className="border-slate-200 shadow-2xs bg-white rounded-2xl overflow-visible relative z-20">
         <CardContent className="p-4 space-y-3">
           
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3">

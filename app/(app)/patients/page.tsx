@@ -234,7 +234,7 @@ export default function PatientListPage() {
       </div>
 
       {/* Structured Filter Controls Bar */}
-      <Card className="border-slate-200 shadow-2xs bg-white rounded-2xl overflow-hidden">
+      <Card className="border-slate-200 shadow-2xs bg-white rounded-2xl overflow-visible relative z-20">
         <CardContent className="p-4 space-y-3">
           
           {/* Top Row: Search + Clinic Filter + Timeframe Filter */}

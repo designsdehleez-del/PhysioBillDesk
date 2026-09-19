@@ -252,7 +252,7 @@ export function SelectContent({
       role="listbox"
       data-slot="select-content"
       className={cn(
-        "absolute left-0 right-0 top-full mt-1.5 z-[100] max-h-64 min-w-full overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 text-gray-900 shadow-2xl ring-1 ring-black/10 animate-in fade-in-80 zoom-in-95",
+        "absolute left-0 top-full mt-1.5 z-[100] max-h-64 min-w-[220px] w-auto max-w-[340px] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 text-slate-900 shadow-xl ring-1 ring-black/10 animate-in fade-in-80 zoom-in-95",
         className
       )}
       {...props}

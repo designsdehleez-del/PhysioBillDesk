@@ -258,6 +258,13 @@ export default function AuthPage() {
                 >
                   <UserCheck className="w-4 h-4" /> Attendance Roster
                 </Button>
+                <Button 
+                  onClick={() => signOut()}
+                  variant="outline"
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-300 border-red-500/30 font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2"
+                >
+                  <LogOut className="w-4 h-4 text-red-400" /> Sign Out Session
+                </Button>
               </div>
             </div>
           </div>

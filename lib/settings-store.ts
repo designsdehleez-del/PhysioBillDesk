@@ -133,9 +133,21 @@ export function saveAdminProfileData(updates: Partial<AdminProfileData>): AdminP
   return updated
 }
 
+import { createClient } from '@/lib/supabase/client'
+
 // ================= ADMIN PASSWORD MANAGEMENT =================
 
 const DEFAULT_ADMIN_PASSWORD = 'Vikas@12344321'
+
+function getCookiePassword(): string | null {
+  if (typeof document === 'undefined') return null
+  try {
+    const match = document.cookie.match(/(?:^|; )physio_admin_pw=([^;]*)/)
+    return match ? decodeURIComponent(match[1]) : null
+  } catch (_) {
+    return null
+  }
+}
 
 export function getStoredAdminPassword(): string {
   if (typeof window === 'undefined') return DEFAULT_ADMIN_PASSWORD
@@ -143,6 +155,8 @@ export function getStoredAdminPassword(): string {
     const stored = localStorage.getItem(ADMIN_PASSWORD_KEY)
     if (stored) return stored
   } catch (_) {}
+  const cookiePw = getCookiePassword()
+  if (cookiePw) return cookiePw
   return DEFAULT_ADMIN_PASSWORD
 }
 
@@ -161,6 +175,15 @@ export function updateAdminPassword(currentPassword: string, newPassword: string
 
   try {
     localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword)
+    if (typeof document !== 'undefined') {
+      document.cookie = `physio_admin_pw=${encodeURIComponent(newPassword)}; path=/; max-age=31536000; SameSite=Lax`
+    }
+
+    try {
+      const supabase = createClient()
+      supabase.from('staff_users').update({ password: newPassword }).eq('email', 'admin@physionautics.com').then(() => {})
+    } catch (_) {}
+
     return { success: true }
   } catch (err: any) {
     return { success: false, error: err?.message || 'Failed to update password' }

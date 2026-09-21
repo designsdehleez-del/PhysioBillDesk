@@ -738,35 +738,38 @@ export default function AuthPage() {
               
               <div className="lg:col-span-6 space-y-4 text-left">
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Interactive Jitter-Style Motion
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> {cms.orbitBadgeText || 'Interactive Care Protocols'}
                 </Badge>
                 
                 <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
-                  Clinical Orbit & <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Rehabilitation Intelligence</span>
+                  {cms.orbitTitlePrefix || 'Clinical Orbit & '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+                    {cms.orbitTitleHighlight || 'Rehabilitation Intelligence'}
+                  </span>
                 </h2>
                 
                 <p className="text-slate-600 text-xs sm:text-sm leading-relaxed max-w-xl">
-                  Hover over any orbiting clinical card to inspect treatment protocols, spinal decompression metrics, and real-time patient recovery ratings.
+                  {cms.orbitSubtitle || 'Hover over any orbiting clinical card to inspect treatment protocols, spinal decompression metrics, and real-time patient recovery ratings.'}
                 </p>
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
                     <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-blue-600" /> Continuous 360° Orbit
+                      <Zap className="w-3.5 h-3.5 text-blue-600" /> {cms.orbitFeature1Title || 'Continuous 360° Orbit'}
                     </div>
-                    <div className="text-[11px] text-slate-500">GPU-accelerated smooth rotation</div>
+                    <div className="text-[11px] text-slate-500">{cms.orbitFeature1Sub || 'GPU-accelerated smooth rotation'}</div>
                   </div>
                   <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
                     <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Interactive Hover Pause
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> {cms.orbitFeature2Title || 'Interactive Hover Pause'}
                     </div>
-                    <div className="text-[11px] text-slate-500">Pauses rotation on card focus</div>
+                    <div className="text-[11px] text-slate-500">{cms.orbitFeature2Sub || 'Pauses rotation on card focus'}</div>
                   </div>
                 </div>
               </div>
 
               <div className="lg:col-span-6 flex justify-center items-center relative min-h-[380px]">
-                <OrbitingCards />
+                <OrbitingCards logoUrl={branding.logoUrl || '/pn-logo.png'} />
               </div>
 
             </div>

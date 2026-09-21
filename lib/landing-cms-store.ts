@@ -54,6 +54,16 @@ export interface LandingPageCMSData {
   scrollTitleHighlight: string
   scrollSubtitle: string
 
+  // Orbit Clinical Showcase Section
+  orbitBadgeText: string
+  orbitTitlePrefix: string
+  orbitTitleHighlight: string
+  orbitSubtitle: string
+  orbitFeature1Title: string
+  orbitFeature1Sub: string
+  orbitFeature2Title: string
+  orbitFeature2Sub: string
+
   // Procedures Section (4 Cards)
   proceduresSectionTitle: string
   proceduresSectionSubtitle: string
@@ -96,6 +106,15 @@ export const DEFAULT_LANDING_CMS: LandingPageCMSData = {
   scrollTitlePrefix: 'Unleash Precision Recovery with ',
   scrollTitleHighlight: 'Digital Health Workflows',
   scrollSubtitle: 'Experience seamless patient evaluation, digital session logging, doctor-guided care plans, and outcome monitoring in one unified platform.',
+
+  orbitBadgeText: 'Interactive Care Protocols',
+  orbitTitlePrefix: 'Clinical Orbit & ',
+  orbitTitleHighlight: 'Rehabilitation Intelligence',
+  orbitSubtitle: 'Hover over any orbiting clinical card to inspect treatment protocols, spinal decompression metrics, and real-time patient recovery ratings.',
+  orbitFeature1Title: 'Continuous 360° Orbit',
+  orbitFeature1Sub: 'GPU-accelerated smooth rotation',
+  orbitFeature2Title: 'Interactive Hover Pause',
+  orbitFeature2Sub: 'Pauses rotation on card focus',
 
   proceduresSectionTitle: 'Advanced Clinical Rehabilitation Procedures',
   proceduresSectionSubtitle: 'Combining biomechanical assessment with targeted non-surgical physical medicine procedures for lasting recovery.',

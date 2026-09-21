@@ -841,6 +841,83 @@ export default function LandingCMSEditorPage() {
                 />
               </div>
 
+              {/* Orbiting Animation & Clinical Intelligence Section */}
+              <div className="pt-4 border-t border-slate-100 space-y-4">
+                <Label className="text-xs font-extrabold uppercase tracking-wider text-blue-600 block flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> Orbiting Cards Showcase Section (Clinical Intelligence)
+                </Label>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-slate-700">Orbit Section Badge Text</Label>
+                    <Input 
+                      value={form.orbitBadgeText || 'Interactive Care Protocols'}
+                      onChange={e => setForm(f => ({ ...f, orbitBadgeText: e.target.value }))}
+                      className="h-10 text-xs"
+                      placeholder="Interactive Care Protocols"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-slate-700">Orbit Title Highlight Text</Label>
+                    <Input 
+                      value={form.orbitTitleHighlight || 'Rehabilitation Intelligence'}
+                      onChange={e => setForm(f => ({ ...f, orbitTitleHighlight: e.target.value }))}
+                      className="h-10 text-xs font-semibold text-blue-600"
+                      placeholder="Rehabilitation Intelligence"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">Orbit Title Prefix</Label>
+                  <Input 
+                    value={form.orbitTitlePrefix || 'Clinical Orbit & '}
+                    onChange={e => setForm(f => ({ ...f, orbitTitlePrefix: e.target.value }))}
+                    className="h-10 text-xs"
+                    placeholder="Clinical Orbit & "
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">Orbit Subtitle Description</Label>
+                  <Textarea 
+                    value={form.orbitSubtitle || 'Hover over any orbiting clinical card to inspect treatment protocols, spinal decompression metrics, and real-time patient recovery ratings.'}
+                    onChange={e => setForm(f => ({ ...f, orbitSubtitle: e.target.value }))}
+                    className="text-xs min-h-[60px]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <Label className="text-[11px] font-bold text-slate-700">Feature 1 (Title / Subtext)</Label>
+                    <Input 
+                      value={form.orbitFeature1Title || 'Continuous 360° Orbit'}
+                      onChange={e => setForm(f => ({ ...f, orbitFeature1Title: e.target.value }))}
+                      className="h-9 text-xs font-bold"
+                    />
+                    <Input 
+                      value={form.orbitFeature1Sub || 'GPU-accelerated smooth rotation'}
+                      onChange={e => setForm(f => ({ ...f, orbitFeature1Sub: e.target.value }))}
+                      className="h-9 text-xs"
+                    />
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <Label className="text-[11px] font-bold text-slate-700">Feature 2 (Title / Subtext)</Label>
+                    <Input 
+                      value={form.orbitFeature2Title || 'Interactive Hover Pause'}
+                      onChange={e => setForm(f => ({ ...f, orbitFeature2Title: e.target.value }))}
+                      className="h-9 text-xs font-bold"
+                    />
+                    <Input 
+                      value={form.orbitFeature2Sub || 'Pauses rotation on card focus'}
+                      onChange={e => setForm(f => ({ ...f, orbitFeature2Sub: e.target.value }))}
+                      className="h-9 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Patient Portal Text */}
               <div className="pt-4 border-t border-slate-100 space-y-4">
                 <Label className="text-xs font-extrabold uppercase tracking-wider text-slate-500 block">

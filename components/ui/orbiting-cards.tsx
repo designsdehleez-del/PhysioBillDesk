@@ -76,7 +76,13 @@ const DEFAULT_ORBIT_ITEMS: OrbitItem[] = [
   },
 ]
 
-export function OrbitingCards({ items = DEFAULT_ORBIT_ITEMS }: { items?: OrbitItem[] }) {
+export function OrbitingCards({ 
+  items = DEFAULT_ORBIT_ITEMS,
+  logoUrl = '/pn-logo.png' 
+}: { 
+  items?: OrbitItem[]
+  logoUrl?: string 
+}) {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   return (
@@ -90,17 +96,22 @@ export function OrbitingCards({ items = DEFAULT_ORBIT_ITEMS }: { items?: OrbitIt
         <div className="absolute w-[400px] h-[400px] rounded-full border border-dashed border-indigo-400/30 animate-[spin_90s_linear_infinite_reverse]" />
       </div>
 
-      {/* 2. Central Core Nucleus (Physionautics Central Hub) */}
+      {/* 2. Central Core Nucleus (Physionautics Official Circular Logo) */}
       <motion.div 
-        animate={{ scale: [1, 1.03, 1] }}
+        animate={{ scale: [1, 1.04, 1] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        className="relative z-20 w-24 h-24 rounded-3xl bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/30 flex flex-col items-center justify-center gap-1 border border-white/30 cursor-pointer"
+        className="relative z-20 w-28 h-28 rounded-full bg-white text-blue-600 shadow-xl shadow-blue-500/25 flex flex-col items-center justify-center border-4 border-blue-600/30 overflow-hidden cursor-pointer group"
       >
-        <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center">
-          <Stethoscope className="w-6 h-6 text-white" />
-        </div>
-        <span className="text-[10px] font-black tracking-wider text-white uppercase">PHYSIO</span>
-        <div className="absolute inset-0 rounded-3xl border border-blue-300/40 animate-ping opacity-25 pointer-events-none" />
+        <img 
+          src={logoUrl} 
+          alt="PhysioNautics Logo" 
+          className="w-full h-full object-cover p-1.5 transition-transform group-hover:scale-105" 
+          onError={(e) => {
+            // Fallback to /logo.png if /pn-logo.png doesn't load
+            ;(e.target as HTMLImageElement).src = '/logo.png'
+          }}
+        />
+        <div className="absolute inset-0 rounded-full border-2 border-blue-500/40 animate-ping opacity-30 pointer-events-none" />
       </motion.div>
 
       {/* 3. Orbiting Cards */}

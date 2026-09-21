@@ -732,38 +732,38 @@ export default function AuthPage() {
             </div>
           </section>
 
-          {/* Interactive Orbiting Cards Showcase */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-8 py-10 w-full">
-            <div className="bg-white/80 backdrop-blur-md border border-slate-200/90 rounded-3xl p-6 sm:p-10 shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative overflow-hidden">
+          {/* Interactive Orbiting Cards Showcase (Dark Contrast Section 1) */}
+          <section className="w-full bg-slate-950 text-white py-16 border-y border-slate-800/80 overflow-hidden relative">
+            <div className="max-w-7xl mx-auto px-4 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               
               <div className="lg:col-span-6 space-y-4 text-left">
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> {cms.orbitBadgeText || 'Interactive Care Protocols'}
+                <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" /> {cms.orbitBadgeText || 'Interactive Care Protocols'}
                 </Badge>
                 
-                <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
                   {cms.orbitTitlePrefix || 'Clinical Orbit & '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-400">
                     {cms.orbitTitleHighlight || 'Rehabilitation Intelligence'}
                   </span>
                 </h2>
                 
-                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed max-w-xl">
+                <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl">
                   {cms.orbitSubtitle || 'Hover over any orbiting clinical card to inspect treatment protocols, spinal decompression metrics, and real-time patient recovery ratings.'}
                 </p>
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
-                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-blue-600" /> {cms.orbitFeature1Title || 'Continuous 360° Orbit'}
+                  <div className="p-3.5 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
+                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-blue-400" /> {cms.orbitFeature1Title || 'Continuous 360° Orbit'}
                     </div>
-                    <div className="text-[11px] text-slate-500">{cms.orbitFeature1Sub || 'GPU-accelerated smooth rotation'}</div>
+                    <div className="text-[11px] text-slate-400">{cms.orbitFeature1Sub || 'GPU-accelerated smooth rotation'}</div>
                   </div>
-                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
-                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> {cms.orbitFeature2Title || 'Interactive Hover Pause'}
+                  <div className="p-3.5 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
+                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> {cms.orbitFeature2Title || 'Interactive Hover Pause'}
                     </div>
-                    <div className="text-[11px] text-slate-500">{cms.orbitFeature2Sub || 'Pauses rotation on card focus'}</div>
+                    <div className="text-[11px] text-slate-400">{cms.orbitFeature2Sub || 'Pauses rotation on card focus'}</div>
                   </div>
                 </div>
               </div>
@@ -775,187 +775,63 @@ export default function AuthPage() {
             </div>
           </section>
 
-          {/* Procedures Section */}
-          <section id="procedures" className="max-w-7xl mx-auto px-4 sm:px-8 py-12 w-full space-y-8 scroll-mt-20">
-            <div className="text-center space-y-3 max-w-3xl mx-auto">
-              <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1.5">
-                <HeartPulse className="w-3.5 h-3.5 text-rose-600" /> Evidence-Based Care
-              </Badge>
-              <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                {cms.proceduresSectionTitle}
-              </h2>
-              <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                {cms.proceduresSectionSubtitle}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {cms.procedures.map((proc, idx) => (
-                <motion.div
-                  key={proc.id || idx}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.3, delay: idx * 0.08 }}
-                  className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md hover:border-blue-300 transition-all group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
-                      <img
-                        src={proc.imageUrl}
-                        alt={proc.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <Badge className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-extrabold px-2.5 py-0.5 rounded-lg border border-slate-200/60 shadow-xs">
-                        {proc.badge}
-                      </Badge>
-                    </div>
-                    <div className="p-5 space-y-2">
-                      <h3 className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
-                        {proc.title}
-                      </h3>
-                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
-                        {proc.description}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="px-5 pb-4 pt-1 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-bold group-hover:text-blue-700">
-                    <span>Clinical Protocol</span>
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </section>
-
-          {/* Services Section */}
-          <section id="services" className="max-w-7xl mx-auto px-4 sm:px-8 py-12 w-full space-y-8 scroll-mt-20">
-            <div className="text-center space-y-3 max-w-3xl mx-auto">
-              <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1.5">
-                <Stethoscope className="w-3.5 h-3.5 text-indigo-600" /> Physical Rehabilitation
-              </Badge>
-              <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                {cms.servicesSectionTitle}
-              </h2>
-              <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                {cms.servicesSectionSubtitle}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {cms.services.map((srv, idx) => (
-                <motion.div
-                  key={srv.id || idx}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.3, delay: idx * 0.06 }}
-                  className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between space-y-4 group"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-                        <Activity className="w-5 h-5" />
-                      </div>
-                      <Badge variant="secondary" className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                        {srv.badge}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1.5">
-                      <h3 className="font-bold text-base text-slate-900 group-hover:text-indigo-600 transition-colors">
-                        {srv.title}
-                      </h3>
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        {srv.description}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2 flex items-center gap-2 text-xs font-semibold text-slate-500 group-hover:text-indigo-600 transition-colors border-t border-slate-100">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Doctor Supervised Treatment
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </section>
-
-          {/* Patient Care Section */}
-          <section id="patient-portal" className="max-w-7xl mx-auto px-4 sm:px-8 py-12 w-full scroll-mt-20">
-            <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-950 text-white rounded-3xl p-8 sm:p-12 shadow-xl relative overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              
-              <div className="absolute right-0 bottom-0 translate-x-16 translate-y-16 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="lg:col-span-7 space-y-5">
-                <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs px-3 py-1 font-bold rounded-full inline-flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" /> {cms.portalBadge || 'PATIENT CARE & PORTAL'}
+          {/* Procedures Section (Light Contrast Section 1) */}
+          <section id="procedures" className="w-full bg-slate-50/70 border-b border-slate-200/80 py-16 scroll-mt-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-8">
+              <div className="text-center space-y-3 max-w-3xl mx-auto">
+                <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                  <HeartPulse className="w-3.5 h-3.5 text-rose-600" /> Evidence-Based Care
                 </Badge>
-
-                <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-                  {cms.portalTitle}
+                <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                  {cms.proceduresSectionTitle}
                 </h2>
-
-                <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl">
-                  {cms.portalSubtitle}
+                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                  {cms.proceduresSectionSubtitle}
                 </p>
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className="flex items-start gap-3 p-3 bg-white/5 border border-white/10 rounded-xl">
-                    <MessageCircle className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                    <div>
-                      <div className="text-xs font-bold text-white">Instant WhatsApp Receipts</div>
-                      <div className="text-[11px] text-slate-400">PDF bills & payment receipts sent directly to your phone</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-3 bg-white/5 border border-white/10 rounded-xl">
-                    <FileText className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
-                    <div>
-                      <div className="text-xs font-bold text-white">Digital Home Care Plans</div>
-                      <div className="text-[11px] text-slate-400">Personalized video guides and posture exercises</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <a 
-                    href="#auth-panel" 
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition-colors"
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {cms.procedures.map((proc, idx) => (
+                  <motion.div
+                    key={proc.id || idx}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.3, delay: idx * 0.08 }}
+                    className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md hover:border-blue-300 transition-all group flex flex-col justify-between"
                   >
-                    <User className="w-4 h-4" /> Access Patient Portal <ArrowRight className="w-4 h-4" />
-                  </a>
-                </div>
+                    <div>
+                      <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
+                        <img
+                          src={proc.imageUrl}
+                          alt={proc.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <Badge className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-extrabold px-2.5 py-0.5 rounded-lg border border-slate-200/60 shadow-xs">
+                          {proc.badge}
+                        </Badge>
+                      </div>
+                      <div className="p-5 space-y-2">
+                        <h3 className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+                          {proc.title}
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                          {proc.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="px-5 pb-4 pt-1 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-bold group-hover:text-blue-700">
+                      <span>Clinical Protocol</span>
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-
-              <div className="lg:col-span-5 bg-white/10 backdrop-blur-md border border-white/10 p-6 rounded-2xl space-y-4">
-                <div className="text-xs font-bold text-blue-300 uppercase tracking-wider">Patient Care Directives</div>
-                
-                <div className="space-y-3 text-xs">
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                    <span className="text-slate-200">Doctor Consultation Log</span>
-                    <Badge className="bg-emerald-500/20 text-emerald-300 border-none text-[10px]">Verified</Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                    <span className="text-slate-200">Cervical Traction Session Status</span>
-                    <Badge className="bg-blue-500/20 text-blue-300 border-none text-[10px]">Active</Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                    <span className="text-slate-200">Delhi-NCR Clinic Network</span>
-                    <span className="text-slate-400 text-[11px]">NFC • Vasant Vihar • GGN</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 text-center text-[11px] text-slate-400 border-t border-white/10">
-                  Physionautics Health Systems • Dedicated Patient Support Hotline
-                </div>
-              </div>
-
             </div>
           </section>
 
-          {/* Container Scroll Section */}
-          <section className="bg-slate-900 text-white py-12 px-4 sm:px-8 overflow-hidden">
+          {/* Container Scroll Section (Dark Contrast Section 2) */}
+          <section className="w-full bg-slate-950 text-white py-12 px-4 sm:px-8 border-b border-slate-800 overflow-hidden">
             <ContainerScroll
               titleComponent={
                 <div className="flex flex-col items-center space-y-3">
@@ -974,7 +850,7 @@ export default function AuthPage() {
                 </div>
               }
             >
-              <div className="w-full h-full bg-slate-950 p-4 sm:p-8 space-y-6 text-slate-100 flex flex-col justify-between select-none">
+              <div className="w-full h-full bg-slate-900 p-4 sm:p-8 space-y-6 text-slate-100 flex flex-col justify-between select-none border border-slate-800 rounded-2xl">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs">
@@ -1018,9 +894,141 @@ export default function AuthPage() {
             </ContainerScroll>
           </section>
 
-          {/* NCR Map Visualizer */}
-          <section id="centers" className="max-w-7xl mx-auto px-4 sm:px-8 py-12 w-full">
-            <NCRMapVisualizer />
+          {/* Services Section (Light Contrast Section 2) */}
+          <section id="services" className="w-full bg-white py-16 border-b border-slate-200/80 scroll-mt-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-8">
+              <div className="text-center space-y-3 max-w-3xl mx-auto">
+                <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                  <Stethoscope className="w-3.5 h-3.5 text-indigo-600" /> Physical Rehabilitation
+                </Badge>
+                <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                  {cms.servicesSectionTitle}
+                </h2>
+                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                  {cms.servicesSectionSubtitle}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {cms.services.map((srv, idx) => (
+                  <motion.div
+                    key={srv.id || idx}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.3, delay: idx * 0.06 }}
+                    className="bg-slate-50/70 border border-slate-200/90 rounded-2xl p-5 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between space-y-4 group"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-100/70 text-indigo-700 flex items-center justify-center font-bold">
+                          <Activity className="w-5 h-5" />
+                        </div>
+                        <Badge variant="secondary" className="bg-white text-slate-700 border border-slate-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                          {srv.badge}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1.5">
+                        <h3 className="font-bold text-base text-slate-900 group-hover:text-indigo-600 transition-colors">
+                          {srv.title}
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          {srv.description}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 flex items-center gap-2 text-xs font-semibold text-slate-500 group-hover:text-indigo-600 transition-colors border-t border-slate-200/70">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> Doctor Supervised Treatment
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Patient Care Section (Dark Contrast Section 3) */}
+          <section id="patient-portal" className="w-full bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 text-white py-16 border-b border-slate-800 scroll-mt-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-8">
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                
+                <div className="absolute right-0 bottom-0 translate-x-16 translate-y-16 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="lg:col-span-7 space-y-5">
+                  <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs px-3 py-1 font-bold rounded-full inline-flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" /> {cms.portalBadge || 'PATIENT CARE & PORTAL'}
+                  </Badge>
+
+                  <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                    {cms.portalTitle}
+                  </h2>
+
+                  <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl">
+                    {cms.portalSubtitle}
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div className="flex items-start gap-3 p-3 bg-white/5 border border-white/10 rounded-xl">
+                      <MessageCircle className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-xs font-bold text-white">Instant WhatsApp Receipts</div>
+                        <div className="text-[11px] text-slate-400">PDF bills & payment receipts sent directly to your phone</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-3 bg-white/5 border border-white/10 rounded-xl">
+                      <FileText className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-xs font-bold text-white">Digital Home Care Plans</div>
+                        <div className="text-[11px] text-slate-400">Personalized video guides and posture exercises</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <a 
+                      href="#auth-panel" 
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition-colors"
+                    >
+                      <User className="w-4 h-4" /> Access Patient Portal <ArrowRight className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-5 bg-white/10 backdrop-blur-md border border-white/10 p-6 rounded-2xl space-y-4">
+                  <div className="text-xs font-bold text-blue-300 uppercase tracking-wider">Patient Care Directives</div>
+                  
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                      <span className="text-slate-200">Doctor Consultation Log</span>
+                      <Badge className="bg-emerald-500/20 text-emerald-300 border-none text-[10px]">Verified</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                      <span className="text-slate-200">Cervical Traction Session Status</span>
+                      <Badge className="bg-blue-500/20 text-blue-300 border-none text-[10px]">Active</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                      <span className="text-slate-200">Delhi-NCR Clinic Network</span>
+                      <span className="text-slate-400 text-[11px]">NFC • Vasant Vihar • GGN</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 text-center text-[11px] text-slate-400 border-t border-white/10">
+                    Physionautics Health Systems • Dedicated Patient Support Hotline
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </section>
+
+          {/* NCR Map Visualizer (Light Contrast Section 3) */}
+          <section id="centers" className="w-full bg-slate-50/60 py-16 scroll-mt-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-8">
+              <NCRMapVisualizer />
+            </div>
           </section>
         </>
       )}

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { 
   Sparkles, Save, RefreshCw, Upload, Image as ImageIcon, Trash2, Plus, Pencil,
   CheckCircle2, ArrowLeft, Layers, Stethoscope, FileText, LayoutGrid, HeartPulse,
-  Building2, MapPin, Phone, Clock, ExternalLink, ShieldCheck
+  Building2, MapPin, Phone, Clock, ExternalLink, ShieldCheck, RotateCcw
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -183,6 +183,9 @@ export default function LandingCMSEditorPage() {
           <TabsTrigger value="hero" className="rounded-lg text-xs font-bold gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-blue-600" /> Hero & Stats
           </TabsTrigger>
+          <TabsTrigger value="orbit" className="rounded-lg text-xs font-bold gap-1.5">
+            <RotateCcw className="w-3.5 h-3.5 text-blue-600" /> Orbit & Care Protocols
+          </TabsTrigger>
           <TabsTrigger value="procedures" className="rounded-lg text-xs font-bold gap-1.5">
             <HeartPulse className="w-3.5 h-3.5 text-rose-600" /> Procedures ({form.procedures.length})
           </TabsTrigger>
@@ -196,6 +199,100 @@ export default function LandingCMSEditorPage() {
             <Layers className="w-3.5 h-3.5 text-emerald-600" /> Showcase & Portal
           </TabsTrigger>
         </TabsList>
+
+        {/* ================= TAB ORBIT: CLINICAL ORBIT & CARE PROTOCOLS ================= */}
+        <TabsContent value="orbit" className="space-y-6">
+          <Card className="shadow-xs border-slate-200/90 rounded-2xl">
+            <CardHeader className="border-b border-slate-100 pb-4">
+              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-blue-600" /> Orbiting Cards Showcase & Care Protocols
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Edit headlines, subtext descriptions, badge text, and key features for the interactive orbiting cards section.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <Pencil className="w-3 h-3 text-blue-600" /> Orbit Section Badge Text
+                  </Label>
+                  <Input 
+                    value={form.orbitBadgeText || 'Interactive Care Protocols'}
+                    onChange={e => setForm(f => ({ ...f, orbitBadgeText: e.target.value }))}
+                    className="h-10 text-xs font-semibold text-blue-800"
+                    placeholder="Interactive Care Protocols"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <Pencil className="w-3 h-3 text-blue-600" /> Headline Highlight (Gradient Text)
+                  </Label>
+                  <Input 
+                    value={form.orbitTitleHighlight || 'Rehabilitation Intelligence'}
+                    onChange={e => setForm(f => ({ ...f, orbitTitleHighlight: e.target.value }))}
+                    className="h-10 text-xs font-semibold text-blue-600"
+                    placeholder="Rehabilitation Intelligence"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-slate-700">Headline Prefix</Label>
+                <Input 
+                  value={form.orbitTitlePrefix || 'Clinical Orbit & '}
+                  onChange={e => setForm(f => ({ ...f, orbitTitlePrefix: e.target.value }))}
+                  className="h-10 text-xs"
+                  placeholder="Clinical Orbit & "
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-slate-700">Main Section Subtitle Description</Label>
+                <Textarea 
+                  value={form.orbitSubtitle || 'Hover over any orbiting clinical card to inspect treatment protocols, spinal decompression metrics, and real-time patient recovery ratings.'}
+                  onChange={e => setForm(f => ({ ...f, orbitSubtitle: e.target.value }))}
+                  className="text-xs min-h-[70px]"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <Label className="text-xs font-extrabold uppercase tracking-wider text-slate-500 block">
+                  Orbit Feature Cards (2 Columns)
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <Label className="text-[11px] font-bold text-slate-700">Feature 1 (Title / Subtext)</Label>
+                    <Input 
+                      value={form.orbitFeature1Title || 'Continuous 360° Orbit'}
+                      onChange={e => setForm(f => ({ ...f, orbitFeature1Title: e.target.value }))}
+                      className="h-9 text-xs font-bold"
+                    />
+                    <Input 
+                      value={form.orbitFeature1Sub || 'GPU-accelerated smooth rotation'}
+                      onChange={e => setForm(f => ({ ...f, orbitFeature1Sub: e.target.value }))}
+                      className="h-9 text-xs text-slate-500"
+                    />
+                  </div>
+
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <Label className="text-[11px] font-bold text-slate-700">Feature 2 (Title / Subtext)</Label>
+                    <Input 
+                      value={form.orbitFeature2Title || 'Interactive Hover Pause'}
+                      onChange={e => setForm(f => ({ ...f, orbitFeature2Title: e.target.value }))}
+                      className="h-9 text-xs font-bold"
+                    />
+                    <Input 
+                      value={form.orbitFeature2Sub || 'Pauses rotation on card focus'}
+                      onChange={e => setForm(f => ({ ...f, orbitFeature2Sub: e.target.value }))}
+                      className="h-9 text-xs text-slate-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* ================= TAB 1: HERO & STATS BOX ================= */}
         <TabsContent value="hero" className="space-y-6">

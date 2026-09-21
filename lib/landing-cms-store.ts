@@ -239,13 +239,19 @@ export function getLandingCMSData(): LandingPageCMSData {
     const cached = localStorage.getItem(LANDING_CMS_KEY)
     if (cached) {
       const parsed = JSON.parse(cached)
-      return {
+      const merged: LandingPageCMSData = {
         ...DEFAULT_LANDING_CMS,
         ...parsed,
         procedures: Array.isArray(parsed.procedures) && parsed.procedures.length > 0 ? parsed.procedures : DEFAULT_LANDING_CMS.procedures,
         services: Array.isArray(parsed.services) && parsed.services.length > 0 ? parsed.services : DEFAULT_LANDING_CMS.services,
         branches: Array.isArray(parsed.branches) && parsed.branches.length > 0 ? parsed.branches : DEFAULT_LANDING_CMS.branches,
       }
+
+      // Automatically sanitize legacy phrasing from cached localStorage
+      if (!merged.orbitBadgeText || merged.orbitBadgeText.toLowerCase().includes('jitter')) {
+        merged.orbitBadgeText = 'Interactive Care Protocols'
+      }
+      return merged
     }
   } catch (_) {}
   return DEFAULT_LANDING_CMS

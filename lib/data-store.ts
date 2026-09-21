@@ -4209,3 +4209,118 @@ export function exportAttendanceToExcel(records: AttendanceRecord[]): void {
   XLSX.utils.book_append_sheet(wb, ws, 'Attendance_Register')
   XLSX.writeFile(wb, `Physionautics_Attendance_Report_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
+
+export interface MonthlyAttendanceExportOptions {
+  month: string // "YYYY-MM"
+  staffId?: string // 'all' or specific staff ID
+  centreId?: string // 'all' or specific centre ID
+  staffList: { id: string; name: string; role: string; centre_id: string; centre_name: string }[]
+}
+
+export function exportMonthlyPersonAttendanceToExcel(options: MonthlyAttendanceExportOptions): void {
+  const [yearStr, monthStr] = options.month.split('-')
+  const year = parseInt(yearStr, 10)
+  const monthIdx = parseInt(monthStr, 10) - 1
+  const daysInMonth = new Date(year, monthIdx + 1, 0).getDate()
+
+  let allRecords: AttendanceRecord[] = DEFAULT_ATTENDANCE
+  try {
+    const cached = localStorage.getItem(ATTENDANCE_STORAGE_KEY)
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length > 0) allRecords = parsed
+    }
+  } catch (_) {}
+
+  let targetStaff = [...options.staffList]
+  if (options.staffId && options.staffId !== 'all') {
+    targetStaff = targetStaff.filter(s => s.id === options.staffId)
+  }
+  if (options.centreId && options.centreId !== 'all') {
+    targetStaff = targetStaff.filter(s => s.centre_id === options.centreId)
+  }
+
+  const recordMap = new Map<string, AttendanceRecord>()
+  allRecords.forEach(r => {
+    recordMap.set(`${r.date}_${r.staff_id}`, r)
+  })
+
+  const dailyLogs: any[] = []
+  const personSummaries: any[] = []
+
+  targetStaff.forEach(staff => {
+    let presentDays = 0
+    let lateDays = 0
+    let halfDays = 0
+    let leaveDays = 0
+    let absentDays = 0
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayStr = day < 10 ? `0${day}` : `${day}`
+      const dateStr = `${options.month}-${dayStr}`
+      const dateObj = new Date(year, monthIdx, day)
+      const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' })
+      const isSunday = dateObj.getDay() === 0
+
+      const key = `${dateStr}_${staff.id}`
+      const existing = recordMap.get(key)
+
+      let status: string = existing?.status || (isSunday ? 'Off' : 'Present')
+
+      if (status === 'Present') presentDays++
+      else if (status === 'Late') lateDays++
+      else if (status === 'Half-Day') halfDays++
+      else if (status === 'On Leave') leaveDays++
+      else if (status === 'Absent') absentDays++
+
+      const checkIn = existing?.check_in_time || (status === 'Absent' || status === 'On Leave' || status === 'Off' ? '—' : '09:00 AM')
+      const checkOut = existing?.check_out_time || (status === 'Absent' || status === 'On Leave' || status === 'Off' ? '—' : '06:00 PM')
+      const notes = existing?.notes || (isSunday ? 'Sunday Weekly Off' : '')
+
+      dailyLogs.push({
+        'Date': dateStr,
+        'Day': dayName,
+        'Employee ID': staff.id,
+        'Employee Name': staff.name,
+        'Role': staff.role === 'doctor' ? 'Doctor / Therapist' : staff.role === 'admin' ? 'Administrator' : 'Clinic Staff',
+        'Clinic Branch': staff.centre_name,
+        'Attendance Status': status,
+        'Check-In Time': checkIn,
+        'Check-Out Time': checkOut,
+        'Shift Notes': notes,
+      })
+    }
+
+    const workingDaysCount = daysInMonth - Math.floor(daysInMonth / 7)
+    const effectivePresent = presentDays + lateDays + (halfDays * 0.5)
+    const attendancePct = workingDaysCount > 0 ? Math.min(100, Math.round((effectivePresent / workingDaysCount) * 100)) : 100
+
+    personSummaries.push({
+      'Employee ID': staff.id,
+      'Employee Name': staff.name,
+      'Role': staff.role === 'doctor' ? 'Doctor' : staff.role === 'admin' ? 'Admin' : 'Front Desk Staff',
+      'Clinic Branch': staff.centre_name,
+      'Month': options.month,
+      'Total Days in Month': daysInMonth,
+      'Days Present': presentDays,
+      'Days Late': lateDays,
+      'Half-Days': halfDays,
+      'Days On Leave': leaveDays,
+      'Days Absent': absentDays,
+      'Attendance Score %': `${attendancePct}%`,
+    })
+  })
+
+  const wb = XLSX.utils.book_new()
+  const wsSummary = XLSX.utils.json_to_sheet(personSummaries)
+  const wsDaily = XLSX.utils.json_to_sheet(dailyLogs)
+
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Monthly_Person_Summary')
+  XLSX.utils.book_append_sheet(wb, wsDaily, 'Daily_Attendance_Logs')
+
+  const fileNamePersonTag = options.staffId && options.staffId !== 'all' && targetStaff[0]
+    ? `_${targetStaff[0].name.replace(/[^a-zA-Z0-9]/g, '_')}`
+    : '_All_Staff'
+
+  XLSX.writeFile(wb, `Physionautics_Attendance_Report_${options.month}${fileNamePersonTag}.xlsx`)
+}

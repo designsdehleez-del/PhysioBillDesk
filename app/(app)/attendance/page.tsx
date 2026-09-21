@@ -5,19 +5,22 @@ import { useRouter } from 'next/navigation'
 import { 
   Calendar, Building2, Users, CheckCircle2, XCircle, Clock, 
   AlertCircle, Download, Check, Sparkles, Filter, Search, RotateCcw, 
-  UserCheck, UserX, Stethoscope, UserPlus, Shield, ChevronRight, Edit3
+  UserCheck, UserX, Stethoscope, UserPlus, Shield, ChevronRight, Edit3,
+  FileSpreadsheet, Lock
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
-import { createClient } from '@/lib/supabase/client'
 import { 
   getCentres, getDoctors, getAttendance, saveAttendanceRecord, 
-  markBulkAttendance, exportAttendanceToExcel, type AttendanceRecord 
+  markBulkAttendance, exportAttendanceToExcel, exportMonthlyPersonAttendanceToExcel, 
+  type AttendanceRecord 
 } from '@/lib/data-store'
 import type { Centre, Doctor, StaffUser } from '@/lib/supabase/types'
 
@@ -40,17 +43,32 @@ export default function AttendancePage() {
   const router = useRouter()
   const { toast } = useToast()
   const { profile } = useAuth()
+
+  const isAdmin = profile?.role === 'admin'
+  const userCentreId = profile?.centreId || 'c1111111-1111-1111-1111-111111111111'
+  const userCentreName = profile?.centreName || 'New Friends Colony, New Delhi'
   
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
-  const [selectedCentre, setSelectedCentre] = useState<string>('all')
+  const [selectedCentre, setSelectedCentre] = useState<string>(isAdmin ? 'all' : userCentreId)
   const [roleFilter, setRoleFilter] = useState<'all' | 'doctor' | 'centre_staff'>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily')
+
+  // Export Modal Dialog State
+  const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [exportMonth, setExportMonth] = useState<string>(() => new Date().toISOString().slice(0, 7))
+  const [exportStaffId, setExportStaffId] = useState<string>('all')
 
   const [centres, setCentres] = useState<Centre[]>([])
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
   const [staffList, setStaffList] = useState(DEFAULT_STAFF_MEMBERS)
   const [loading, setLoading] = useState(true)
+
+  // Synchronize clinic selection based on user role
+  useEffect(() => {
+    if (!isAdmin && profile?.centreId) {
+      setSelectedCentre(profile.centreId)
+    }
+  }, [isAdmin, profile])
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -109,10 +127,19 @@ export default function AttendancePage() {
     loadData()
   }, [loadData])
 
-  // Filtered Roster
+  // Clinic-Scoped Filtered Roster
   const filteredRoster = useMemo(() => {
     return staffList.filter(employee => {
-      if (selectedCentre !== 'all' && employee.centre_id !== selectedCentre) return false
+      // Clinic Scoping Rule:
+      // If non-admin clinic login, ONLY show staff members tagged to this clinic branch!
+      if (!isAdmin) {
+        const isMatch = employee.centre_id === userCentreId || employee.centre_name.toLowerCase().includes(userCentreName.toLowerCase().split(',')[0])
+        if (!isMatch) return false
+      } else {
+        // Admin login: filter by selectedCentre if not 'all'
+        if (selectedCentre !== 'all' && employee.centre_id !== selectedCentre) return false
+      }
+
       if (roleFilter !== 'all' && employee.role !== roleFilter) return false
       if (searchQuery.trim()) {
         const lower = searchQuery.toLowerCase()
@@ -121,7 +148,7 @@ export default function AttendancePage() {
       }
       return true
     })
-  }, [staffList, selectedCentre, roleFilter, searchQuery])
+  }, [staffList, selectedCentre, roleFilter, searchQuery, isAdmin, userCentreId, userCentreName])
 
   // Map employee ID to attendance record
   const attendanceMap = useMemo(() => {
@@ -237,7 +264,7 @@ export default function AttendancePage() {
     toast({ title: `Marked all ${filteredRoster.length} roster members as Present!` })
   }
 
-  const handleExport = () => {
+  const handleExportToday = () => {
     const recordsToExport: AttendanceRecord[] = filteredRoster.map(emp => {
       const rec = attendanceMap.get(emp.id)
       return rec || {
@@ -257,7 +284,21 @@ export default function AttendancePage() {
     })
 
     exportAttendanceToExcel(recordsToExport)
-    toast({ title: `Exported attendance register for ${recordsToExport.length} employees!` })
+    toast({ title: `Exported daily attendance register for ${recordsToExport.length} staff!` })
+  }
+
+  const handleDownloadMonthlyReport = () => {
+    exportMonthlyPersonAttendanceToExcel({
+      month: exportMonth,
+      staffId: exportStaffId,
+      centreId: isAdmin ? selectedCentre : userCentreId,
+      staffList: filteredRoster,
+    })
+    toast({ 
+      title: "Monthly Attendance Report Generated!",
+      description: `Downloaded report for ${exportMonth} (${exportStaffId === 'all' ? 'All Staff Members' : 'Selected Employee'})` 
+    })
+    setExportModalOpen(false)
   }
 
   return (
@@ -268,28 +309,46 @@ export default function AttendancePage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Clinic Attendance Register</h1>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold px-2 py-0.5">
-              Clinic-Wise Roster
-            </Badge>
+            {isAdmin ? (
+              <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-xs font-bold px-2 py-0.5 gap-1">
+                <Shield className="w-3 h-3 text-amber-600" /> Master Admin Access
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold px-2 py-0.5 gap-1">
+                <Building2 className="w-3 h-3 text-blue-600" /> {userCentreName.split(',')[0]} Branch Roster
+              </Badge>
+            )}
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Track daily attendance, shift check-ins, and leave logs for doctors & clinic staff.
+            {isAdmin ? (
+              'Global roster overview & attendance management across all clinic branches.'
+            ) : (
+              `Shift check-ins and leave tracking scoped exclusively to ${userCentreName.split(',')[0]}.`
+            )}
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button 
+            onClick={() => setExportModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs gap-1.5"
+          >
+            <FileSpreadsheet className="w-4 h-4" /> Download Monthly Report
+          </Button>
+
           <Button 
             onClick={handleMarkAllPresent}
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs gap-1.5"
           >
             <UserCheck className="w-4 h-4" /> Mark All Present
           </Button>
+
           <Button 
             variant="outline" 
-            onClick={handleExport}
+            onClick={handleExportToday}
             className="text-xs h-9 rounded-xl gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50"
           >
-            <Download className="w-4 h-4 text-blue-600" /> Export Excel Register
+            <Download className="w-4 h-4 text-slate-600" /> Export Today's Register
           </Button>
         </div>
       </div>
@@ -311,24 +370,36 @@ export default function AttendancePage() {
               />
             </div>
 
-            {/* Clinic / Centre Dropdown */}
+            {/* Clinic / Centre Dropdown (Admin vs Scoped Clinic Staff) */}
             <div className="md:col-span-3">
-              <Select value={selectedCentre} onValueChange={(val: string | null) => setSelectedCentre(val || 'all')}>
-                <SelectTrigger className="bg-slate-50 border-slate-200 text-xs h-10 rounded-xl">
+              {isAdmin ? (
+                <Select value={selectedCentre} onValueChange={(val: string | null) => setSelectedCentre(val || 'all')}>
+                  <SelectTrigger className="bg-slate-50 border-slate-200 text-xs h-10 rounded-xl">
+                    <div className="flex items-center gap-2 truncate">
+                      <Building2 className="h-4 w-4 text-blue-600 shrink-0" />
+                      <SelectValue placeholder="All Clinics / Centres" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">🏢 All Clinics & Centres</SelectItem>
+                    {centres.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        📍 {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex items-center justify-between px-3 h-10 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs font-bold text-blue-900">
                   <div className="flex items-center gap-2 truncate">
                     <Building2 className="h-4 w-4 text-blue-600 shrink-0" />
-                    <SelectValue placeholder="All Clinics / Centres" />
+                    <span className="truncate">📍 {userCentreName.split(',')[0]}</span>
                   </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">🏢 All Clinics & Centres</SelectItem>
-                  {centres.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      📍 {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  <Badge variant="secondary" className="bg-blue-200 text-blue-800 text-[9px] font-extrabold px-1.5 py-0 shrink-0">
+                    SCOPED
+                  </Badge>
+                </div>
+              )}
             </div>
 
             {/* Date Input */}
@@ -431,7 +502,9 @@ export default function AttendancePage() {
             <div className="text-center py-16 text-slate-500 space-y-2">
               <Users className="h-10 w-10 text-slate-300 mx-auto" />
               <div className="text-sm font-semibold text-slate-700">No staff members found</div>
-              <p className="text-xs text-slate-400">Try changing the clinic branch or search query.</p>
+              <p className="text-xs text-slate-400">
+                {isAdmin ? 'Try changing the clinic branch or search query.' : `No staff members tagged to ${userCentreName.split(',')[0]}.`}
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -492,7 +565,7 @@ export default function AttendancePage() {
                             <button
                               type="button"
                               onClick={() => handleStatusChange(emp, 'Present')}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                                 currentStatus === 'Present' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                               }`}
                             >
@@ -501,7 +574,7 @@ export default function AttendancePage() {
                             <button
                               type="button"
                               onClick={() => handleStatusChange(emp, 'Late')}
-                              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                                 currentStatus === 'Late' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                               }`}
                             >
@@ -510,7 +583,7 @@ export default function AttendancePage() {
                             <button
                               type="button"
                               onClick={() => handleStatusChange(emp, 'Half-Day')}
-                              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                                 currentStatus === 'Half-Day' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                               }`}
                             >
@@ -519,7 +592,7 @@ export default function AttendancePage() {
                             <button
                               type="button"
                               onClick={() => handleStatusChange(emp, 'On Leave')}
-                              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                                 currentStatus === 'On Leave' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                               }`}
                             >
@@ -528,7 +601,7 @@ export default function AttendancePage() {
                             <button
                               type="button"
                               onClick={() => handleStatusChange(emp, 'Absent')}
-                              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                                 currentStatus === 'Absent' ? 'bg-red-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                               }`}
                             >
@@ -576,6 +649,95 @@ export default function AttendancePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Month-Wise & Person-Wise Attendance Report Dialog */}
+      <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
+        <DialogContent className="sm:max-w-md bg-white border border-slate-200 shadow-xl rounded-2xl p-6 space-y-4">
+          <DialogHeader className="space-y-1.5 text-left">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                <FileSpreadsheet className="w-5 h-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold text-slate-900">
+                  Export Monthly Attendance Report
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500">
+                  Download a person-wise and day-by-day attendance log in Excel (.xlsx) format.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            
+            {/* 1. Month Picker */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-700">Select Month</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-600" />
+                <Input
+                  type="month"
+                  value={exportMonth}
+                  onChange={e => setExportMonth(e.target.value)}
+                  className="pl-9 bg-slate-50 border-slate-200 text-xs h-10 rounded-xl font-medium"
+                />
+              </div>
+            </div>
+
+            {/* 2. Staff / Person Selector */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-700">Select Employee / Person</Label>
+              <Select value={exportStaffId} onValueChange={(val: string | null) => setExportStaffId(val || 'all')}>
+                <SelectTrigger className="bg-slate-50 border-slate-200 text-xs h-10 rounded-xl">
+                  <SelectValue placeholder="All Roster Staff" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">👥 All Roster Staff ({filteredRoster.length} Members)</SelectItem>
+                  {filteredRoster.map(staff => (
+                    <SelectItem key={staff.id} value={staff.id}>
+                      {staff.role === 'doctor' ? '🩺' : staff.role === 'admin' ? '🛡️' : '📍'} {staff.name} ({staff.centre_name.split(',')[0]})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 3. Branch Scope Information */}
+            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-xs space-y-1">
+              <div className="font-bold text-slate-700 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                <span>Clinic Scope:</span>
+                <span className="text-blue-700 font-extrabold">
+                  {isAdmin ? (selectedCentre === 'all' ? 'All Clinic Branches (Global)' : centres.find(c => c.id === selectedCentre)?.name) : userCentreName.split(',')[0]}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                The Excel file will contain 2 sheets: <span className="font-bold text-slate-700">Monthly Person Summary</span> and <span className="font-bold text-slate-700">Daily Attendance Logs</span>.
+              </p>
+            </div>
+
+          </div>
+
+          <DialogFooter className="flex flex-row items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setExportModalOpen(false)}
+              className="text-xs h-10 rounded-xl px-4 border-slate-200 text-slate-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDownloadMonthlyReport}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-10 px-4 rounded-xl gap-2 shadow-xs"
+            >
+              <Download className="w-4 h-4" /> Download Excel Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   )

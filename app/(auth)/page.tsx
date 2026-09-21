@@ -23,6 +23,7 @@ import { NCRMapVisualizer } from '@/components/ncr-map-visualizer'
 import { getVisits, getPatients, getCentres, getDoctors, getExpenses } from '@/lib/data-store'
 import { formatCurrency } from '@/lib/utils'
 import { TopHeaderNav } from '@/components/layout/top-header-nav'
+import { OrbitingCards } from '@/components/ui/orbiting-cards'
 import { motion } from 'motion/react'
 
 export default function AuthPage() {
@@ -728,6 +729,46 @@ export default function AuthPage() {
                   Eliminating pain dysfunction through evidence-based biomechanical protocols.
                 </p>
               </div>
+            </div>
+          </section>
+
+          {/* Interactive Orbiting Cards Showcase */}
+          <section className="max-w-7xl mx-auto px-4 sm:px-8 py-10 w-full">
+            <div className="bg-white/80 backdrop-blur-md border border-slate-200/90 rounded-3xl p-6 sm:p-10 shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative overflow-hidden">
+              
+              <div className="lg:col-span-6 space-y-4 text-left">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Interactive Jitter-Style Motion
+                </Badge>
+                
+                <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                  Clinical Orbit & <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Rehabilitation Intelligence</span>
+                </h2>
+                
+                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed max-w-xl">
+                  Hover over any orbiting clinical card to inspect treatment protocols, spinal decompression metrics, and real-time patient recovery ratings.
+                </p>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-blue-600" /> Continuous 360° Orbit
+                    </div>
+                    <div className="text-[11px] text-slate-500">GPU-accelerated smooth rotation</div>
+                  </div>
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+                    <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Interactive Hover Pause
+                    </div>
+                    <div className="text-[11px] text-slate-500">Pauses rotation on card focus</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-6 flex justify-center items-center relative min-h-[380px]">
+                <OrbitingCards />
+              </div>
+
             </div>
           </section>
 

@@ -146,7 +146,7 @@ export function getStoredAdminPassword(): string {
 
 export function verifyAdminPassword(inputPassword: string): boolean {
   const current = getStoredAdminPassword()
-  return inputPassword === current || inputPassword === 'admin123'
+  return inputPassword === current
 }
 
 export function updateAdminPassword(currentPassword: string, newPassword: string): { success: boolean; error?: string } {

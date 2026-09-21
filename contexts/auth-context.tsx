@@ -288,7 +288,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (found.is_active === false) {
             return { error: { message: 'This account has been deactivated by the Administrator.' } as AuthError }
           }
-          if (found.password && found.password !== enteredPassword && enteredPassword !== 'centre123' && enteredPassword !== 'admin123') {
+          if (found.password && found.password !== enteredPassword) {
             return { error: { message: 'Invalid password for this clinic staff account.' } as AuthError }
           }
           const p: UserProfile = {

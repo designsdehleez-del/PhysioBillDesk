@@ -106,23 +106,22 @@ export function InactivityLock({ timeoutMinutes = 15 }: InactivityLockProps) {
         }
       } else {
         // Staff user verification
-        if (entered === 'centre123' || entered === 'admin123') {
-          unlockScreen()
-          setUnlocking(false)
-          return
-        }
-
-        const customStaffRaw = localStorage.getItem('physio_custom_staff_users')
+        const customStaffRaw = typeof window !== 'undefined' ? localStorage.getItem('physio_custom_staff_users') : null
+        let staffPassword = 'centre123'
         if (customStaffRaw) {
           try {
             const staffList = JSON.parse(customStaffRaw)
             const staffUser = staffList.find((s: any) => s.email?.toLowerCase() === profile?.email?.toLowerCase())
-            if (staffUser && staffUser.password === entered) {
-              unlockScreen()
-              setUnlocking(false)
-              return
+            if (staffUser && staffUser.password) {
+              staffPassword = staffUser.password
             }
           } catch (_) {}
+        }
+
+        if (entered === staffPassword) {
+          unlockScreen()
+          setUnlocking(false)
+          return
         }
       }
 

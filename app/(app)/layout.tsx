@@ -27,24 +27,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!user) return null
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-100/90 via-slate-50 to-indigo-50/40 text-slate-900 relative selection:bg-blue-100 selection:text-blue-900 pb-16 md:pb-0">
-      {/* Ambient Decorative Background Pattern & Soft Radial Glows */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Soft Radial Gradients */}
-        <div className="absolute -top-32 -left-32 w-[32rem] h-[32rem] bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -right-32 w-[36rem] h-[36rem] bg-indigo-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-32 left-1/3 w-[30rem] h-[30rem] bg-teal-500/10 rounded-full blur-3xl" />
-        
-        {/* Micro-Dot Matrix Pattern */}
-        <div className="absolute inset-0 bg-dot-pattern opacity-60" />
-      </div>
-
-      <div className="relative z-10 flex flex-col min-h-screen">
-        <InactivityLock />
-        <TopHeaderNav />
-        <main className="flex-1 w-full">{children}</main>
-        <BottomNav />
-      </div>
+    <div className="flex-1 flex flex-col w-full pb-16 md:pb-0">
+      <InactivityLock />
+      <TopHeaderNav />
+      <main className="flex-1 w-full">{children}</main>
+      <BottomNav />
     </div>
   )
 }

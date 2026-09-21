@@ -47,9 +47,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="Physionautics" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-gradient-to-br from-slate-100/90 via-slate-50 to-indigo-50/40 text-slate-900 min-h-screen relative selection:bg-blue-100 selection:text-blue-900 antialiased`}>
         <AuthProvider>
-          {children}
+          {/* Ambient Decorative Background Pattern & Soft Radial Glows */}
+          <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+            {/* Soft Radial Gradients */}
+            <div className="absolute -top-32 -left-32 w-[36rem] h-[36rem] bg-blue-500/10 rounded-full blur-3xl" />
+            <div className="absolute top-1/3 -right-32 w-[40rem] h-[40rem] bg-indigo-500/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-32 left-1/3 w-[36rem] h-[36rem] bg-teal-500/10 rounded-full blur-3xl" />
+            
+            {/* Micro-Dot Matrix Pattern */}
+            <div className="absolute inset-0 bg-dot-pattern opacity-65" />
+          </div>
+
+          <div className="relative z-10 flex flex-col min-h-screen">
+            {children}
+          </div>
           <Toaster richColors />
           <PwaRegister />
         </AuthProvider>

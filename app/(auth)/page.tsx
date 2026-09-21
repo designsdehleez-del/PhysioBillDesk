@@ -126,7 +126,7 @@ export default function AuthPage() {
   const isDoctor = role === 'doctor'
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between font-sans selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-transparent text-slate-900 flex flex-col justify-between font-sans selection:bg-blue-100 selection:text-blue-900">
       
       {/* 1. Header Navigation Bar */}
       {isLoggedIn ? (

@@ -135,13 +135,15 @@ export function saveAdminProfileData(updates: Partial<AdminProfileData>): AdminP
 
 // ================= ADMIN PASSWORD MANAGEMENT =================
 
+const DEFAULT_ADMIN_PASSWORD = 'Vikas@12344321'
+
 export function getStoredAdminPassword(): string {
-  if (typeof window === 'undefined') return 'admin123'
+  if (typeof window === 'undefined') return DEFAULT_ADMIN_PASSWORD
   try {
     const stored = localStorage.getItem(ADMIN_PASSWORD_KEY)
     if (stored) return stored
   } catch (_) {}
-  return 'admin123'
+  return DEFAULT_ADMIN_PASSWORD
 }
 
 export function verifyAdminPassword(inputPassword: string): boolean {

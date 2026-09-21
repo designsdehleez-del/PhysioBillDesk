@@ -496,7 +496,7 @@ export default function SettingsPage() {
                         type={showCurrentPassword ? 'text' : 'password'}
                         value={currentPassword}
                         onChange={e => setCurrentPassword(e.target.value)}
-                        placeholder="Enter current password (default: admin123)"
+                        placeholder="Enter current master admin password"
                         required
                         className="bg-white pr-10"
                       />
@@ -508,7 +508,7 @@ export default function SettingsPage() {
                         {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">Default password for demonstration: <code className="bg-gray-100 px-1 py-0.5 rounded font-mono text-purple-700">admin123</code></p>
+                    <p className="text-[11px] text-muted-foreground">Default master administrator password: <code className="bg-gray-100 px-1 py-0.5 rounded font-mono text-purple-700">Vikas@12344321</code></p>
                   </div>
 
                   {/* New Password */}

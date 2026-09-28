@@ -43,11 +43,16 @@ export default function DoctorDetailPage() {
           const foundCentre = cList.find((c: Centre) => c.id === foundDoc.centre_id)
           setCentre(foundCentre || null)
 
-          const docRawName = foundDoc.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+          const docRawName = foundDoc?.name ? foundDoc.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase() : ''
           
           const docVisits = vList.filter((v: StoredVisit) => {
+            if (v.primary_doctor_id && v.primary_doctor_id === foundDoc.id) return true
             if (v.doctor_id && v.doctor_id === foundDoc.id) return true
-            if (v.doctor_name) {
+            if (v.primary_doctor_name && docRawName) {
+              const pName = v.primary_doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+              if (pName.includes(docRawName) || docRawName.includes(pName)) return true
+            }
+            if (v.doctor_name && docRawName) {
               const vName = v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
               return vName.includes(docRawName) || docRawName.includes(vName)
             }
@@ -56,7 +61,7 @@ export default function DoctorDetailPage() {
           setVisits(docVisits)
 
           const docFb = fbList.filter((f: PatientFeedback) => {
-            if (!f.doctor_name) return false
+            if (!f.doctor_name || !docRawName) return false
             const fName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
             return fName.includes(docRawName) || docRawName.includes(fName)
           })

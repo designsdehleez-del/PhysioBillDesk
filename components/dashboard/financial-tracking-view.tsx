@@ -170,9 +170,11 @@ export function FinancialTrackingView({ initialDoctors, initialVisits }: Financi
   const doctorPerformanceList = useMemo(() => {
     if (doctors.length > 0 && visits.length > 0) {
       return doctors.map(doc => {
+        const docRawName = doc.name ? doc.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase() : ''
         const docVisits = filteredVisits.filter(v => 
           v.primary_doctor_id === doc.id || v.doctor_id === doc.id ||
-          (v.doctor_name && v.doctor_name.toLowerCase().includes(doc.name.toLowerCase().replace(/^dr\.\s*/i, '')))
+          (v.primary_doctor_name && docRawName && v.primary_doctor_name.toLowerCase().includes(docRawName)) ||
+          (v.doctor_name && docRawName && v.doctor_name.toLowerCase().includes(docRawName))
         )
         const clientIds = new Set(docVisits.map(v => v.patient_id || v.patient_uid))
         const clientsHandled = clientIds.size || docVisits.length
@@ -181,7 +183,7 @@ export function FinancialTrackingView({ initialDoctors, initialVisits }: Financi
 
         return {
           id: doc.id,
-          name: doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`,
+          name: doc.name ? (doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`) : 'Doctor',
           avatar: doc.photo_url || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200',
           clientsHandled,
           feeCharged,

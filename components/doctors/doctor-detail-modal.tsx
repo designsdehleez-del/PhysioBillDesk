@@ -42,12 +42,17 @@ export function DoctorDetailModal({
 
   if (!doctor) return null
 
-  const docRawName = doctor.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+  const docRawName = doctor?.name ? doctor.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase() : ''
 
   // Filter visits for this doctor
   const docVisits = visits.filter(v => {
+    if (v.primary_doctor_id && v.primary_doctor_id === doctor.id) return true
     if (v.doctor_id && v.doctor_id === doctor.id) return true
-    if (v.doctor_name) {
+    if (docRawName && v.primary_doctor_name) {
+      const pName = v.primary_doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+      if (pName.includes(docRawName) || docRawName.includes(pName)) return true
+    }
+    if (docRawName && v.doctor_name) {
       const vName = v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
       return vName.includes(docRawName) || docRawName.includes(vName)
     }
@@ -56,7 +61,7 @@ export function DoctorDetailModal({
 
   // Filter feedback for this doctor
   const docFeedbacks = feedbacks.filter(f => {
-    if (!f.doctor_name) return false
+    if (!f.doctor_name || !docRawName) return false
     const fName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
     return fName.includes(docRawName) || docRawName.includes(fName)
   })
@@ -65,7 +70,7 @@ export function DoctorDetailModal({
   const patientCount = docVisits.length
   const avgTicket = patientCount > 0 ? Math.round(totalRevenue / patientCount) : 0
   const avgRating = docFeedbacks.length > 0 
-    ? (docFeedbacks.reduce((sum, f) => sum + f.rating, 0) / docFeedbacks.length).toFixed(1)
+    ? (docFeedbacks.reduce((sum, f) => sum + (f.rating || 5), 0) / docFeedbacks.length).toFixed(1)
     : '5.0'
 
   return (

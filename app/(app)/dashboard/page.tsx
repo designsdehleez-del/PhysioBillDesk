@@ -214,11 +214,16 @@ export default function DashboardPage() {
   const doctorStats: DoctorStat[] = useMemo(() => {
     return doctors
       .map(doc => {
-        const docRawName = doc.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+        const docRawName = doc.name ? doc.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase() : ''
         
         const docVisits = filteredVisits.filter(v => {
+          if (v.primary_doctor_id && v.primary_doctor_id === doc.id) return true
           if (v.doctor_id && v.doctor_id === doc.id) return true
-          if (v.doctor_name) {
+          if (v.primary_doctor_name && docRawName) {
+            const pDocName = v.primary_doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+            if (pDocName.includes(docRawName) || docRawName.includes(pDocName)) return true
+          }
+          if (v.doctor_name && docRawName) {
             const vDocName = v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
             return vDocName.includes(docRawName) || docRawName.includes(vDocName)
           }
@@ -230,19 +235,21 @@ export default function DashboardPage() {
         const avgTicket = patientCount > 0 ? Math.round(revenue / patientCount) : 0
 
         const docFeedbacks = feedbacks.filter(f => {
-          if (!f.doctor_name) return false
+          if (!f.doctor_name || !docRawName) return false
           const fDocName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
           return fDocName.includes(docRawName) || docRawName.includes(fDocName)
         })
 
         const avgRating = docFeedbacks.length > 0 
-          ? (docFeedbacks.reduce((sum, f) => sum + f.rating, 0) / docFeedbacks.length).toFixed(1)
+          ? (docFeedbacks.reduce((sum, f) => sum + (f.rating || 5), 0) / docFeedbacks.length).toFixed(1)
           : '5.0'
 
         const serviceCounts: Record<string, number> = {}
         docVisits.forEach(v => {
           v.items?.forEach(i => {
-            serviceCounts[i.service_name] = (serviceCounts[i.service_name] || 0) + i.quantity
+            if (i && i.service_name) {
+              serviceCounts[i.service_name] = (serviceCounts[i.service_name] || 0) + (i.quantity || 1)
+            }
           })
         })
         const topProcedures = Object.entries(serviceCounts)
@@ -254,7 +261,7 @@ export default function DashboardPage() {
 
         return {
           id: doc.id,
-          name: doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`,
+          name: doc.name ? (doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`) : 'Doctor',
           specialization: doc.specialization || 'Physiotherapy Specialist',
           centre_name: centreObj ? centreObj.name : 'Physionautics Multispecialty',
           revenue,
@@ -397,7 +404,7 @@ export default function DashboardPage() {
   // Active Doctor ID resolution
   const activeDoctorId = profile?.doctorId || doctors.find(d => 
     (profile?.email && d.email?.toLowerCase() === profile.email.toLowerCase()) ||
-    (profile?.name && d.name.toLowerCase().includes(profile.name.toLowerCase().replace(/^dr\.\s*/i, '')))
+    (profile?.name && d.name && d.name.toLowerCase().includes(profile.name.toLowerCase().replace(/^dr\.\s*/i, '')))
   )?.id
 
   // All Visits matching this Doctor (Primary Doctor or Attending Doctor)
@@ -470,9 +477,9 @@ export default function DashboardPage() {
     if (!doctorPatientQuery.trim()) return myPatients
     const q = doctorPatientQuery.toLowerCase().trim()
     return myPatients.filter(p => 
-      p.full_name.toLowerCase().includes(q) ||
-      p.uid.toLowerCase().includes(q) ||
-      p.phone.includes(q)
+      (p.full_name && p.full_name.toLowerCase().includes(q)) ||
+      (p.uid && p.uid.toLowerCase().includes(q)) ||
+      (p.phone && p.phone.includes(q))
     )
   }, [myPatients, doctorPatientQuery])
 
@@ -482,8 +489,8 @@ export default function DashboardPage() {
     if (!doctorInvoiceQuery.trim()) return list
     const q = doctorInvoiceQuery.toLowerCase().trim()
     return list.filter(v => 
-      v.bill_number.toLowerCase().includes(q) ||
-      v.patient_name.toLowerCase().includes(q) ||
+      (v.bill_number && v.bill_number.toLowerCase().includes(q)) ||
+      (v.patient_name && v.patient_name.toLowerCase().includes(q)) ||
       (v.patient_uid && v.patient_uid.toLowerCase().includes(q))
     )
   }, [doctorVisits, doctorInvoiceQuery])

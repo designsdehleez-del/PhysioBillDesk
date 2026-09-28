@@ -21,7 +21,8 @@ export const DEFAULT_WHATSAPP_TEMPLATE = `🏥 *PHYSIONAUTICS CLINIC & PHYSIOTHE
 🔢 *Bill No:* {bill_number}
 📅 *Date:* {bill_date}
 👤 *Patient:* {patient_name} ({patient_uid})
-👨‍⚕️ *Consulting Doctor:* Dr. {doctor_name}
+👨‍⚕️ *Primary Doctor:* {primary_doctor}
+🩺 *Attending Physiotherapist:* {physiotherapist}
 📍 *Clinic Centre:* {centre_name}
 
 📋 *Services & Charges:*
@@ -55,7 +56,8 @@ export const PRESET_TEMPLATES = [
 Receipt for {patient_name} ({patient_uid})
 ━━━━━━━━━━━━━━━━━━━━
 Invoice: {bill_number} | Date: {bill_date}
-Doctor: Dr. {doctor_name}
+Primary Doctor: {primary_doctor}
+Attending Physio: {physiotherapist}
 Branch: {centre_name}
 
 Services:
@@ -76,6 +78,8 @@ Get well soon! 🌿
 Thank you for visiting *Physionautics ({centre_name})* today! 
 
 Your session with Dr. {doctor_name} has been recorded under Invoice #{bill_number}.
+Primary Doctor: {primary_doctor}
+Attending Physiotherapist: {physiotherapist}
 ✨ *Total Amount Paid:* {total_amount} via {payment_mode}
 
 💧 *Post-Treatment Care:*
@@ -95,6 +99,8 @@ Physionautics Team 🌿`,
     template: `*PHYSIONAUTICS INVOICE CONFIRMATION*
 Bill #{bill_number}
 Patient: {patient_name}
+Primary Doctor: {primary_doctor}
+Attending Physio: {physiotherapist}
 Amount Paid: {total_amount} via {payment_mode}
 Date: {bill_date}
 
@@ -109,6 +115,8 @@ export const AVAILABLE_VARIABLES = [
   { tag: '{patient_phone}', label: 'Patient Mobile Number', example: '+91 98765 11111' },
   { tag: '{bill_number}', label: 'Invoice Number', example: 'INV-202609-0001' },
   { tag: '{bill_date}', label: 'Invoice Date', example: '15 Sep 2026' },
+  { tag: '{primary_doctor}', label: 'Primary Doctor', example: 'Dr. Sarah Jenkins' },
+  { tag: '{physiotherapist}', label: 'Attending Physiotherapist', example: 'PT Vikram Verma' },
   { tag: '{doctor_name}', label: 'Attending Doctor', example: 'Dr. Sarah Jenkins' },
   { tag: '{centre_name}', label: 'Clinic Branch Name', example: 'New Friends Colony, New Delhi' },
   { tag: '{centre_phone}', label: 'Clinic Contact Number', example: '08383936905' },
@@ -179,7 +187,7 @@ export function getFeedbackUrl(visit: StoredVisit): string {
     uid: visit.patient_uid,
     name: visit.patient_name,
     phone: visit.patient_phone || '',
-    doc: (visit.doctor_name || '').replace(/^Dr\.\s*/i, ''),
+    doc: (visit.primary_doctor_name || visit.doctor_name || '').replace(/^Dr\.\s*/i, ''),
     centre: visit.centre_name || '',
     services: servicesList || '',
   })
@@ -198,6 +206,8 @@ export function renderWhatsAppMessage(template: string, visit: StoredVisit): str
     discountText = `-${formatCurrency(visit.discount)}`
   }
 
+  const primaryDoctor = visit.primary_doctor_name || visit.doctor_name || 'N/A'
+  const physiotherapist = visit.physiotherapist_name || 'N/A'
   const doctorName = (visit.doctor_name || 'Consultant').replace(/^Dr\.\s*/i, '')
   const centreName = visit.centre_name || 'New Friends Colony, New Delhi'
   const centrePhone = visit.centre_phone || '08383936905'
@@ -209,6 +219,8 @@ export function renderWhatsAppMessage(template: string, visit: StoredVisit): str
     .replace(/{patient_phone}/g, visit.patient_phone || '')
     .replace(/{bill_number}/g, visit.bill_number || '')
     .replace(/{bill_date}/g, formatDate(visit.visit_date))
+    .replace(/{primary_doctor}/g, primaryDoctor)
+    .replace(/{physiotherapist}/g, physiotherapist)
     .replace(/{doctor_name}/g, doctorName)
     .replace(/{centre_name}/g, centreName)
     .replace(/{centre_phone}/g, centrePhone)

@@ -253,10 +253,14 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
             </div>
 
             <div class="grid-col">
-              <h3>Consulting Clinician</h3>
+              <h3>Consulting Clinician & Staff</h3>
               <div class="row">
-                <span class="label">Doctor:</span>
-                <span class="val">${visit.doctor_name ? `Dr. ${visit.doctor_name}` : 'Attending Consultant'}</span>
+                <span class="label">Primary Doctor:</span>
+                <span class="val">${visit.primary_doctor_name || visit.doctor_name || 'N/A'}</span>
+              </div>
+              <div class="row">
+                <span class="label">Attending Physiotherapist:</span>
+                <span class="val">${visit.physiotherapist_name || 'N/A'}</span>
               </div>
               <div class="row">
                 <span class="label">Specialty:</span>
@@ -442,8 +446,12 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
                 <Building2 className="h-3 w-3 text-purple-600" /> Attending Doctor & Centre
               </p>
               <div className="flex justify-between text-xs pt-1">
-                <span className="text-muted-foreground">Doctor:</span>
-                <span className="font-semibold text-gray-900">{visit.doctor_name ? `Dr. ${visit.doctor_name}` : 'Consultant'}</span>
+                <span className="text-muted-foreground">Primary Doctor:</span>
+                <span className="font-semibold text-gray-900">{visit.primary_doctor_name || visit.doctor_name || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Attending Physiotherapist:</span>
+                <span className="font-semibold text-gray-900">{visit.physiotherapist_name || 'N/A'}</span>
               </div>
               {visit.doctor_specialization && (
                 <div className="flex justify-between text-xs">

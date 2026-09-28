@@ -39,7 +39,22 @@ export function WhatsAppShareModal({ visit, open, onOpenChange }: WhatsAppShareM
     if (visit && open) {
       const cfg = getWhatsAppConfig()
       setConfig(cfg)
-      const rendered = generateWhatsAppInvoiceText(visit)
+      let rendered = generateWhatsAppInvoiceText(visit)
+      const primaryDoc = visit.primary_doctor_name || visit.doctor_name || 'N/A'
+      const physio = visit.physiotherapist_name || 'N/A'
+      if (!rendered.includes('Primary Doctor:') && !rendered.includes('*Primary Doctor:*')) {
+        if (rendered.includes('👨‍⚕️ *Consulting Doctor:*')) {
+          rendered = rendered.replace(
+            /👨‍⚕️ \*Consulting Doctor:\*.*$/m,
+            `👨‍⚕️ *Primary Doctor:* ${primaryDoc}\n🩺 *Attending Physiotherapist:* ${physio}`
+          )
+        } else if (rendered.includes('Doctor:')) {
+          rendered = rendered.replace(
+            /Doctor:.*$/m,
+            `Primary Doctor: ${primaryDoc}\nAttending Physiotherapist: ${physio}`
+          )
+        }
+      }
       setMessageText(rendered)
       setIsEditing(false)
       setApiResult(null)

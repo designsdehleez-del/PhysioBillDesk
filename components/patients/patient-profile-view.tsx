@@ -1,22 +1,61 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Star, Play, Send, Calendar, CheckCircle2, 
-  Lightbulb, ChevronRight, X, Phone, User, Clock
+  Lightbulb, ChevronRight, X, Phone, User, Clock,
+  Stethoscope, UserCheck
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { getDoctors, getPhysiotherapists } from '@/lib/data-store'
+import type { Patient } from '@/lib/supabase/types'
 
-export function PatientProfileView() {
+interface PatientProfileViewProps {
+  patient?: Patient & {
+    primary_doctor_name?: string | null
+    physiotherapist_name?: string | null
+  }
+  primaryDoctorName?: string | null
+  physiotherapistName?: string | null
+}
+
+export function PatientProfileView({ patient, primaryDoctorName, physiotherapistName }: PatientProfileViewProps = {}) {
   const [activeTab, setActiveTab] = useState<'feedback' | 'exercises' | 'progress'>('feedback')
   const [rating, setRating] = useState<number>(0)
   const [feedbackText, setFeedbackText] = useState<string>('')
   const [submitted, setSubmitted] = useState<boolean>(false)
   const [showProTip, setShowProTip] = useState<boolean>(true)
+
+  const [assignedDoctor, setAssignedDoctor] = useState<string | null>(primaryDoctorName || patient?.primary_doctor_name || null)
+  const [assignedPhysio, setAssignedPhysio] = useState<string | null>(physiotherapistName || patient?.physiotherapist_name || null)
+
+  useEffect(() => {
+    async function loadCareTeamNames() {
+      if (patient?.primary_doctor_id || patient?.physiotherapist_id) {
+        try {
+          const [docs, pts] = await Promise.all([getDoctors(), getPhysiotherapists()])
+          if (patient.primary_doctor_id && !assignedDoctor) {
+            const foundDoc = docs.find(d => d.id === patient.primary_doctor_id)
+            if (foundDoc) setAssignedDoctor(foundDoc.name)
+          }
+          if (patient.physiotherapist_id && !assignedPhysio) {
+            const foundPt = pts.find(p => p.id === patient.physiotherapist_id)
+            if (foundPt) setAssignedPhysio(foundPt.name)
+          }
+        } catch (err) {
+          console.error('Failed to load care team names:', err)
+        }
+      }
+    }
+    loadCareTeamNames()
+  }, [patient?.primary_doctor_id, patient?.physiotherapist_id, assignedDoctor, assignedPhysio])
+
+  const doctorDisplayName = assignedDoctor || 'Dr. Sarah Jenkins'
+  const physioDisplayName = assignedPhysio || 'PT Ananya Sen'
 
   const exercises = [
     {
@@ -54,22 +93,39 @@ export function PatientProfileView() {
           <div className="flex items-center gap-4">
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"
-              alt="Priya Sharma"
+              alt={patient?.full_name || "Priya Sharma"}
               className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
             />
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Priya Sharma</h1>
+                <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">{patient?.full_name || "Priya Sharma"}</h1>
                 <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[11px] font-semibold px-2.5 py-0.5 rounded-full">
                   Active Patient
                 </Badge>
               </div>
-              <p className="text-xs font-semibold text-slate-500">Patient ID: PN-10224</p>
+              <p className="text-xs font-semibold text-slate-500">Patient ID: {patient?.uid || "PN-10224"}</p>
 
               <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 pt-1">
-                <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400" /> Age: 32</span>
-                <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-slate-400" /> Gender: Female</span>
-                <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-slate-400" /> +91 98765 43210</span>
+                <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400" /> Age: {patient?.age ?? 32}</span>
+                <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-slate-400" /> Gender: {patient?.gender ?? 'Female'}</span>
+                <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-slate-400" /> {patient?.phone ?? '+91 98765 43210'}</span>
+              </div>
+
+              {/* Care Team Overview */}
+              <div className="flex flex-wrap items-center gap-4 text-xs pt-2.5 mt-2 border-t border-slate-100">
+                <div className="flex items-center gap-1.5">
+                  <Stethoscope className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span className="font-semibold text-slate-700">Primary Doctor:</span>
+                  <span className="font-medium text-slate-900">{doctorDisplayName}</span>
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[10px] font-medium px-2 py-0.5 rounded-full ml-1">
+                    Doctor
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span className="font-semibold text-slate-700">Attending Physio:</span>
+                  <span className="font-medium text-slate-900">{physioDisplayName}</span>
+                </div>
               </div>
             </div>
           </div>

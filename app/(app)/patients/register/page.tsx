@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, CheckCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { registerPatient } from '@/lib/data-store'
+import { registerPatient, getDoctors, getPhysiotherapists } from '@/lib/data-store'
+import type { Doctor, Physiotherapist } from '@/lib/supabase/types'
 import { isValidPhone, isValidEmail } from '@/lib/utils'
 
 interface FormData {
   full_name: string; age: string; gender: string; phone: string
   email: string; address: string; blood_group: string; medical_notes: string
+  primary_doctor_id: string; physiotherapist_id: string
   primary_complaint: string; pain_vas: string; mobility_score: string; functional_score: string
 }
 interface Errors { [k: string]: string }
@@ -22,11 +24,27 @@ export default function RegisterPatientPage() {
   const router = useRouter()
   const [form, setForm] = useState<FormData>({ 
     full_name: '', age: '', gender: '', phone: '', email: '', address: '', blood_group: '', medical_notes: '',
+    primary_doctor_id: '', physiotherapist_id: '',
     primary_complaint: '', pain_vas: '6', mobility_score: '60', functional_score: '65'
   })
+  const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [physiotherapists, setPhysiotherapists] = useState<Physiotherapist[]>([])
   const [errors, setErrors] = useState<Errors>({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState<{ uid: string; id: string } | null>(null)
+
+  useEffect(() => {
+    async function loadCareTeam() {
+      try {
+        const [docs, pts] = await Promise.all([getDoctors(), getPhysiotherapists()])
+        setDoctors(docs.filter(d => d.is_active !== false))
+        setPhysiotherapists(pts.filter(p => p.is_active !== false))
+      } catch (err) {
+        console.error('Failed to load care team:', err)
+      }
+    }
+    loadCareTeam()
+  }, [])
 
   const set = (k: keyof FormData) => (v: string) => setForm(p => ({ ...p, [k]: v }))
 
@@ -55,6 +73,8 @@ export default function RegisterPatientPage() {
         address: form.address || null,
         blood_group: (form.blood_group || null) as any,
         medical_notes: form.medical_notes || null,
+        primary_doctor_id: form.primary_doctor_id || null,
+        physiotherapist_id: form.physiotherapist_id || null,
         primary_complaint: form.primary_complaint || null,
         pain_vas: form.pain_vas ? Number(form.pain_vas) : null,
         mobility_score: form.mobility_score ? Number(form.mobility_score) : null,
@@ -73,7 +93,7 @@ export default function RegisterPatientPage() {
       <p className="text-muted-foreground text-sm mb-4">Patient ID: <span className="font-mono font-semibold text-blue-600 text-base">{success.uid}</span></p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Button onClick={() => router.push(`/billing?patientId=${success.id}`)}>Create Bill</Button>
-        <Button variant="outline" onClick={() => { setSuccess(null); setForm({ full_name: '', age: '', gender: '', phone: '', email: '', address: '', blood_group: '', medical_notes: '', primary_complaint: '', pain_vas: '6', mobility_score: '60', functional_score: '65' }) }}>Register Another</Button>
+        <Button variant="outline" onClick={() => { setSuccess(null); setForm({ full_name: '', age: '', gender: '', phone: '', email: '', address: '', blood_group: '', medical_notes: '', primary_doctor_id: '', physiotherapist_id: '', primary_complaint: '', pain_vas: '6', mobility_score: '60', functional_score: '65' }) }}>Register Another</Button>
         <Button variant="ghost" onClick={() => router.push('/patients')}>View Patient List</Button>
       </div>
     </div>
@@ -129,6 +149,37 @@ export default function RegisterPatientPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Primary Doctor & Attending Physiotherapist */}
+              <div className="space-y-1">
+                <Label>Primary Doctor</Label>
+                <Select value={form.primary_doctor_id} onValueChange={(v: string | null) => set('primary_doctor_id')(v === 'none' ? '' : (v ?? ''))}>
+                  <SelectTrigger><SelectValue placeholder="Select primary doctor" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None / Unassigned</SelectItem>
+                    {doctors.map(d => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name} {d.specialization ? `(${d.specialization})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Attending Physiotherapist</Label>
+                <Select value={form.physiotherapist_id} onValueChange={(v: string | null) => set('physiotherapist_id')(v === 'none' ? '' : (v ?? ''))}>
+                  <SelectTrigger><SelectValue placeholder="Select physiotherapist" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None / Unassigned</SelectItem>
+                    {physiotherapists.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} {p.qualification ? `(${p.qualification})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="sm:col-span-2 space-y-1">
                 <Label htmlFor="address">Address</Label>
                 <Input id="address" value={form.address} onChange={e => set('address')(e.target.value)} placeholder="Optional" />

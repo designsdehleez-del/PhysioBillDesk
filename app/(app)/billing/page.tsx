@@ -15,9 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/auth-context'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import type { Patient, Service, Centre, Doctor, DiscountPreset } from '@/lib/supabase/types'
+import type { Patient, Service, Centre, Doctor, DiscountPreset, Physiotherapist } from '@/lib/supabase/types'
 import {
-  getCentres, getDoctors, getPatients, getServices,
+  getCentres, getDoctors, getPatients, getServices, getPhysiotherapists,
   getVisits, saveVisit, exportBillsToExcel, exportSingleBillToExcel,
   StoredVisit, BillLineItem
 } from '@/lib/data-store'
@@ -39,6 +39,7 @@ export default function BillingPage() {
   const [services, setServices] = useState<Service[]>([])
   const [centres, setCentres] = useState<Centre[]>([])
   const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [physiotherapists, setPhysiotherapists] = useState<Physiotherapist[]>([])
   const [discountPresets, setDiscountPresets] = useState<DiscountPreset[]>([])
   const [visits, setVisits] = useState<StoredVisit[]>([])
 
@@ -48,6 +49,10 @@ export default function BillingPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [selectedCentreId, setSelectedCentreId] = useState('')
   const [selectedDoctorId, setSelectedDoctorId] = useState('')
+  const [primaryDoctorId, setPrimaryDoctorId] = useState('')
+  const [primaryDoctorName, setPrimaryDoctorName] = useState('')
+  const [physiotherapistId, setPhysiotherapistId] = useState('')
+  const [physiotherapistName, setPhysiotherapistName] = useState('')
   const [billItems, setBillItems] = useState<BillLineItem[]>([])
   const [discountPresetId, setDiscountPresetId] = useState('')
   const [customDiscount, setCustomDiscount] = useState('')
@@ -73,17 +78,19 @@ export default function BillingPage() {
   const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false)
 
   const loadData = useCallback(async () => {
-    const [cList, dList, pList, vList, sList] = await Promise.all([
+    const [cList, dList, pList, vList, sList, ptList] = await Promise.all([
       getCentres(),
       getDoctors(),
       getPatients(),
       getVisits(),
       getServices(),
+      getPhysiotherapists(),
     ])
 
     const activeCentres = cList.filter(c => c.is_active)
     setCentres(activeCentres)
     setDoctors(dList.filter(d => d.is_active))
+    setPhysiotherapists(ptList.filter(pt => pt.is_active))
     setPatients(pList)
     setVisits(vList)
     setServices(sList)
@@ -120,6 +127,34 @@ export default function BillingPage() {
       })
     }
   }, [preselectedId])
+
+  // Pre-fill primary doctor and physiotherapist when selectedPatient changes
+  useEffect(() => {
+    if (selectedPatient) {
+      if (selectedPatient.primary_doctor_id) {
+        setPrimaryDoctorId(selectedPatient.primary_doctor_id)
+        const doc = doctors.find(d => d.id === selectedPatient.primary_doctor_id)
+        setPrimaryDoctorName(doc ? doc.name : '')
+      } else {
+        setPrimaryDoctorId('')
+        setPrimaryDoctorName('')
+      }
+
+      if (selectedPatient.physiotherapist_id) {
+        setPhysiotherapistId(selectedPatient.physiotherapist_id)
+        const pt = physiotherapists.find(p => p.id === selectedPatient.physiotherapist_id)
+        setPhysiotherapistName(pt ? pt.name : '')
+      } else {
+        setPhysiotherapistId('')
+        setPhysiotherapistName('')
+      }
+    } else {
+      setPrimaryDoctorId('')
+      setPrimaryDoctorName('')
+      setPhysiotherapistId('')
+      setPhysiotherapistName('')
+    }
+  }, [selectedPatient, doctors, physiotherapists])
 
   // Patient search handler
   const handleSearchPatient = async (q: string) => {
@@ -222,6 +257,10 @@ export default function BillingPage() {
       const saved = await saveVisit({
         patient: selectedPatient,
         doctor: selectedDoctor,
+        primary_doctor_id: primaryDoctorId || null,
+        primary_doctor_name: primaryDoctorName || null,
+        physiotherapist_id: physiotherapistId || null,
+        physiotherapist_name: physiotherapistName || null,
         centre: selectedCentre,
         items: billItems,
         subtotal,
@@ -247,6 +286,10 @@ export default function BillingPage() {
   const resetForm = () => {
     setRecentSavedVisit(null)
     setSelectedPatient(null)
+    setPrimaryDoctorId('')
+    setPrimaryDoctorName('')
+    setPhysiotherapistId('')
+    setPhysiotherapistName('')
     setBillItems([])
     setDiscountPresetId('')
     setCustomDiscount('')
@@ -518,7 +561,7 @@ export default function BillingPage() {
                 <Card className="shadow-sm border overflow-visible">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-bold flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-purple-600" /> Step 2: Centre & Attending Doctor
+                      <Building2 className="h-4 w-4 text-purple-600" /> Step 2: Centre & Clinical Team
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-visible">
@@ -552,12 +595,72 @@ export default function BillingPage() {
                         onValueChange={(v: string | null) => setSelectedDoctorId(v ?? '')}
                       >
                         <SelectTrigger className="text-xs bg-white">
-                          <SelectValue placeholder="Select Attending Doctor" />
+                          <SelectValue placeholder="Select Consulting Doctor" />
                         </SelectTrigger>
                         <SelectContent className="z-[100] max-h-60 bg-white">
                           {(filteredDoctors.length > 0 ? filteredDoctors : doctors).map(d => (
                             <SelectItem key={d.id} value={d.id} className="text-xs">
                               {d.name} {d.specialization ? `(${d.specialization})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold flex items-center justify-between">
+                        <span>Primary Doctor</span>
+                        {selectedPatient?.primary_doctor_id && (
+                          <span className="text-[10px] text-blue-600 font-normal">(Pre-filled)</span>
+                        )}
+                      </Label>
+                      <Select
+                        value={primaryDoctorId || 'none'}
+                        onValueChange={(v: string | null) => {
+                          const val = v === 'none' ? '' : (v ?? '')
+                          setPrimaryDoctorId(val)
+                          const doc = doctors.find(d => d.id === val)
+                          setPrimaryDoctorName(doc ? doc.name : '')
+                        }}
+                      >
+                        <SelectTrigger className="text-xs bg-white">
+                          <SelectValue placeholder="Select Primary Doctor" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[100] max-h-60 bg-white">
+                          <SelectItem value="none" className="text-xs">None / Unassigned</SelectItem>
+                          {doctors.map(d => (
+                            <SelectItem key={d.id} value={d.id} className="text-xs">
+                              {d.name} {d.specialization ? `(${d.specialization})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold flex items-center justify-between">
+                        <span>Attending Physiotherapist</span>
+                        {selectedPatient?.physiotherapist_id && (
+                          <span className="text-[10px] text-blue-600 font-normal">(Pre-filled)</span>
+                        )}
+                      </Label>
+                      <Select
+                        value={physiotherapistId || 'none'}
+                        onValueChange={(v: string | null) => {
+                          const val = v === 'none' ? '' : (v ?? '')
+                          setPhysiotherapistId(val)
+                          const pt = physiotherapists.find(p => p.id === val)
+                          setPhysiotherapistName(pt ? pt.name : '')
+                        }}
+                      >
+                        <SelectTrigger className="text-xs bg-white">
+                          <SelectValue placeholder="Select Attending Physio" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[100] max-h-60 bg-white">
+                          <SelectItem value="none" className="text-xs">None / Unassigned</SelectItem>
+                          {physiotherapists.map(pt => (
+                            <SelectItem key={pt.id} value={pt.id} className="text-xs">
+                              {pt.name} {pt.qualification ? `(${pt.qualification})` : ''}
                             </SelectItem>
                           ))}
                         </SelectContent>

@@ -686,45 +686,6 @@ export default function AuthPage() {
                     </Button>
                   </form>
 
-                  {/* 1-Click Role Login Presets */}
-                  <div className="pt-3 border-t border-slate-100 space-y-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 text-center">Instant Demo Logins (1-Click Switch)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => loginAsRole('admin')}
-                        className="h-9 text-[11px] font-bold border-purple-200 text-purple-700 bg-purple-50/50 hover:bg-purple-100/80 rounded-xl justify-start gap-1.5"
-                      >
-                        👑 Admin Login
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => loginAsRole('reception_nfc')}
-                        className="h-9 text-[11px] font-bold border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100/80 rounded-xl justify-start gap-1.5"
-                      >
-                        🏥 Clinic Reception
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => loginAsRole('doctor_sarah')}
-                        className="h-9 text-[11px] font-bold border-emerald-200 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100/80 rounded-xl justify-start gap-1.5"
-                      >
-                        🩺 Dr. Sarah Jenkins
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => loginAsRole('doctor_rajesh')}
-                        className="h-9 text-[11px] font-bold border-teal-200 text-teal-700 bg-teal-50/50 hover:bg-teal-100/80 rounded-xl justify-start gap-1.5"
-                      >
-                        🩺 Dr. Rajesh Sharma
-                      </Button>
-                    </div>
-                  </div>
-
                   {error && (
                     <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700 font-medium">
                       {error}

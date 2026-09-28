@@ -211,7 +211,7 @@ export interface StaffUser {
   password?: string
   centre_id: string | null
   centre_name: string | null
-  role: 'admin' | 'centre_staff' | 'doctor'
+  role: 'admin' | 'clinic_reception' | 'doctor'
   doctor_id?: string | null
   doctor_name?: string | null
   is_active: boolean

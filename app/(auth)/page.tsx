@@ -122,7 +122,7 @@ export default function AuthPage() {
   }
 
   const isLoggedIn = !!profile || !!user
-  const role = profile?.role || 'centre_staff'
+  const role = profile?.role || 'clinic_reception'
   const isAdmin = role === 'admin'
   const isDoctor = role === 'doctor'
 

@@ -34,7 +34,7 @@ const DEFAULT_STAFF: StaffUser[] = [
     password: 'centre123',
     centre_id: 'c1111111-1111-1111-1111-111111111111',
     centre_name: 'New Friends Colony, New Delhi',
-    role: 'centre_staff',
+    role: 'clinic_reception',
     is_active: true,
   },
   {
@@ -44,7 +44,7 @@ const DEFAULT_STAFF: StaffUser[] = [
     password: 'centre123',
     centre_id: 'c2222222-2222-2222-2222-222222222222',
     centre_name: 'Vasant Vihar, New Delhi',
-    role: 'centre_staff',
+    role: 'clinic_reception',
     is_active: true,
   },
   {
@@ -54,7 +54,7 @@ const DEFAULT_STAFF: StaffUser[] = [
     password: 'centre123',
     centre_id: 'c3333333-3333-3333-3333-333333333333',
     centre_name: 'Gurugram – DLF Phase 1',
-    role: 'centre_staff',
+    role: 'clinic_reception',
     is_active: true,
   },
 ]
@@ -78,7 +78,7 @@ export default function StaffManagementPage() {
   const [password, setPassword] = useState('')
   const [centreId, setCentreId] = useState<string>('')
   const [doctorId, setDoctorId] = useState<string>('')
-  const [role, setRole] = useState<'admin' | 'centre_staff' | 'doctor'>('centre_staff')
+  const [role, setRole] = useState<'admin' | 'clinic_reception' | 'doctor'>('clinic_reception')
   const [saving, setSaving] = useState(false)
 
   const loadData = async () => {
@@ -156,7 +156,7 @@ export default function StaffManagementPage() {
     setPassword('')
     setCentreId(centres[0]?.id || '')
     setDoctorId(doctorsList[0]?.id || '')
-    setRole('centre_staff')
+    setRole('clinic_reception')
     setDialogOpen(true)
   }
 
@@ -383,10 +383,10 @@ export default function StaffManagementPage() {
 
             <div className="space-y-1">
               <Label>Role *</Label>
-              <Select value={role} onValueChange={(v: string | null) => setRole((v as 'admin' | 'centre_staff' | 'doctor') || 'centre_staff')}>
+              <Select value={role} onValueChange={(v: string | null) => setRole((v as 'admin' | 'clinic_reception' | 'doctor') || 'clinic_reception')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="centre_staff">Centre Staff (Clinical Desk & Billing)</SelectItem>
+                  <SelectItem value="clinic_reception">Clinic Reception (Clinical Desk & Billing)</SelectItem>
                   <SelectItem value="doctor">Doctor / Therapist (Personal Dashboard)</SelectItem>
                   <SelectItem value="admin">Admin (Financials & Governance)</SelectItem>
                 </SelectContent>
@@ -408,7 +408,7 @@ export default function StaffManagementPage() {
               </div>
             )}
 
-            {role === 'centre_staff' && (
+            {role === 'clinic_reception' && (
               <div className="space-y-1">
                 <Label>Assigned Clinic Centre *</Label>
                 <Select value={centreId} onValueChange={(v: string | null) => setCentreId(v ?? '')}>

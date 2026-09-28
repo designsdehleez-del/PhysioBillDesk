@@ -9,7 +9,7 @@ export const CLINIC_NAME_FALLBACKS: Record<string, string> = {
   'c2222222-2222-2222-2222-222222222222': 'Vasant Vihar, New Delhi',
   'c3333333-3333-3333-3333-333333333333': 'Gurugram – DLF Phase 1',
   'all': 'All 3 Clinic Branches',
-  'centre_staff': 'Centre Staff (Clinical Desk & Billing)',
+  'clinic_reception': 'Clinic Reception (Clinical Desk & Billing)',
   'admin': 'Admin (Financials & Governance)',
   'percentage': 'Percentage (%)',
   'fixed': 'Fixed Amount (₹)',

@@ -173,7 +173,7 @@ CREATE TABLE IF NOT EXISTS public.staff_users (
   password     text        NOT NULL,
   centre_id    uuid        REFERENCES public.centres(id) ON DELETE SET NULL,
   centre_name  text,
-  role         text        NOT NULL CHECK (role IN ('admin', 'centre_staff')) DEFAULT 'centre_staff',
+  role         text        NOT NULL CHECK (role IN ('admin', 'clinic_reception', 'doctor')) DEFAULT 'clinic_reception',
   is_active    boolean     NOT NULL DEFAULT true,
   created_at   timestamptz NOT NULL DEFAULT now(),
   updated_at   timestamptz NOT NULL DEFAULT now()
@@ -300,9 +300,9 @@ ON CONFLICT DO NOTHING;
 INSERT INTO public.staff_users (id, full_name, email, password, centre_id, centre_name, role, is_active)
 VALUES
   ('a0000000-0000-0000-0000-000000000000', 'Chief Medical Officer (CMO)', 'admin@physionautics.com', 'admin123', NULL, 'All Centres (HQ)', 'admin', true),
-  ('a1111111-1111-1111-1111-111111111111', 'Reception Desk - New Friends Colony', 'nfc@physionautics.com', 'nfc123', 'c1111111-1111-1111-1111-111111111111', 'New Friends Colony, New Delhi', 'centre_staff', true),
-  ('a2222222-2222-2222-2222-222222222222', 'Reception Desk - Vasant Vihar', 'vv@physionautics.com', 'vv123', 'c2222222-2222-2222-2222-222222222222', 'Vasant Vihar, New Delhi', 'centre_staff', true),
-  ('a3333333-3333-3333-3333-333333333333', 'Reception Desk - Gurugram Phase 1', 'ggn@physionautics.com', 'ggn123', 'c3333333-3333-3333-3333-333333333333', 'Gurugram – DLF Phase 1', 'centre_staff', true)
+  ('a1111111-1111-1111-1111-111111111111', 'Reception Desk - New Friends Colony', 'nfc@physionautics.com', 'nfc123', 'c1111111-1111-1111-1111-111111111111', 'New Friends Colony, New Delhi', 'clinic_reception', true),
+  ('a2222222-2222-2222-2222-222222222222', 'Reception Desk - Vasant Vihar', 'vv@physionautics.com', 'vv123', 'c2222222-2222-2222-2222-222222222222', 'Vasant Vihar, New Delhi', 'clinic_reception', true),
+  ('a3333333-3333-3333-3333-333333333333', 'Reception Desk - Gurugram Phase 1', 'ggn@physionautics.com', 'ggn123', 'c3333333-3333-3333-3333-333333333333', 'Gurugram – DLF Phase 1', 'clinic_reception', true)
 ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, role = EXCLUDED.role;
 
 -- 11. audit_logs (Healthcare Compliance & Tamper-Evident Access Trail)

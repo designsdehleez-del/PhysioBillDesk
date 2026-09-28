@@ -24,17 +24,17 @@ import {
 } from '@/lib/data-store'
 import type { Centre, Doctor, StaffUser } from '@/lib/supabase/types'
 
-const DEFAULT_STAFF_MEMBERS: { id: string; name: string; role: 'admin' | 'centre_staff' | 'doctor'; centre_id: string; centre_name: string }[] = [
+const DEFAULT_STAFF_MEMBERS: { id: string; name: string; role: 'admin' | 'clinic_reception' | 'doctor'; centre_id: string; centre_name: string }[] = [
   { id: 'usr-admin-01', name: 'Super Administrator', role: 'admin', centre_id: 'c1111111-1111-1111-1111-111111111111', centre_name: 'All Centres (Global)' },
-  { id: 'usr-centre1-01', name: 'New Friends Colony Reception', role: 'centre_staff', centre_id: 'c1111111-1111-1111-1111-111111111111', centre_name: 'New Friends Colony, New Delhi' },
+  { id: 'usr-centre1-01', name: 'New Friends Colony Reception', role: 'clinic_reception', centre_id: 'c1111111-1111-1111-1111-111111111111', centre_name: 'New Friends Colony, New Delhi' },
   { id: 'doc-101', name: 'Dr. Sarah Jenkins', role: 'doctor', centre_id: 'c1111111-1111-1111-1111-111111111111', centre_name: 'New Friends Colony, New Delhi' },
   { id: 'doc-102', name: 'Dr. Rajesh Sharma', role: 'doctor', centre_id: 'c1111111-1111-1111-1111-111111111111', centre_name: 'New Friends Colony, New Delhi' },
   
-  { id: 'usr-centre2-01', name: 'Vasant Vihar Reception', role: 'centre_staff', centre_id: 'c2222222-2222-2222-2222-222222222222', centre_name: 'Vasant Vihar, New Delhi' },
+  { id: 'usr-centre2-01', name: 'Vasant Vihar Reception', role: 'clinic_reception', centre_id: 'c2222222-2222-2222-2222-222222222222', centre_name: 'Vasant Vihar, New Delhi' },
   { id: 'doc-201', name: 'Dr. Emily Watson', role: 'doctor', centre_id: 'c2222222-2222-2222-2222-222222222222', centre_name: 'Vasant Vihar, New Delhi' },
   { id: 'doc-202', name: 'Dr. Michael Chang', role: 'doctor', centre_id: 'c2222222-2222-2222-2222-222222222222', centre_name: 'Vasant Vihar, New Delhi' },
 
-  { id: 'usr-centre3-01', name: 'Gurugram DLF Phase 1 Desk', role: 'centre_staff', centre_id: 'c3333333-3333-3333-3333-333333333333', centre_name: 'Gurugram – DLF Phase 1' },
+  { id: 'usr-centre3-01', name: 'Gurugram DLF Phase 1 Desk', role: 'clinic_reception', centre_id: 'c3333333-3333-3333-3333-333333333333', centre_name: 'Gurugram – DLF Phase 1' },
   { id: 'doc-301', name: 'Dr. Priya Nair', role: 'doctor', centre_id: 'c3333333-3333-3333-3333-333333333333', centre_name: 'Gurugram – DLF Phase 1' },
   { id: 'doc-302', name: 'Dr. David Kim', role: 'doctor', centre_id: 'c3333333-3333-3333-3333-333333333333', centre_name: 'Gurugram – DLF Phase 1' },
 ]
@@ -50,7 +50,7 @@ export default function AttendancePage() {
   
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [selectedCentre, setSelectedCentre] = useState<string>(isAdmin ? 'all' : userCentreId)
-  const [roleFilter, setRoleFilter] = useState<'all' | 'doctor' | 'centre_staff'>('all')
+  const [roleFilter, setRoleFilter] = useState<'all' | 'doctor' | 'clinic_reception'>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Export Modal Dialog State
@@ -424,7 +424,7 @@ export default function AttendancePage() {
                 <SelectContent>
                   <SelectItem value="all">👥 All Roles</SelectItem>
                   <SelectItem value="doctor">🩺 Doctors Only</SelectItem>
-                  <SelectItem value="centre_staff">📍 Clinic Staff</SelectItem>
+                  <SelectItem value="clinic_reception">📍 Clinic Staff</SelectItem>
                 </SelectContent>
               </Select>
             </div>

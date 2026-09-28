@@ -4216,7 +4216,7 @@ export interface AttendanceRecord {
   date: string // YYYY-MM-DD
   staff_id: string
   staff_name: string
-  role: 'admin' | 'centre_staff' | 'doctor'
+  role: 'admin' | 'clinic_reception' | 'doctor'
   centre_id: string
   centre_name: string
   status: 'Present' | 'Absent' | 'Half-Day' | 'On Leave' | 'Late'
@@ -4237,7 +4237,7 @@ const DEFAULT_ATTENDANCE: AttendanceRecord[] = [
     date: todayDateStr,
     staff_id: 'usr-centre1-01',
     staff_name: 'New Friends Colony Reception',
-    role: 'centre_staff',
+    role: 'clinic_reception',
     centre_id: 'c1111111-1111-1111-1111-111111111111',
     centre_name: 'New Friends Colony, New Delhi',
     status: 'Present',
@@ -4281,7 +4281,7 @@ const DEFAULT_ATTENDANCE: AttendanceRecord[] = [
     date: todayDateStr,
     staff_id: 'usr-centre2-01',
     staff_name: 'Vasant Vihar Reception',
-    role: 'centre_staff',
+    role: 'clinic_reception',
     centre_id: 'c2222222-2222-2222-2222-222222222222',
     centre_name: 'Vasant Vihar, New Delhi',
     status: 'Present',
@@ -4323,7 +4323,7 @@ const DEFAULT_ATTENDANCE: AttendanceRecord[] = [
     date: todayDateStr,
     staff_id: 'usr-centre3-01',
     staff_name: 'Gurugram DLF Phase 1 Desk',
-    role: 'centre_staff',
+    role: 'clinic_reception',
     centre_id: 'c3333333-3333-3333-3333-333333333333',
     centre_name: 'Gurugram – DLF Phase 1',
     status: 'Present',
@@ -4401,7 +4401,7 @@ export async function saveAttendanceRecord(record: Partial<AttendanceRecord>): P
       date: targetDate,
       staff_id: targetStaffId,
       staff_name: record.staff_name || 'Staff Member',
-      role: record.role || 'centre_staff',
+      role: record.role || 'clinic_reception',
       centre_id: record.centre_id || 'c1111111-1111-1111-1111-111111111111',
       centre_name: record.centre_name || 'New Friends Colony, New Delhi',
       status: record.status || 'Present',

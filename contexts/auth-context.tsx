@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getAdminProfileData, verifyAdminPassword, updateAdminPassword } from '@/lib/settings-store'
 import { logAuditEvent } from '@/lib/audit-logger'
 
-export type UserRole = 'admin' | 'centre_staff' | 'doctor'
+export type UserRole = 'admin' | 'clinic_reception' | 'doctor'
 
 export interface UserProfile {
   id: string
@@ -31,7 +31,7 @@ interface AuthContextType {
   signIn: (email: string, password?: string) => Promise<{ error: AuthError | null }>
   signUp: (email: string, password?: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
-  loginAsRole: (roleType: 'admin' | 'centre1' | 'centre2' | 'centre3') => void
+  loginAsRole: (roleType: 'admin' | 'reception_nfc' | 'reception_vasant' | 'reception_gurugram' | 'doctor_sarah' | 'doctor_rajesh') => void
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>
   updatePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>
 }
@@ -47,50 +47,72 @@ const PRESET_ACCOUNTS: Record<string, UserProfile> = {
   'nfc@physionautics.com': {
     id: 'usr-centre1-01',
     email: 'nfc@physionautics.com',
-    name: 'New Friends Colony Staff',
-    role: 'centre_staff',
+    name: 'New Friends Colony Reception',
+    role: 'clinic_reception',
     centreId: 'c1111111-1111-1111-1111-111111111111',
     centreName: 'New Friends Colony, New Delhi',
   },
   'centre1@physionautics.com': {
     id: 'usr-centre1-01',
     email: 'centre1@physionautics.com',
-    name: 'New Friends Colony Staff',
-    role: 'centre_staff',
+    name: 'New Friends Colony Reception',
+    role: 'clinic_reception',
     centreId: 'c1111111-1111-1111-1111-111111111111',
     centreName: 'New Friends Colony, New Delhi',
   },
   'vasantvihar@physionautics.com': {
     id: 'usr-centre2-01',
     email: 'vasantvihar@physionautics.com',
-    name: 'Vasant Vihar Staff',
-    role: 'centre_staff',
+    name: 'Vasant Vihar Reception',
+    role: 'clinic_reception',
     centreId: 'c2222222-2222-2222-2222-222222222222',
     centreName: 'Vasant Vihar, New Delhi',
   },
   'centre2@physionautics.com': {
     id: 'usr-centre2-01',
     email: 'centre2@physionautics.com',
-    name: 'Vasant Vihar Staff',
-    role: 'centre_staff',
+    name: 'Vasant Vihar Reception',
+    role: 'clinic_reception',
     centreId: 'c2222222-2222-2222-2222-222222222222',
     centreName: 'Vasant Vihar, New Delhi',
   },
   'gurugram@physionautics.com': {
     id: 'usr-centre3-01',
     email: 'gurugram@physionautics.com',
-    name: 'Gurugram DLF Phase 1 Staff',
-    role: 'centre_staff',
+    name: 'Gurugram Reception',
+    role: 'clinic_reception',
     centreId: 'c3333333-3333-3333-3333-333333333333',
     centreName: 'Gurugram – DLF Phase 1',
   },
   'centre3@physionautics.com': {
     id: 'usr-centre3-01',
     email: 'centre3@physionautics.com',
-    name: 'Gurugram DLF Phase 1 Staff',
-    role: 'centre_staff',
+    name: 'Gurugram Reception',
+    role: 'clinic_reception',
     centreId: 'c3333333-3333-3333-3333-333333333333',
     centreName: 'Gurugram – DLF Phase 1',
+  },
+  'dr.sarah@physionautics.com': {
+    id: 'usr-doc-101',
+    email: 'dr.sarah@physionautics.com',
+    name: 'Dr. Sarah Jenkins',
+    role: 'doctor',
+    doctorId: 'doc-101',
+    doctorName: 'Dr. Sarah Jenkins',
+    centreId: 'c1111111-1111-1111-1111-111111111111',
+    centreName: 'New Friends Colony, New Delhi',
+    roleTitle: 'Physiotherapist',
+  },
+  'dr.rajesh@physionautics.com': {
+    id: 'usr-doc-102',
+    email: 'dr.rajesh@physionautics.com',
+    name: 'Dr. Rajesh Sharma',
+    role: 'doctor',
+    doctorId: 'doc-102',
+    doctorName: 'Dr. Rajesh Sharma',
+    centreId: 'c1111111-1111-1111-1111-111111111111',
+    centreName: 'New Friends Colony, New Delhi',
+    roleTitle: 'Physiotherapist',
   },
 }
 
@@ -156,7 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (_) {}
 
-    return { id: 'staff-auto', email, name: 'Clinic Staff', role: 'centre_staff', centreName: 'New Friends Colony, New Delhi' }
+    return { id: 'staff-auto', email, name: 'Clinic Staff', role: 'clinic_reception', centreName: 'New Friends Colony, New Delhi' }
   }
 
   useEffect(() => {
@@ -262,6 +284,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       else if (lower === 'centre1') lower = 'nfc@physionautics.com'
       else if (lower === 'centre2') lower = 'vasantvihar@physionautics.com'
       else if (lower === 'centre3') lower = 'gurugram@physionautics.com'
+      else if (lower.includes('sarah')) lower = 'dr.sarah@physionautics.com'
+      else if (lower.includes('rajesh')) lower = 'dr.rajesh@physionautics.com'
       else lower = `${lower}@physionautics.com`
     }
 
@@ -295,7 +319,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             id: found.id || 'usr-custom',
             email: found.email || lower,
             name: found.full_name || found.name || 'Clinic Staff',
-            role: found.role || 'centre_staff',
+            role: found.role || 'clinic_reception',
             centreId: found.centre_id,
             centreName: found.centre_name || (found.role === 'admin' ? undefined : 'New Friends Colony, New Delhi'),
             avatarUrl: found.avatarUrl,
@@ -349,12 +373,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return signIn(email, password)
   }
 
-  const loginAsRole = async (roleType: 'admin' | 'centre1' | 'centre2' | 'centre3') => {
+  const loginAsRole = async (roleType: 'admin' | 'reception_nfc' | 'reception_vasant' | 'reception_gurugram' | 'doctor_sarah' | 'doctor_rajesh') => {
     const emailMap: Record<string, string> = {
       admin: 'admin@physionautics.com',
-      centre1: 'nfc@physionautics.com',
-      centre2: 'vasantvihar@physionautics.com',
-      centre3: 'gurugram@physionautics.com',
+      reception_nfc: 'nfc@physionautics.com',
+      reception_vasant: 'vasantvihar@physionautics.com',
+      reception_gurugram: 'gurugram@physionautics.com',
+      doctor_sarah: 'dr.sarah@physionautics.com',
+      doctor_rajesh: 'dr.rajesh@physionautics.com',
     }
     const targetEmail = emailMap[roleType]
     const p = resolveProfile(targetEmail)

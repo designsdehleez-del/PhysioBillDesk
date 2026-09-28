@@ -7,22 +7,23 @@ import {
   Building2, CreditCard, TrendingUp, Filter, Wallet, 
   ArrowUpRight, Star, HeartHandshake, Sparkles, MessageCircle,
   FileSpreadsheet, Award, Download, Layers, CheckCircle2, Ticket,
-  UserCog, Stethoscope, Clock, ChevronRight, X, Trash2, Plus, ArrowDownRight, Tag
+  UserCog, Stethoscope, Clock, ChevronRight, X, Trash2, Plus, ArrowDownRight, Tag, Search
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 import { 
   getVisits, getCentres, getPatientFeedback, getDoctors, exportBillsToExcel, 
-  getExpenses, deleteExpense, exportExpensesToExcel, type StoredVisit 
+  getExpenses, deleteExpense, exportExpensesToExcel, getPatients, type StoredVisit 
 } from '@/lib/data-store'
 import { FinancialTrackingView } from '@/components/dashboard/financial-tracking-view'
 import { ExpenseLoggingModal } from '@/components/dashboard/expense-logging-modal'
 import { DoctorDetailModal } from '@/components/doctors/doctor-detail-modal'
-import { Centre, Doctor, PatientFeedback, ClinicExpense, ExpenseCategory } from '@/lib/supabase/types'
+import { Centre, Doctor, PatientFeedback, ClinicExpense, ExpenseCategory, Patient } from '@/lib/supabase/types'
 import { motion } from 'motion/react'
 
 interface DoctorStat {
@@ -51,7 +52,12 @@ export default function DashboardPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([])
   const [feedbacks, setFeedbacks] = useState<PatientFeedback[]>([])
   const [expenses, setExpenses] = useState<ClinicExpense[]>([])
+  const [patients, setPatients] = useState<Patient[]>([])
   
+  // Doctor Portal search states
+  const [doctorPatientQuery, setDoctorPatientQuery] = useState('')
+  const [doctorInvoiceQuery, setDoctorInvoiceQuery] = useState('')
+
   // Filters
   const [selectedFilterCentre, setSelectedFilterCentre] = useState<string>('all')
   const [selectedTimeframe, setSelectedTimeframe] = useState<'today' | '7days' | '30days' | 'all'>('all')
@@ -62,18 +68,20 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [vData, cData, fbData, docData, expData] = await Promise.all([
+        const [vData, cData, fbData, docData, expData, pData] = await Promise.all([
           getVisits(),
           getCentres(),
           getPatientFeedback(),
           getDoctors(),
           getExpenses(),
+          getPatients(),
         ])
         setAllVisits(vData)
         setCentres(cData)
         setFeedbacks(fbData)
         setDoctors(docData)
         setExpenses(expData)
+        setPatients(pData)
       } catch (err) {
         console.error('Failed to load dashboard data:', err)
       } finally {
@@ -384,14 +392,346 @@ export default function DashboardPage() {
     )
   }
 
-  // Doctor Dashboard View omitted for brevity (unchanged)
+  // Doctor Dashboard View: Dedicated Doctor Portal & Tagged Revenue Dashboard
+  // Active Doctor ID resolution
+  const activeDoctorId = profile?.doctorId || doctors.find(d => 
+    (profile?.email && d.email?.toLowerCase() === profile.email.toLowerCase()) ||
+    (profile?.name && d.name.toLowerCase().includes(profile.name.toLowerCase().replace(/^dr\.\s*/i, '')))
+  )?.id
+
+  // All Visits matching this Doctor (Primary Doctor or Attending Doctor)
+  const doctorVisits = useMemo(() => {
+    if (!profile) return []
+    return allVisits.filter(v => {
+      if (activeDoctorId && (v.primary_doctor_id === activeDoctorId || v.doctor_id === activeDoctorId)) {
+        return true
+      }
+      if (profile.name) {
+        const docRawName = profile.name.replace(/^dr\.\s*/i, '').trim().toLowerCase()
+        const matchPrim = v.primary_doctor_name && v.primary_doctor_name.toLowerCase().includes(docRawName)
+        const matchAtt = v.doctor_name && v.doctor_name.toLowerCase().includes(docRawName)
+        return matchPrim || matchAtt
+      }
+      return false
+    })
+  }, [allVisits, activeDoctorId, profile])
+
+  // Primary Doctor Tagged Visits (100% Net Invoice total where doctor is Primary Doctor)
+  const primaryTaggedVisits = useMemo(() => {
+    return doctorVisits.filter(v => {
+      if (activeDoctorId) {
+        if (v.primary_doctor_id) return v.primary_doctor_id === activeDoctorId
+        return v.doctor_id === activeDoctorId
+      }
+      return true
+    })
+  }, [doctorVisits, activeDoctorId])
+
+  // Revenue Metrics for My Tagged Revenue cards
+  const currentNow = new Date()
+  const currentYear = currentNow.getFullYear()
+  const currentMonth = currentNow.getMonth()
+
+  const thisMonthTaggedRevenue = useMemo(() => {
+    return primaryTaggedVisits
+      .filter(v => {
+        const d = new Date(v.visit_date)
+        return d.getFullYear() === currentYear && d.getMonth() === currentMonth
+      })
+      .reduce((sum, v) => sum + (Number(v.total) || 0), 0)
+  }, [primaryTaggedVisits, currentYear, currentMonth])
+
+  const ytdTaggedRevenue = useMemo(() => {
+    return primaryTaggedVisits
+      .filter(v => {
+        const d = new Date(v.visit_date)
+        return d.getFullYear() === currentYear
+      })
+      .reduce((sum, v) => sum + (Number(v.total) || 0), 0)
+  }, [primaryTaggedVisits, currentYear])
+
+  const totalTaggedRevenue = useMemo(() => {
+    return primaryTaggedVisits.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
+  }, [primaryTaggedVisits])
+
+  // My Patients List (patients registered with primary_doctor_id === profile.doctorId)
+  const myPatients = useMemo(() => {
+    if (!profile) return []
+    return patients.filter(p => {
+      if (activeDoctorId && p.primary_doctor_id === activeDoctorId) return true
+      if (activeDoctorId && doctorVisits.some(v => v.patient_id === p.id || v.patient_uid === p.uid)) return true
+      return false
+    })
+  }, [patients, activeDoctorId, doctorVisits, profile])
+
+  // Search filtered patients
+  const filteredMyPatients = useMemo(() => {
+    if (!doctorPatientQuery.trim()) return myPatients
+    const q = doctorPatientQuery.toLowerCase().trim()
+    return myPatients.filter(p => 
+      p.full_name.toLowerCase().includes(q) ||
+      p.uid.toLowerCase().includes(q) ||
+      p.phone.includes(q)
+    )
+  }, [myPatients, doctorPatientQuery])
+
+  // Search filtered invoices
+  const filteredMyInvoices = useMemo(() => {
+    const list = [...doctorVisits].sort((a, b) => new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime())
+    if (!doctorInvoiceQuery.trim()) return list
+    const q = doctorInvoiceQuery.toLowerCase().trim()
+    return list.filter(v => 
+      v.bill_number.toLowerCase().includes(q) ||
+      v.patient_name.toLowerCase().includes(q) ||
+      (v.patient_uid && v.patient_uid.toLowerCase().includes(q))
+    )
+  }, [doctorVisits, doctorInvoiceQuery])
+
   if (profile?.role === 'doctor') {
     return (
       <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
-        <div className="p-6 bg-gradient-to-r from-teal-900 to-emerald-900 text-white rounded-2xl">
-          <h1 className="text-2xl font-bold">Doctor Performance Desk - Dr. {profile.name}</h1>
-          <p className="text-xs text-teal-200 mt-1">View patient feedback and session logs.</p>
+        {/* Doctor Portal Header Banner */}
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-teal-950 via-emerald-900 to-teal-900 border border-teal-800/80 text-white p-6 rounded-3xl shadow-xl backdrop-blur-md"
+        >
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="bg-teal-500/20 text-teal-200 border border-teal-400/30 text-xs font-bold px-2.5 py-0.5">
+                🩺 Doctor Portal Desk
+              </Badge>
+              <span className="text-xs text-teal-200/80">{profile.centreName || 'Physionautics Multispecialty'}</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1.5">
+              Welcome, Dr. {profile.name.replace(/^dr\.\s*/i, '')}
+            </h1>
+            <p className="text-xs sm:text-sm text-teal-100/80">
+              100% Net Tagged Revenue, Assigned Patients & Clinical Billing History
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 bg-teal-950/70 p-2.5 rounded-2xl border border-teal-800/80">
+            <Link href="/patients">
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 h-9 rounded-xl">
+                <UserPlus className="h-3.5 w-3.5" /> Register Patient
+              </Button>
+            </Link>
+            <Link href="/billing">
+              <Button size="sm" variant="outline" className="bg-teal-900 hover:bg-teal-800 text-teal-100 border-teal-700 text-xs font-bold gap-1.5 h-9 rounded-xl">
+                <Receipt className="h-3.5 w-3.5 text-emerald-400" /> New Clinical Bill
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
+
+        {/* My Tagged Revenue Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: This Month Tagged Revenue */}
+          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
+            <Card className="border border-emerald-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-emerald-50/30 rounded-2xl h-full">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">My Tagged Revenue (This Month)</p>
+                  <p className="text-2xl font-black text-emerald-950">{formatCurrency(thisMonthTaggedRevenue)}</p>
+                  <p className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                    <Tag className="h-3 w-3 text-emerald-600" /> 100% Primary Doctor Tagged
+                  </p>
+                </div>
+                <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-sm">
+                  <DollarSign className="h-6 w-6" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Card 2: YTD Tagged Revenue */}
+          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
+            <Card className="border border-blue-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-blue-50/30 rounded-2xl h-full">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">My Tagged Revenue (YTD)</p>
+                  <p className="text-2xl font-black text-blue-950">{formatCurrency(ytdTaggedRevenue)}</p>
+                  <p className="text-[11px] text-blue-700 font-bold flex items-center gap-1">
+                    <Calendar className="h-3 w-3 text-blue-600" /> Year-To-Date Total
+                  </p>
+                </div>
+                <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-sm">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Card 3: Total Tagged Revenue */}
+          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
+            <Card className="border border-purple-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-purple-50/30 rounded-2xl h-full">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Tagged Revenue</p>
+                  <p className="text-2xl font-black text-purple-950">{formatCurrency(totalTaggedRevenue)}</p>
+                  <p className="text-[11px] text-purple-700 font-bold flex items-center gap-1">
+                    <Wallet className="h-3 w-3 text-purple-600" /> {primaryTaggedVisits.length} Primary Invoices
+                  </p>
+                </div>
+                <div className="p-3 bg-purple-600 text-white rounded-2xl shadow-sm">
+                  <Award className="h-6 w-6" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Card 4: My Patients Count */}
+          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
+            <Card className="border border-teal-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-teal-50/30 rounded-2xl h-full">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">My Primary Patients</p>
+                  <p className="text-2xl font-black text-teal-950">{myPatients.length}</p>
+                  <p className="text-[11px] text-teal-700 font-bold flex items-center gap-1">
+                    <Users className="h-3 w-3 text-teal-600" /> Registered & Attended
+                  </p>
+                </div>
+                <div className="p-3 bg-teal-600 text-white rounded-2xl shadow-sm">
+                  <Stethoscope className="h-6 w-6" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
+
+        {/* My Patients List */}
+        <Card className="shadow-sm border bg-white rounded-2xl overflow-hidden">
+          <CardHeader className="pb-3 border-b bg-teal-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base font-extrabold text-teal-950 flex items-center gap-2">
+                <Users className="h-5 w-5 text-teal-600" />
+                My Patients List ({myPatients.length})
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Patients registered with Dr. {profile.name} as Primary Doctor
+              </CardDescription>
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                placeholder="Search patient name, UID..."
+                value={doctorPatientQuery}
+                onChange={(e) => setDoctorPatientQuery(e.target.value)}
+                className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-xl"
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {filteredMyPatients.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-500">
+                No registered primary patients found matching your search query.
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                <div className="px-6 py-2.5 bg-slate-50 text-[11px] font-semibold text-slate-500 grid grid-cols-12">
+                  <span className="col-span-4">Patient Name & UID</span>
+                  <span className="col-span-2">Age / Gender</span>
+                  <span className="col-span-3">Contact Phone</span>
+                  <span className="col-span-3">Medical Notes / Complaint</span>
+                </div>
+                {filteredMyPatients.map(p => (
+                  <div key={p.id} className="px-6 py-3.5 grid grid-cols-12 items-center hover:bg-teal-50/20 transition-colors text-xs">
+                    <div className="col-span-4">
+                      <p className="font-bold text-slate-900">{p.full_name}</p>
+                      <span className="font-mono text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                        {p.uid}
+                      </span>
+                    </div>
+                    <div className="col-span-2 text-slate-700">
+                      {p.age} Yrs • {p.gender}
+                    </div>
+                    <div className="col-span-3 text-slate-700 font-mono">
+                      {p.phone}
+                    </div>
+                    <div className="col-span-3 text-slate-600 truncate">
+                      {p.medical_notes || 'No notes logged'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* My Recent Clinical Invoices Table */}
+        <Card className="shadow-sm border bg-white rounded-2xl overflow-hidden">
+          <CardHeader className="pb-3 border-b bg-blue-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base font-extrabold text-blue-950 flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-blue-600" />
+                My Recent Clinical Invoices ({doctorVisits.length})
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Clinical billing statements tagged to Dr. {profile.name}
+              </CardDescription>
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                placeholder="Search invoice #, patient..."
+                value={doctorInvoiceQuery}
+                onChange={(e) => setDoctorInvoiceQuery(e.target.value)}
+                className="pl-8 h-8 text-xs bg-white border-slate-200 rounded-xl"
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {filteredMyInvoices.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-500">
+                No clinical invoices found for your account.
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                <div className="px-6 py-2.5 bg-slate-50 text-[11px] font-semibold text-slate-500 grid grid-cols-12">
+                  <span className="col-span-3">Invoice #</span>
+                  <span className="col-span-3">Patient Name</span>
+                  <span className="col-span-2">Visit Date</span>
+                  <span className="col-span-2 text-right">Net Total</span>
+                  <span className="col-span-2 text-center">Doctor Tag</span>
+                </div>
+                {filteredMyInvoices.map(inv => {
+                  const isPrimary = activeDoctorId 
+                    ? (inv.primary_doctor_id ? inv.primary_doctor_id === activeDoctorId : inv.doctor_id === activeDoctorId)
+                    : true
+                  return (
+                    <div key={inv.id} className="px-6 py-3.5 grid grid-cols-12 items-center hover:bg-slate-50/60 transition-colors text-xs">
+                      <div className="col-span-3">
+                        <span className="font-mono font-bold text-slate-900 block">{inv.bill_number}</span>
+                        <span className="text-[10px] text-slate-500">{inv.payment_mode} • {inv.payment_status}</span>
+                      </div>
+                      <div className="col-span-3">
+                        <p className="font-bold text-slate-800">{inv.patient_name}</p>
+                        <p className="text-[10px] text-slate-500 font-mono">{inv.patient_uid}</p>
+                      </div>
+                      <div className="col-span-2 text-slate-600">
+                        {formatDate(inv.visit_date)}
+                      </div>
+                      <div className="col-span-2 text-right font-extrabold text-emerald-700">
+                        {formatCurrency(inv.total)}
+                      </div>
+                      <div className="col-span-2 text-center">
+                        <Badge 
+                          className={isPrimary 
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px]' 
+                            : 'bg-blue-100 text-blue-800 border-blue-200 text-[10px]'}
+                        >
+                          {isPrimary ? 'Primary Doctor' : 'Attending Doctor'}
+                        </Badge>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     )
   }

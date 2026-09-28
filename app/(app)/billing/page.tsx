@@ -105,8 +105,8 @@ export default function BillingPage() {
     // Set branch for centre staff
     if (profile?.role === 'clinic_reception') {
       const matched = activeCentres.find(
-        c => c.name.toLowerCase().includes(profile.name.toLowerCase().split(' ')[0]) ||
-             (profile.centreName && c.name.includes(profile.centreName))
+        c => (profile?.name && c.name.toLowerCase().includes(profile.name.toLowerCase().split(' ')[0])) ||
+             (profile?.centreName && c.name.toLowerCase().includes(profile.centreName.toLowerCase()))
       )
       if (matched) setSelectedCentreId(matched.id)
       else if (activeCentres.length > 0) setSelectedCentreId(activeCentres[0].id)

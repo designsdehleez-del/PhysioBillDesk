@@ -67,8 +67,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(dashboardUrl)
   }
 
-  // Doctor-restricted routes — block access to financial admin areas
-  const DOCTOR_BLOCKED_PREFIXES = ['/staff', '/centres', '/services', '/discounts', '/billing', '/settings/data']
+  // Doctor-restricted routes — block access to administrative management areas
+  const DOCTOR_BLOCKED_PREFIXES = ['/staff', '/centres', '/services', '/discounts', '/settings/data']
   if (userRole === 'doctor') {
     const isBlocked = DOCTOR_BLOCKED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
     if (isBlocked) {

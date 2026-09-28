@@ -185,8 +185,9 @@ export default function DashboardPage() {
   // Feedback Metrics (Filtered specifically by clinic if filter or staff active)
   const relevantFeedbacks = useMemo(() => {
     if (!isAdmin && profile?.centreName) {
+      const cName = profile.centreName.toLowerCase()
       return feedbacks.filter(f => 
-        f.centre_name && f.centre_name.toLowerCase().includes(profile.centreName!.toLowerCase())
+        f.centre_name && f.centre_name.toLowerCase().includes(cName)
       )
     }
     if (isAdmin && selectedFilterCentre !== 'all') {
@@ -777,7 +778,7 @@ export default function DashboardPage() {
               <span className="text-xs text-teal-200/80">{profile.centreName || 'Physionautics Multispecialty'}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1.5">
-              Welcome, Dr. {profile.name.replace(/^dr\.\s*/i, '')}
+              Welcome, Dr. {profile?.name ? profile.name.replace(/^dr\.\s*/i, '') : 'Doctor'}
             </h1>
             <p className="text-xs sm:text-sm text-teal-100/80">
               100% Net Tagged Revenue, Assigned Patients & Clinical Billing History
@@ -882,7 +883,7 @@ export default function DashboardPage() {
                 My Patients List ({myPatients.length})
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                Patients registered with Dr. {profile.name} as Primary Doctor
+                Patients registered with Dr. {profile?.name || 'Doctor'} as Primary Doctor
               </CardDescription>
             </div>
             <div className="relative w-full sm:w-64">
@@ -941,7 +942,7 @@ export default function DashboardPage() {
                 My Recent Clinical Invoices ({doctorVisits.length})
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                Clinical billing statements tagged to Dr. {profile.name}
+                Clinical billing statements tagged to Dr. {profile?.name || 'Doctor'}
               </CardDescription>
             </div>
             <div className="relative w-full sm:w-64">

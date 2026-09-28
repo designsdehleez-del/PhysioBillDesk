@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import type { Centre, Doctor, Patient, Service, DiscountPreset, PackagePreset, PatientPackageCredit, PatientFeedback, FeedbackFormTemplate, FormField, ClinicExpense, ExpenseCategory } from '@/lib/supabase/types'
+import type { Centre, Doctor, Patient, Physiotherapist, Service, DiscountPreset, PackagePreset, PatientPackageCredit, PatientFeedback, FeedbackFormTemplate, FormField, ClinicExpense, ExpenseCategory } from '@/lib/supabase/types'
 import * as XLSX from 'xlsx'
 
 const DEFAULT_CENTRES: Centre[] = [
@@ -127,6 +127,42 @@ const DEFAULT_DOCTORS: Doctor[] = [
     bio: 'Pediatric physical medicine lead specializing in developmental delay, cerebral palsy, and juvenile posture correction.',
     phone: '+91 98111 00006',
     email: 'david@physionautics.com',
+    centre_id: 'c3333333-3333-3333-3333-333333333333',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+]
+
+export const DEFAULT_PHYSIOTHERAPISTS: Physiotherapist[] = [
+  {
+    id: 'pt-101',
+    name: 'PT Ananya Sen',
+    phone: '+91 98765 43210',
+    email: 'ananya.sen@physionautics.com',
+    qualification: 'BPT, MPT (Musculoskeletal)',
+    centre_id: 'c1111111-1111-1111-1111-111111111111',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'pt-102',
+    name: 'PT Vikram Verma',
+    phone: '+91 98765 43211',
+    email: 'vikram.verma@physionautics.com',
+    qualification: 'BPT, Cert. Sports Rehab',
+    centre_id: 'c2222222-2222-2222-2222-222222222222',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'pt-103',
+    name: 'PT Ritu Sharma',
+    phone: '+91 98765 43212',
+    email: 'ritu.sharma@physionautics.com',
+    qualification: 'BPT, Neuro Rehab Specialist',
     centre_id: 'c3333333-3333-3333-3333-333333333333',
     is_active: true,
     created_at: new Date().toISOString(),
@@ -470,6 +506,72 @@ export async function toggleDoctorActive(id: string): Promise<void> {
   } catch (_) {}
 }
 
+// ================= PHYSIOTHERAPISTS =================
+export async function getPhysiotherapists(centreId?: string): Promise<Physiotherapist[]> {
+  const CACHE_KEY = 'physio_physiotherapists_cache_v1'
+  let list: Physiotherapist[] = DEFAULT_PHYSIOTHERAPISTS
+  try {
+    const supabase = createClient()
+    let q = supabase.from('physiotherapists').select('*').order('name')
+    if (centreId && centreId !== 'all') q = q.eq('centre_id', centreId)
+    const { data } = await q
+    if (data && data.length > 0) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data))
+      return data as unknown as Physiotherapist[]
+    }
+  } catch (_) {}
+
+  const cached = localStorage.getItem(CACHE_KEY)
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length > 0) list = parsed
+    } catch (_) {}
+  } else {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(DEFAULT_PHYSIOTHERAPISTS))
+  }
+
+  if (centreId && centreId !== 'all') {
+    return list.filter(pt => pt.centre_id === centreId)
+  }
+  return list
+}
+
+export async function addPhysiotherapist(
+  physio: Omit<Physiotherapist, 'id' | 'created_at' | 'updated_at'>
+): Promise<Physiotherapist> {
+  const current = await getPhysiotherapists()
+  const now = new Date().toISOString()
+  const newPt: Physiotherapist = {
+    id: `pt-${Date.now()}`,
+    name: physio.name.trim(),
+    phone: physio.phone || null,
+    email: physio.email || null,
+    qualification: physio.qualification || null,
+    centre_id: physio.centre_id || null,
+    is_active: physio.is_active ?? true,
+    created_at: now,
+    updated_at: now,
+  }
+
+  const updated = [...current, newPt]
+  localStorage.setItem('physio_physiotherapists_cache_v1', JSON.stringify(updated))
+
+  try {
+    const supabase = createClient()
+    await supabase.from('physiotherapists').insert({
+      name: newPt.name,
+      phone: newPt.phone,
+      email: newPt.email,
+      qualification: newPt.qualification,
+      centre_id: newPt.centre_id,
+      is_active: newPt.is_active,
+    })
+  } catch (_) {}
+
+  return newPt
+}
+
 // ================= PATIENTS =================
 export async function getPatients(query?: string): Promise<Patient[]> {
   const CACHE_KEY = 'physio_patients_cache_v5'
@@ -681,6 +783,8 @@ export async function registerPatient(input: {
   address?: string | null
   blood_group?: 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-' | null
   medical_notes?: string | null
+  primary_doctor_id?: string | null
+  physiotherapist_id?: string | null
   primary_complaint?: string | null
   pain_vas?: number | null
   mobility_score?: number | null
@@ -700,6 +804,9 @@ export async function registerPatient(input: {
     const { data: generatedUid, error: uidErr } = await supabase.rpc('generate_patient_uid')
     const uidToUse = (!uidErr && generatedUid) ? generatedUid : fallbackUid
 
+    const isDocUuid = input.primary_doctor_id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.primary_doctor_id) : false
+    const isPhysioUuid = input.physiotherapist_id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.physiotherapist_id) : false
+
     const { data, error } = await supabase.from('patients').insert({
       uid: uidToUse,
       full_name: input.full_name.trim(),
@@ -710,6 +817,8 @@ export async function registerPatient(input: {
       address: input.address || null,
       blood_group: input.blood_group || null,
       medical_notes: input.medical_notes || null,
+      primary_doctor_id: isDocUuid ? input.primary_doctor_id : null,
+      physiotherapist_id: isPhysioUuid ? input.physiotherapist_id : null,
     }).select('id, uid').single()
 
     if (!error && data) {
@@ -731,6 +840,8 @@ export async function registerPatient(input: {
     address: input.address || null,
     blood_group: input.blood_group || null,
     medical_notes: input.medical_notes || null,
+    primary_doctor_id: input.primary_doctor_id || null,
+    physiotherapist_id: input.physiotherapist_id || null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }
@@ -756,6 +867,93 @@ export async function registerPatient(input: {
   return { id: finalId, uid: finalUid }
 }
 
+export async function addPatient(input: {
+  full_name: string
+  age: number
+  gender: 'Male' | 'Female' | 'Other'
+  phone: string
+  email?: string | null
+  address?: string | null
+  blood_group?: 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-' | null
+  medical_notes?: string | null
+  primary_doctor_id?: string | null
+  physiotherapist_id?: string | null
+  primary_complaint?: string | null
+  pain_vas?: number | null
+  mobility_score?: number | null
+  functional_score?: number | null
+}): Promise<Patient> {
+  const regResult = await registerPatient(input)
+  const current = await getPatients()
+  const created = current.find(p => p.id === regResult.id || p.uid === regResult.uid)
+  if (created) return created
+
+  return {
+    id: regResult.id,
+    uid: regResult.uid,
+    full_name: input.full_name.trim(),
+    age: Number(input.age),
+    gender: input.gender,
+    phone: input.phone.trim(),
+    email: input.email || null,
+    address: input.address || null,
+    blood_group: input.blood_group || null,
+    medical_notes: input.medical_notes || null,
+    primary_doctor_id: input.primary_doctor_id || null,
+    physiotherapist_id: input.physiotherapist_id || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+}
+
+export async function updatePatient(
+  id: string,
+  data: Partial<Patient>
+): Promise<Patient> {
+  const current = await getPatients()
+  const existing = current.find(p => p.id === id || p.uid === id)
+  if (!existing) {
+    throw new Error(`Patient with ID ${id} not found`)
+  }
+
+  const updatedPatient: Patient = {
+    ...existing,
+    ...data,
+    updated_at: new Date().toISOString(),
+  }
+
+  const updatedList = current.map(p => (p.id === id || p.uid === id) ? updatedPatient : p)
+  try {
+    localStorage.setItem('physio_patients_cache_v5', JSON.stringify(updatedList))
+    localStorage.setItem('physio_patients_cache', JSON.stringify(updatedList))
+  } catch (_) {}
+
+  try {
+    const supabase = createClient()
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    if (isUuid) {
+      const isDocUuid = updatedPatient.primary_doctor_id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(updatedPatient.primary_doctor_id) : false
+      const isPhysioUuid = updatedPatient.physiotherapist_id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(updatedPatient.physiotherapist_id) : false
+
+      await supabase.from('patients').update({
+        full_name: updatedPatient.full_name,
+        age: updatedPatient.age,
+        gender: updatedPatient.gender,
+        phone: updatedPatient.phone,
+        email: updatedPatient.email,
+        address: updatedPatient.address,
+        blood_group: updatedPatient.blood_group,
+        medical_notes: updatedPatient.medical_notes,
+        primary_doctor_id: isDocUuid ? updatedPatient.primary_doctor_id : null,
+        physiotherapist_id: isPhysioUuid ? updatedPatient.physiotherapist_id : null,
+        updated_at: updatedPatient.updated_at,
+      }).eq('id', id)
+    }
+  } catch (_) {}
+
+  return updatedPatient
+}
+
 // ================= VISITS & BILLING DATA =================
 export interface BillLineItem {
   id?: string
@@ -779,6 +977,10 @@ export interface StoredVisit {
   doctor_id?: string | null
   doctor_name?: string | null
   doctor_specialization?: string | null
+  primary_doctor_id?: string | null
+  primary_doctor_name?: string | null
+  physiotherapist_id?: string | null
+  physiotherapist_name?: string | null
   centre_id?: string | null
   centre_name?: string | null
   centre_address?: string | null
@@ -1490,6 +1692,10 @@ export async function getVisits(centreId?: string, query?: string): Promise<Stor
         doctor_id: v.doctor_id,
         doctor_name: v.doctor_name,
         doctor_specialization: '',
+        primary_doctor_id: v.primary_doctor_id || null,
+        primary_doctor_name: v.primary_doctor_name || null,
+        physiotherapist_id: v.physiotherapist_id || null,
+        physiotherapist_name: v.physiotherapist_name || null,
         centre_id: v.centre_id,
         centre_name: v.centre_name,
         centre_address: '',
@@ -1555,6 +1761,8 @@ function filterVisits(list: StoredVisit[], centreId?: string, query?: string): S
       v.patient_uid.toLowerCase().includes(q) ||
       v.patient_phone.includes(q) ||
       (v.doctor_name && v.doctor_name.toLowerCase().includes(q)) ||
+      (v.primary_doctor_name && v.primary_doctor_name.toLowerCase().includes(q)) ||
+      (v.physiotherapist_name && v.physiotherapist_name.toLowerCase().includes(q)) ||
       (v.centre_name && v.centre_name.toLowerCase().includes(q))
     )
   }
@@ -1565,6 +1773,12 @@ export async function saveVisit(
   visitData: {
     patient: Patient
     doctor?: Doctor | null
+    primaryDoctor?: Doctor | null
+    physiotherapist?: Physiotherapist | null
+    primary_doctor_id?: string | null
+    primary_doctor_name?: string | null
+    physiotherapist_id?: string | null
+    physiotherapist_name?: string | null
     centre?: Centre | null
     items: BillLineItem[]
     subtotal: number
@@ -1580,6 +1794,11 @@ export async function saveVisit(
   const yyyymm = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
   const billNumber = `INV-${yyyymm}-${String(current.length + 1).padStart(4, '0')}`
 
+  const primaryDocId = visitData.primary_doctor_id || visitData.primaryDoctor?.id || visitData.patient?.primary_doctor_id || null
+  const primaryDocName = visitData.primary_doctor_name || visitData.primaryDoctor?.name || null
+  const physioId = visitData.physiotherapist_id || visitData.physiotherapist?.id || visitData.patient?.physiotherapist_id || null
+  const physioName = visitData.physiotherapist_name || visitData.physiotherapist?.name || null
+
   const newVisit: StoredVisit = {
     id: `vis-${Date.now()}`,
     bill_number: billNumber,
@@ -1593,6 +1812,10 @@ export async function saveVisit(
     doctor_id: visitData.doctor?.id || null,
     doctor_name: visitData.doctor?.name || null,
     doctor_specialization: visitData.doctor?.specialization || null,
+    primary_doctor_id: primaryDocId,
+    primary_doctor_name: primaryDocName,
+    physiotherapist_id: physioId,
+    physiotherapist_name: physioName,
     centre_id: visitData.centre?.id || null,
     centre_name: visitData.centre?.name || null,
     centre_address: visitData.centre?.address || null,
@@ -1631,6 +1854,11 @@ export async function saveVisit(
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(realPatientId)
     
     if (isUuid) {
+      const isDocUuid = newVisit.doctor_id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(newVisit.doctor_id) : false
+      const isPrimaryDocUuid = newVisit.primary_doctor_id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(newVisit.primary_doctor_id) : false
+      const isPhysioUuid = newVisit.physiotherapist_id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(newVisit.physiotherapist_id) : false
+      const isCentreUuid = newVisit.centre_id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(newVisit.centre_id) : false
+
       const { data: vRecord, error } = await supabase.from('visits').insert({
         bill_number: newVisit.bill_number,
         patient_id: realPatientId,
@@ -1639,9 +1867,13 @@ export async function saveVisit(
         total: newVisit.total,
         payment_mode: newVisit.payment_mode === 'Bank Transfer' ? 'UPI' : newVisit.payment_mode,
         visit_date: newVisit.visit_date,
-        centre_id: (newVisit.centre_id && isUuid) ? newVisit.centre_id : null,
-        doctor_id: (newVisit.doctor_id && isUuid) ? newVisit.doctor_id : null,
+        centre_id: isCentreUuid ? newVisit.centre_id : null,
+        doctor_id: isDocUuid ? newVisit.doctor_id : null,
         doctor_name: newVisit.doctor_name,
+        primary_doctor_id: isPrimaryDocUuid ? newVisit.primary_doctor_id : null,
+        primary_doctor_name: newVisit.primary_doctor_name,
+        physiotherapist_id: isPhysioUuid ? newVisit.physiotherapist_id : null,
+        physiotherapist_name: newVisit.physiotherapist_name,
         centre_name: newVisit.centre_name,
       }).select('id').single()
 
@@ -1663,6 +1895,8 @@ export async function saveVisit(
 
   return newVisit
 }
+
+export const addVisit = saveVisit
 
 export function exportBillsToExcel(visits: StoredVisit[]) {
   const exportData = visits.map((v, idx) => ({

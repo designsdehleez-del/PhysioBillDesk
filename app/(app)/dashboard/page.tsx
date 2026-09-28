@@ -487,6 +487,278 @@ export default function DashboardPage() {
     )
   }, [doctorVisits, doctorInvoiceQuery])
 
+  // Reception Dashboard Operational Calculations (Financial metrics & growth charts masked)
+  const patientsRegisteredToday = useMemo(() => {
+    return patients.filter(p => {
+      if (!p.created_at) return false
+      return p.created_at.split('T')[0] === todayStr
+    })
+  }, [patients, todayStr])
+
+  const todayExpensesList = useMemo(() => {
+    return filteredExpenses.filter(e => e.expense_date === todayStr)
+  }, [filteredExpenses, todayStr])
+
+  const todayExpensesAmount = useMemo(() => {
+    return todayExpensesList.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+  }, [todayExpensesList])
+
+  const recentClinicBills = useMemo(() => {
+    return [...filteredVisits]
+      .sort((a, b) => new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime())
+      .slice(0, 10)
+  }, [filteredVisits])
+
+  const recentClinicExpenses = useMemo(() => {
+    return [...filteredExpenses]
+      .sort((a, b) => new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime())
+      .slice(0, 10)
+  }, [filteredExpenses])
+
+  // Dedicated Clinic Reception Dashboard View (Role: clinic_reception)
+  if (profile?.role === 'clinic_reception') {
+    return (
+      <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+        {/* Reception Header Banner */}
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-900 border border-blue-800/80 text-white p-6 rounded-3xl shadow-xl backdrop-blur-md"
+        >
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="bg-blue-500/20 text-blue-200 border border-blue-400/30 text-xs font-bold px-2.5 py-0.5">
+                🏥 Clinic Reception Desk
+              </Badge>
+              <span className="text-xs text-blue-200/80">{profile.centreName || 'Physionautics Clinic'}</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1.5">
+              Welcome, {profile.name}
+            </h1>
+            <p className="text-xs sm:text-sm text-blue-100/80">
+              Daily operational overview: patient registrations, clinical billing & branch expense logging
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <ExpenseLoggingModal
+              centres={centres}
+              userCentreId={profile?.centreId}
+              userCentreName={profile?.centreName}
+              userName={profile?.name}
+              onExpenseAdded={() => getExpenses().then(setExpenses)}
+              trigger={
+                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 h-9 rounded-xl shadow-xs">
+                  <Plus className="h-4 w-4" /> Log Expense
+                </Button>
+              }
+            />
+          </div>
+        </motion.div>
+
+        {/* Operational Reception Cards (Financial Growth & Network Revenue Masked) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Card 1: Patients Registered Today */}
+          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
+            <Card className="border border-blue-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-blue-50/30 rounded-2xl h-full">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Patients Registered Today</p>
+                  <p className="text-3xl font-black text-blue-950">{patientsRegisteredToday.length}</p>
+                  <p className="text-[11px] text-blue-700 font-bold flex items-center gap-1">
+                    <UserPlus className="h-3 w-3 text-blue-600" /> New Patient Profiles
+                  </p>
+                </div>
+                <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-sm">
+                  <UserPlus className="h-6 w-6" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Card 2: Invoices Generated Today */}
+          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
+            <Card className="border border-emerald-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-emerald-50/30 rounded-2xl h-full">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Invoices Generated Today</p>
+                  <p className="text-3xl font-black text-emerald-950">{todayVisitsList.length}</p>
+                  <p className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                    <Receipt className="h-3 w-3 text-emerald-600" /> Clinical Bills Created
+                  </p>
+                </div>
+                <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-sm">
+                  <Receipt className="h-6 w-6" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Card 3: Expenses Logged Today */}
+          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
+            <Card className="border border-rose-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-rose-50/30 rounded-2xl h-full">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Expenses Logged Today</p>
+                  <p className="text-3xl font-black text-rose-950">{formatCurrency(todayExpensesAmount)}</p>
+                  <p className="text-[11px] text-rose-700 font-bold flex items-center gap-1">
+                    <Wallet className="h-3 w-3 text-rose-600" /> {todayExpensesList.length} Entries Logged
+                  </p>
+                </div>
+                <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-sm">
+                  <Wallet className="h-6 w-6" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Quick Action Buttons */}
+        <Card className="shadow-xs border border-slate-200 bg-white rounded-2xl p-4">
+          <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3">Quick Actions</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Link href="/patients/register" className="w-full">
+              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-11 rounded-xl shadow-xs gap-2">
+                <UserPlus className="h-4 w-4" /> New Patient Registration
+              </Button>
+            </Link>
+            <Link href="/billing" className="w-full">
+              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-11 rounded-xl shadow-xs gap-2">
+                <Receipt className="h-4 w-4" /> New Invoice / Bill
+              </Button>
+            </Link>
+            <ExpenseLoggingModal
+              centres={centres}
+              userCentreId={profile?.centreId}
+              userCentreName={profile?.centreName}
+              userName={profile?.name}
+              onExpenseAdded={() => getExpenses().then(setExpenses)}
+              trigger={
+                <Button className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs h-11 rounded-xl shadow-xs gap-2">
+                  <Wallet className="h-4 w-4" /> Log Clinic Expense
+                </Button>
+              }
+            />
+            <Link href="/settings/whatsapp" className="w-full">
+              <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs h-11 rounded-xl shadow-xs gap-2">
+                <MessageCircle className="h-4 w-4" /> WhatsApp Receipt
+              </Button>
+            </Link>
+          </div>
+        </Card>
+
+        {/* Recent Clinic Invoices & Expenses */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Recent Bills (7 cols) */}
+          <Card className="lg:col-span-7 shadow-sm border bg-white rounded-2xl overflow-hidden">
+            <CardHeader className="pb-3 border-b bg-blue-50/40 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-extrabold text-blue-950 flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-blue-600" />
+                  Recent Clinic Invoices & Bills
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Invoices generated at {profile?.centreName || 'this branch'}
+                </CardDescription>
+              </div>
+              <Link href="/billing">
+                <Button size="sm" variant="ghost" className="text-xs text-blue-700 hover:bg-blue-100 font-bold gap-1">
+                  View All Bills <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent className="p-0">
+              {recentClinicBills.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500">
+                  No invoices recorded at this clinic yet.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  <div className="px-5 py-2.5 bg-slate-50 text-[11px] font-semibold text-slate-500 grid grid-cols-12">
+                    <span className="col-span-4">Invoice #</span>
+                    <span className="col-span-4">Patient Name</span>
+                    <span className="col-span-2">Date</span>
+                    <span className="col-span-2 text-right">Amount</span>
+                  </div>
+                  {recentClinicBills.map(inv => (
+                    <div key={inv.id} className="px-5 py-3 grid grid-cols-12 items-center hover:bg-slate-50/60 transition-colors text-xs">
+                      <div className="col-span-4">
+                        <span className="font-mono font-bold text-slate-900 block">{inv.bill_number}</span>
+                        <span className="text-[10px] text-slate-500">{inv.payment_mode} • {inv.payment_status}</span>
+                      </div>
+                      <div className="col-span-4">
+                        <p className="font-bold text-slate-800">{inv.patient_name}</p>
+                        <p className="text-[10px] text-slate-500 font-mono">{inv.patient_uid}</p>
+                      </div>
+                      <div className="col-span-2 text-slate-600 text-[11px]">
+                        {formatDate(inv.visit_date)}
+                      </div>
+                      <div className="col-span-2 text-right font-extrabold text-emerald-700">
+                        {formatCurrency(inv.total)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Clinic Expenses (5 cols) */}
+          <Card className="lg:col-span-5 shadow-sm border bg-white rounded-2xl overflow-hidden">
+            <CardHeader className="pb-3 border-b bg-rose-50/40 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-extrabold text-rose-950 flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-rose-600" />
+                  Recent Clinic Expenses
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Operational expenditure logged for {profile?.centreName || 'this branch'}
+                </CardDescription>
+              </div>
+              <ExpenseLoggingModal
+                centres={centres}
+                userCentreId={profile?.centreId}
+                userCentreName={profile?.centreName}
+                userName={profile?.name}
+                onExpenseAdded={() => getExpenses().then(setExpenses)}
+                trigger={
+                  <Button size="sm" variant="outline" className="text-xs border-rose-200 text-rose-700 hover:bg-rose-100 font-bold gap-1">
+                    <Plus className="h-3.5 w-3.5" /> Log
+                  </Button>
+                }
+              />
+            </CardHeader>
+            <CardContent className="p-4 space-y-2">
+              {recentClinicExpenses.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500">
+                  No clinic expenses logged yet.
+                </div>
+              ) : (
+                recentClinicExpenses.map(e => (
+                  <div key={e.id} className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between text-xs">
+                    <div>
+                      <div className="font-bold text-slate-900">{e.description}</div>
+                      <div className="text-[10px] text-slate-500 flex items-center gap-2">
+                        <span>{e.category}</span> • <span>{formatDate(e.expense_date)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-rose-700">{formatCurrency(e.amount)}</span>
+                      <button onClick={() => handleDeleteExp(e.id)} className="text-slate-400 hover:text-red-600 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
   if (profile?.role === 'doctor') {
     return (
       <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">

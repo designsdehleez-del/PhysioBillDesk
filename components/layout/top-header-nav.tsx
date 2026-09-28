@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { 
   Stethoscope, LayoutDashboard, Receipt, Users, Sparkles, UserCog, 
   Building2, Settings, MessageCircle, Database, ChevronDown, Lock, 
-  LogOut, HelpCircle, Plus, Sliders, Tag, UserPlus, Menu, X, ShieldCheck, FileText, UserCheck
+  LogOut, HelpCircle, Plus, Sliders, Tag, UserPlus, Menu, X, ShieldCheck, FileText, UserCheck, Wallet
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding } from '@/lib/settings-store'
@@ -28,6 +28,7 @@ export function TopHeaderNav() {
 
   const isAdmin = profile?.role === 'admin'
   const isDoctor = profile?.role === 'doctor'
+  const isReception = profile?.role === 'clinic_reception'
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -52,17 +53,16 @@ export function TopHeaderNav() {
     router.push('/')
   }
 
-  // Navigation Groups
-  const navGroups = [
+  // Navigation Groups based on Role
+  const adminGroups = [
     {
       label: 'Operations & Billing',
       icon: LayoutDashboard,
       items: [
         { label: 'Financials & KPIs', href: '/dashboard', icon: LayoutDashboard, desc: 'Real-time revenue & CSAT' },
-        ...(!isDoctor ? [
-          { label: 'Register Patient', href: '/patients/register', icon: UserPlus, desc: 'Add new patient record' },
-          { label: 'Billing & Invoices', href: '/billing', icon: Receipt, desc: 'Create bills & ledger' },
-        ] : []),
+        { label: 'Register Patient', href: '/patients/register', icon: UserPlus, desc: 'Add new patient record' },
+        { label: 'Billing & Invoices', href: '/billing', icon: Receipt, desc: 'Create bills & ledger' },
+        { label: 'Expenses Logging', href: '/dashboard', icon: Wallet, desc: 'Log & manage expenses' },
         { label: 'Feedback Studio', href: '/feedback-builder', icon: FileText, desc: 'Patient feedback forms' },
       ],
     },
@@ -73,35 +73,57 @@ export function TopHeaderNav() {
         { label: 'Patient Directory', href: '/patients', icon: Users, desc: 'All registered patients' },
         { label: 'Staff Attendance', href: '/attendance', icon: UserCheck, desc: 'Clinic-wise roster & shift logs' },
         { label: 'Doctors & Tagging', href: '/doctors', icon: Stethoscope, desc: 'Doctor directory & tags' },
-        ...(isAdmin ? [
-          { label: 'Clinic Centres', href: '/centres', icon: Building2, desc: 'Multi-branch locations' },
-          { label: 'Staff & Logins', href: '/staff', icon: UserCog, desc: 'Manage access & passwords' },
-        ] : []),
+        { label: 'Clinic Centres', href: '/centres', icon: Building2, desc: 'Multi-branch locations' },
+        { label: 'Staff & Logins', href: '/staff', icon: UserCog, desc: 'Manage access & passwords' },
       ],
     },
-    ...(!isDoctor ? [
-      {
-        label: 'Services & Pricing',
-        icon: Sliders,
-        items: [
-          { label: 'Services & Rates', href: '/services', icon: Sliders, desc: 'Procedures & price list' },
-          { label: 'Discount Rules', href: '/discounts', icon: Tag, desc: 'Discount presets & rules' },
-        ],
-      },
-      {
-        label: 'Settings & Tools',
-        icon: Settings,
-        items: [
-          { label: 'Brand & Clinic Settings', href: '/settings', icon: Settings, desc: 'Branding & contacts' },
-          { label: 'Landing Page CMS', href: '/settings/landing', icon: Sparkles, desc: 'Edit text & images' },
-          { label: 'WhatsApp Settings', href: '/settings/whatsapp', icon: MessageCircle, desc: 'Message templates' },
-          ...(isAdmin ? [
-            { label: 'Data & Demo Tools', href: '/settings/data', icon: Database, desc: 'Seed & reset tools' },
-          ] : []),
-        ],
-      },
-    ] : []),
+    {
+      label: 'Services & Pricing',
+      icon: Sliders,
+      items: [
+        { label: 'Services & Rates', href: '/services', icon: Sliders, desc: 'Procedures & price list' },
+        { label: 'Discount Rules', href: '/discounts', icon: Tag, desc: 'Discount presets & rules' },
+      ],
+    },
+    {
+      label: 'Settings & Tools',
+      icon: Settings,
+      items: [
+        { label: 'Brand & Clinic Settings', href: '/settings', icon: Settings, desc: 'Branding & contacts' },
+        { label: 'Landing Page CMS', href: '/settings/landing', icon: Sparkles, desc: 'Edit text & images' },
+        { label: 'WhatsApp Settings', href: '/settings/whatsapp', icon: MessageCircle, desc: 'Message templates' },
+        { label: 'Data & Demo Tools', href: '/settings/data', icon: Database, desc: 'Seed & reset tools' },
+      ],
+    },
   ]
+
+  const receptionGroups = [
+    {
+      label: 'Reception Desk',
+      icon: LayoutDashboard,
+      items: [
+        { label: 'Reception Dashboard', href: '/dashboard', icon: LayoutDashboard, desc: 'Daily reception overview' },
+        { label: 'Patients', href: '/patients', icon: Users, desc: 'Patient directory & registration' },
+        { label: 'Billing', href: '/billing', icon: Receipt, desc: 'Generate bills & receipts' },
+        { label: 'Expenses', href: '/dashboard', icon: Wallet, desc: 'Log clinic branch expenses' },
+        { label: 'WhatsApp', href: '/settings/whatsapp', icon: MessageCircle, desc: 'WhatsApp receipt messaging' },
+      ],
+    },
+  ]
+
+  const doctorGroups = [
+    {
+      label: 'Doctor Portal',
+      icon: LayoutDashboard,
+      items: [
+        { label: 'Doctor Portal (My Revenue & Patients)', href: '/dashboard', icon: LayoutDashboard, desc: 'My revenue & patient statistics' },
+        { label: 'My Patients', href: '/patients', icon: Users, desc: 'Attended patient records' },
+        { label: 'Billing / Invoices', href: '/billing', icon: Receipt, desc: 'Clinical billing & invoices' },
+      ],
+    },
+  ]
+
+  const navGroups = isAdmin ? adminGroups : isDoctor ? doctorGroups : receptionGroups
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
 

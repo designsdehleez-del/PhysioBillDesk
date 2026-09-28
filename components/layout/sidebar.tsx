@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert, MessageCircle, Database, Settings, Sparkles, Lock, FileText } from 'lucide-react'
+import { LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert, MessageCircle, Database, Settings, Sparkles, Lock, FileText, Wallet, TrendingUp } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding } from '@/lib/settings-store'
 import { Button } from '@/components/ui/button'
@@ -16,46 +16,52 @@ export function Sidebar() {
   const pathname = usePathname()
 
   const isAdmin = profile?.role === 'admin'
+  const isDoctor = profile?.role === 'doctor'
+  const isReception = profile?.role === 'clinic_reception'
+
   const activeAvatar = isAdmin ? (adminProfile.avatarUrl || profile?.avatarUrl) : profile?.avatarUrl
-  const displayName = isAdmin ? (adminProfile.name || profile?.name || 'Administrator') : (profile?.name || 'Clinic Staff')
-  const displayRole = isAdmin ? (adminProfile.roleTitle || profile?.roleTitle || '👑 Master Admin (Financials)') : (profile?.centreName || 'Active Centre')
+  const displayName = isAdmin 
+    ? (adminProfile.name || profile?.name || 'Administrator') 
+    : isDoctor
+    ? (profile?.name || 'Doctor')
+    : (profile?.name || 'Clinic Reception Staff')
+  const displayRole = isAdmin 
+    ? (adminProfile.roleTitle || profile?.roleTitle || '👑 Master Admin (Financials)') 
+    : isDoctor
+    ? '🩺 Doctor / Physio'
+    : (profile?.centreName || 'Clinic Reception Desk')
 
   const adminNav = [
-    { label: 'Financials & KPIs', href: '/dashboard', icon: DollarSign },
-    { label: 'Billing & Invoices', href: '/billing', icon: Receipt },
-    { label: 'Feedback Studio', href: '/feedback-builder', icon: FileText },
+    { label: 'Financials & Dashboard', href: '/dashboard', icon: DollarSign },
     { label: 'Patients Directory', href: '/patients', icon: Users },
-    { label: 'Doctors & Tagging', href: '/doctors', icon: UserCog },
+    { label: 'Billing & Invoices', href: '/billing', icon: Receipt },
+    { label: 'Doctors & Physios', href: '/doctors', icon: UserCog },
+    { label: 'Expenses Logging', href: '/dashboard', icon: Wallet },
+    { label: 'Analytics & CSAT', href: '/dashboard', icon: TrendingUp },
     { label: 'Centres Management', href: '/centres', icon: Building2 },
-    { label: 'Staff & Clinic Logins', href: '/staff', icon: ShieldAlert },
+    { label: 'Staff & Logins', href: '/staff', icon: ShieldAlert },
     { label: 'Services & Pricing', href: '/services', icon: Stethoscope },
     { label: 'Discount Rules', href: '/discounts', icon: Tag },
-    { label: 'Admin & Brand Settings', href: '/settings', icon: Settings },
+    { label: 'Settings', href: '/settings', icon: Settings },
     { label: 'WhatsApp Settings', href: '/settings/whatsapp', icon: MessageCircle },
     { label: 'Data & Demo Tools', href: '/settings/data', icon: Database },
   ]
 
-  const clinicNav = [
-    { label: 'Clinic Overview', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Register Patient', href: '/patients/register', icon: UserPlus },
-    { label: 'Generate Bill', href: '/billing', icon: Receipt },
-    { label: 'Patient Directory', href: '/patients', icon: Users },
-    { label: 'Patient Feedback Studio', href: '/feedback-builder', icon: FileText },
-    { label: 'Centre Doctors', href: '/doctors', icon: UserCog },
-    { label: 'Clinic & Brand Settings', href: '/settings', icon: Settings },
-    { label: 'WhatsApp Settings', href: '/settings/whatsapp', icon: MessageCircle },
+  const receptionNav = [
+    { label: 'Reception Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Patients', href: '/patients', icon: Users },
+    { label: 'Billing', href: '/billing', icon: Receipt },
+    { label: 'Expenses', href: '/dashboard', icon: Wallet },
+    { label: 'WhatsApp', href: '/settings/whatsapp', icon: MessageCircle },
   ]
 
   const doctorNav = [
-    { label: 'My Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Doctor Portal (My Revenue & Patients)', href: '/dashboard', icon: LayoutDashboard },
     { label: 'My Patients', href: '/patients', icon: Users },
-    { label: 'Patient Feedback', href: '/feedback-builder', icon: Sparkles },
-    { label: 'Doctors Directory', href: '/doctors', icon: Stethoscope },
-    { label: 'Settings', href: '/settings', icon: Settings },
+    { label: 'Billing / Invoices', href: '/billing', icon: Receipt },
   ]
 
-  const isDoctor = profile?.role === 'doctor'
-  const activeNav = isAdmin ? adminNav : isDoctor ? doctorNav : clinicNav
+  const activeNav = isAdmin ? adminNav : isDoctor ? doctorNav : receptionNav
 
   return (
     <aside className="w-64 h-screen bg-white border-r flex flex-col">
@@ -109,7 +115,7 @@ export function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
         <p className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-          {isAdmin ? 'Financial Governance' : 'Clinical Operations'}
+          {isAdmin ? 'Financial Governance' : isDoctor ? 'Doctor Portal' : 'Reception Desk Navigation'}
         </p>
         {activeNav.map(item => {
           const Icon = item.icon

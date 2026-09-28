@@ -572,6 +572,99 @@ export async function addPhysiotherapist(
   return newPt
 }
 
+export async function savePhysiotherapist(p: {
+  id?: string
+  name: string
+  phone?: string | null
+  email?: string | null
+  qualification?: string | null
+  centre_id?: string | null
+  is_active?: boolean
+}): Promise<Physiotherapist> {
+  const current = await getPhysiotherapists()
+  const now = new Date().toISOString()
+  let saved: Physiotherapist
+  let updated: Physiotherapist[]
+
+  if (p.id) {
+    saved = {
+      ...current.find(item => item.id === p.id)!,
+      name: p.name.trim(),
+      phone: p.phone || null,
+      email: p.email || null,
+      qualification: p.qualification || null,
+      centre_id: p.centre_id || null,
+      is_active: p.is_active ?? true,
+      updated_at: now,
+    } as Physiotherapist
+    updated = current.map(item => item.id === p.id ? saved : item)
+  } else {
+    saved = {
+      id: `pt-${Date.now()}`,
+      name: p.name.trim(),
+      phone: p.phone || null,
+      email: p.email || null,
+      qualification: p.qualification || null,
+      centre_id: p.centre_id || null,
+      is_active: p.is_active ?? true,
+      created_at: now,
+      updated_at: now,
+    }
+    updated = [...current, saved]
+  }
+
+  localStorage.setItem('physio_physiotherapists_cache_v1', JSON.stringify(updated))
+
+  try {
+    const supabase = createClient()
+    if (p.id) {
+      await supabase.from('physiotherapists').update({
+        name: saved.name,
+        phone: saved.phone,
+        email: saved.email,
+        qualification: saved.qualification,
+        centre_id: saved.centre_id,
+        is_active: saved.is_active,
+      }).eq('id', p.id)
+    } else {
+      await supabase.from('physiotherapists').insert({
+        name: saved.name,
+        phone: saved.phone,
+        email: saved.email,
+        qualification: saved.qualification,
+        centre_id: saved.centre_id,
+        is_active: saved.is_active,
+      })
+    }
+  } catch (_) {}
+
+  return saved
+}
+
+export async function deletePhysiotherapist(id: string): Promise<void> {
+  const current = await getPhysiotherapists()
+  const updated = current.filter(p => p.id !== id)
+  localStorage.setItem('physio_physiotherapists_cache_v1', JSON.stringify(updated))
+
+  try {
+    const supabase = createClient()
+    await supabase.from('physiotherapists').delete().eq('id', id)
+  } catch (_) {}
+}
+
+export async function togglePhysiotherapistActive(id: string): Promise<void> {
+  const current = await getPhysiotherapists()
+  const updated = current.map(p => p.id === id ? { ...p, is_active: !p.is_active } : p)
+  localStorage.setItem('physio_physiotherapists_cache_v1', JSON.stringify(updated))
+
+  try {
+    const found = updated.find(p => p.id === id)
+    if (found) {
+      await createClient().from('physiotherapists').update({ is_active: found.is_active }).eq('id', id)
+    }
+  } catch (_) {}
+}
+
 // ================= PATIENTS =================
 export async function getPatients(query?: string): Promise<Patient[]> {
   const CACHE_KEY = 'physio_patients_cache_v5'

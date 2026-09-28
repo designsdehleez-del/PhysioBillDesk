@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Pencil, Trash2, Plus, UserCog, Upload, Download, Building2, Search, Filter, User, 
-  Award, ShieldCheck, FileText, Phone, Mail, ExternalLink, Image as ImageIcon 
+  Award, ShieldCheck, FileText, Phone, Mail, ExternalLink, Image as ImageIcon, HeartHandshake, Sparkles 
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,9 +16,14 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { getDoctors, saveDoctor, deleteDoctor, toggleDoctorActive, bulkImportDoctors, getCentres, getVisits, getPatientFeedback, type StoredVisit } from '@/lib/data-store'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { 
+  getDoctors, saveDoctor, deleteDoctor, toggleDoctorActive, bulkImportDoctors, 
+  getCentres, getVisits, getPatientFeedback, getPhysiotherapists, savePhysiotherapist, 
+  deletePhysiotherapist, togglePhysiotherapistActive, type StoredVisit 
+} from '@/lib/data-store'
 import { ExcelImporter, type ColumnDefinition } from '@/components/import/excel-importer'
-import type { Doctor, Centre, PatientFeedback } from '@/lib/supabase/types'
+import type { Doctor, Centre, PatientFeedback, Physiotherapist } from '@/lib/supabase/types'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
 import { DoctorDetailModal } from '@/components/doctors/doctor-detail-modal'
@@ -46,7 +51,10 @@ export default function DoctorsPage() {
   const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
 
+  const [activeTab, setActiveTab] = useState<'doctors' | 'physiotherapists'>('doctors')
+
   const [doctors, setDoctors] = useState<DoctorRow[]>([])
+  const [physiotherapists, setPhysiotherapists] = useState<Physiotherapist[]>([])
   const [centres, setCentres] = useState<Centre[]>([])
   const [allVisits, setAllVisits] = useState<StoredVisit[]>([])
   const [allFeedbacks, setAllFeedbacks] = useState<PatientFeedback[]>([])
@@ -54,13 +62,21 @@ export default function DoctorsPage() {
   const [search, setSearch] = useState('')
   const [centreFilter, setCentreFilter] = useState('all')
 
+  // Doctor Dialog & Modals
   const [dialogOpen, setDialogOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [selectedDoctorDetail, setSelectedDoctorDetail] = useState<Doctor | null>(null)
   const [editing, setEditing] = useState<Doctor | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+
+  // Physiotherapist Dialog & Delete State
+  const [physioDialogOpen, setPhysioDialogOpen] = useState(false)
+  const [editingPhysio, setEditingPhysio] = useState<Physiotherapist | null>(null)
+  const [deletePhysioId, setDeletePhysioId] = useState<string | null>(null)
+
   const [saving, setSaving] = useState(false)
 
+  // Doctor Form State
   const [form, setForm] = useState({
     name: '',
     specialization: '',
@@ -69,6 +85,15 @@ export default function DoctorsPage() {
     experience_years: '',
     registration_number: '',
     bio: '',
+    phone: '',
+    email: '',
+    centre_id: ''
+  })
+
+  // Physiotherapist Form State
+  const [physioForm, setPhysioForm] = useState({
+    name: '',
+    qualification: '',
     phone: '',
     email: '',
     centre_id: ''
@@ -83,8 +108,9 @@ export default function DoctorsPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [dData, cData, vData, fbData] = await Promise.all([
+      const [dData, pData, cData, vData, fbData] = await Promise.all([
         getDoctors(),
+        getPhysiotherapists(),
         getCentres(),
         getVisits(),
         getPatientFeedback(),
@@ -92,6 +118,7 @@ export default function DoctorsPage() {
 
       setAllVisits(vData)
       setAllFeedbacks(fbData)
+      setPhysiotherapists(pData)
 
       const docRows: DoctorRow[] = dData.map(d => {
         const c = cData.find(centre => centre.id === d.centre_id)
@@ -113,7 +140,7 @@ export default function DoctorsPage() {
       setDoctors(docRows)
       setCentres(cData)
     } catch (err) {
-      console.error('Failed to load doctors:', err)
+      console.error('Failed to load doctors & physiotherapists:', err)
     }
     setLoading(false)
   }, [])
@@ -135,9 +162,23 @@ export default function DoctorsPage() {
            (d.qualification?.toLowerCase().includes(q))
   })
 
+  const visiblePhysios = !isAdmin && staffCentreId
+    ? physiotherapists.filter(p => p.centre_id === staffCentreId)
+    : physiotherapists
+
+  const filteredPhysios = visiblePhysios.filter(p => {
+    const matchesCentre = centreFilter === 'all' || p.centre_id === centreFilter
+    if (!matchesCentre) return false
+
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    return p.name.toLowerCase().includes(q) || (p.qualification?.toLowerCase().includes(q))
+  })
+
   const totalDoctorRevenue = doctors.reduce((sum, d) => sum + (d.revenue || 0), 0)
   const totalDoctorVisits = doctors.reduce((sum, d) => sum + (d.visitCount || 0), 0)
 
+  // Doctor Form Handlers
   const openAdd = () => {
     setEditing(null)
     setForm({ 
@@ -150,50 +191,31 @@ export default function DoctorsPage() {
       bio: '', 
       phone: '', 
       email: '', 
-      centre_id: centres[0]?.id ?? '' 
+      centre_id: staffCentreId || centres[0]?.id || '' 
     })
     setDialogOpen(true)
   }
 
   const openEdit = (d: Doctor) => {
     setEditing(d)
-    setForm({ 
-      name: d.name, 
-      specialization: d.specialization ?? '', 
-      qualification: d.qualification ?? '', 
-      photo_url: d.photo_url ?? '', 
-      experience_years: d.experience_years ?? '', 
-      registration_number: d.registration_number ?? '', 
-      bio: d.bio ?? '', 
-      phone: d.phone ?? '', 
-      email: d.email ?? '', 
-      centre_id: d.centre_id ?? '' 
+    setForm({
+      name: d.name,
+      specialization: d.specialization || '',
+      qualification: d.qualification || '',
+      photo_url: d.photo_url || '',
+      experience_years: d.experience_years || '',
+      registration_number: d.registration_number || '',
+      bio: d.bio || '',
+      phone: d.phone || '',
+      email: d.email || '',
+      centre_id: d.centre_id || '',
     })
     setDialogOpen(true)
   }
 
-  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (file.size > 3 * 1024 * 1024) {
-      toast({ title: 'Image file too large', description: 'Please choose an image under 3MB.', variant: 'destructive' })
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string
-      setForm(f => ({ ...f, photo_url: base64 }))
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const save = async () => {
-    if (!form.name.trim() || !form.specialization.trim()) {
-      toast({ title: 'Name and Specialization are required', variant: 'destructive' })
-      return
-    }
+  const handleSaveDoctor = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form.name.trim()) return
     setSaving(true)
     try {
       await saveDoctor({
@@ -229,7 +251,7 @@ export default function DoctorsPage() {
     }
   }
 
-  const handleDelete = async () => {
+  const handleDeleteDoctor = async () => {
     if (!deleteId) return
     try {
       await deleteDoctor(deleteId)
@@ -238,6 +260,76 @@ export default function DoctorsPage() {
       load()
     } catch (err: any) {
       toast({ title: 'Failed to delete doctor', description: err?.message, variant: 'destructive' })
+    }
+  }
+
+  // Physiotherapist Form Handlers
+  const openAddPhysio = () => {
+    setEditingPhysio(null)
+    setPhysioForm({
+      name: '',
+      qualification: 'BPT, MPT',
+      phone: '',
+      email: '',
+      centre_id: staffCentreId || centres[0]?.id || ''
+    })
+    setPhysioDialogOpen(true)
+  }
+
+  const openEditPhysio = (pt: Physiotherapist) => {
+    setEditingPhysio(pt)
+    setPhysioForm({
+      name: pt.name,
+      qualification: pt.qualification || '',
+      phone: pt.phone || '',
+      email: pt.email || '',
+      centre_id: pt.centre_id || '',
+    })
+    setPhysioDialogOpen(true)
+  }
+
+  const handleSavePhysio = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!physioForm.name.trim()) return
+    setSaving(true)
+    try {
+      await savePhysiotherapist({
+        ...(editingPhysio ? { id: editingPhysio.id } : {}),
+        name: physioForm.name.trim(),
+        qualification: physioForm.qualification.trim() || null,
+        phone: physioForm.phone.trim() || null,
+        email: physioForm.email.trim() || null,
+        centre_id: physioForm.centre_id || null,
+        is_active: editingPhysio ? editingPhysio.is_active : true,
+      })
+      toast({ title: editingPhysio ? 'Physiotherapist profile updated' : 'New Physiotherapist added & tagged to clinic' })
+      setPhysioDialogOpen(false)
+      load()
+    } catch (err: any) {
+      toast({ title: 'Failed to save physiotherapist', description: err?.message, variant: 'destructive' })
+    }
+    setSaving(false)
+  }
+
+  const togglePhysioActiveState = async (pt: Physiotherapist) => {
+    try {
+      await togglePhysiotherapistActive(pt.id)
+      toast({ title: `Physiotherapist status updated` })
+      load()
+    } catch (err: any) {
+      toast({ title: 'Failed to update status', description: err?.message, variant: 'destructive' })
+    }
+  }
+
+  const handleDeletePhysio = async () => {
+    if (!deletePhysioId) return
+    try {
+      await deletePhysiotherapist(deletePhysioId)
+      toast({ title: 'Physiotherapist removed' })
+      setDeletePhysioId(null)
+      load()
+    } catch (err: any) {
+      toast({ title: 'Failed to delete physiotherapist', description: err?.message, variant: 'destructive' })
     }
   }
 
@@ -272,7 +364,7 @@ export default function DoctorsPage() {
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
       
-      {/* Interactive Admin Doctor Profile & Performance Drilldown Modal */}
+      {/* Doctor Performance Modal */}
       <DoctorDetailModal
         doctor={selectedDoctorDetail}
         open={!!selectedDoctorDetail}
@@ -286,346 +378,368 @@ export default function DoctorsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-gray-900">Doctor Directory & Qualifications</h1>
+            <h1 className="text-2xl font-black tracking-tight text-gray-900">Clinical Staff & Doctor Directory</h1>
             <Badge className="bg-purple-600 text-white text-xs font-bold">{isAdmin ? 'Admin View' : 'Clinic Desk'}</Badge>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Manage qualifications, profile photos, registration details, and clinic branch tagging. Click any doctor name for detailed financials & CSAT.
+            Manage senior doctors, attending physiotherapists, qualifications, and clinic branch tagging.
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 gap-1.5 text-xs font-semibold" onClick={() => setImportOpen(true)}>
             <Download className="h-4 w-4 text-emerald-600" /> Import Excel
           </Button>
-          <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 shadow-sm">
-            <Plus className="h-4 w-4" /> Add Doctor Profile
-          </Button>
+          {activeTab === 'doctors' ? (
+            <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 shadow-sm">
+              <Plus className="h-4 w-4" /> Add Senior Doctor
+            </Button>
+          ) : (
+            <Button onClick={openAddPhysio} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm">
+              <Plus className="h-4 w-4" /> Add Physiotherapist
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Admin Quick Performance Metric Cards */}
-      {isAdmin && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="border shadow-xs bg-gradient-to-br from-white to-blue-50/50">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase text-muted-foreground">Total Active Doctors</p>
-                <p className="text-2xl font-black text-blue-950">{doctors.length}</p>
-                <p className="text-[10px] text-blue-700 font-semibold">Across {centres.length} clinic flagships</p>
-              </div>
-              <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-xs">
-                <UserCog className="h-5 w-5" />
-              </div>
-            </CardContent>
-          </Card>
+      {/* Tabs Switcher: Senior Doctors vs Physiotherapists */}
+      <Tabs defaultValue="doctors" value={activeTab} onValueChange={(val: string) => setActiveTab(val as 'doctors' | 'physiotherapists')}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-3">
+          <TabsList className="bg-slate-100 p-1 rounded-xl">
+            <TabsTrigger value="doctors" className="text-xs font-bold px-4 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-900 shadow-xs">
+              🩺 Senior Doctors ({doctors.length})
+            </TabsTrigger>
+            <TabsTrigger value="physiotherapists" className="text-xs font-bold px-4 py-2 rounded-lg data-[state=active]:bg-white data-[state=active]:text-emerald-900 shadow-xs">
+              💆 Physiotherapists ({physiotherapists.length})
+            </TabsTrigger>
+          </TabsList>
 
-          <Card className="border shadow-xs bg-gradient-to-br from-white to-emerald-50/50">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase text-muted-foreground">Consultant Billed Revenue</p>
-                <p className="text-2xl font-black text-emerald-950">{formatCurrency(totalDoctorRevenue)}</p>
-                <p className="text-[10px] text-emerald-700 font-semibold">{totalDoctorVisits} billed consultations</p>
-              </div>
-              <div className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-xs">
-                <Building2 className="h-5 w-5" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border shadow-xs bg-gradient-to-br from-white to-purple-50/50">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase text-muted-foreground">Top Billed Specialist</p>
-                <p className="text-base font-black text-purple-950 truncate max-w-[180px]">
-                  {doctors.slice().sort((a, b) => (b.revenue || 0) - (a.revenue || 0))[0]?.name || '—'}
-                </p>
-                <p className="text-[10px] text-purple-700 font-bold">
-                  {formatCurrency(doctors.slice().sort((a, b) => (b.revenue || 0) - (a.revenue || 0))[0]?.revenue || 0)}
-                </p>
-              </div>
-              <div className="p-2.5 bg-purple-600 text-white rounded-xl shadow-xs">
-                <Badge className="bg-white text-purple-900 text-xs font-extrabold">👑 #1</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Filter and Search Bar */}
-      <Card>
-        <CardContent className="p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search doctors by name, qualification, or specialization…" 
-              value={search} 
-              onChange={e => setSearch(e.target.value)} 
-              className="pl-9 text-xs" 
-            />
-          </div>
+          {/* Search & Centre Filters */}
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={centreFilter} onValueChange={(v: string | null) => setCentreFilter(v ?? 'all')}>
-              <SelectTrigger className="w-56 bg-white text-xs font-semibold"><SelectValue placeholder="All Centres" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-xs">All Clinic Centres ({doctors.length})</SelectItem>
-                {centres.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Doctor List Table */}
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="p-12 text-center text-muted-foreground text-xs">Loading doctors directory…</div>
-          ) : filteredDoctors.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground text-xs">
-              No doctors found matching search criteria. Click &quot;Add Doctor Profile&quot; or import from Excel.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead className="bg-gray-50 border-b">
-                  <tr className="text-left text-[11px] font-bold text-muted-foreground uppercase">
-                    <th className="px-4 py-3">Doctor Profile</th>
-                    <th className="px-4 py-3">Qualification</th>
-                    <th className="px-4 py-3">Specialization</th>
-                    <th className="px-4 py-3">Clinic Centre</th>
-                    {isAdmin && <th className="px-4 py-3 text-right">Revenue Generated</th>}
-                    <th className="px-4 py-3 text-center">CSAT</th>
-                    <th className="px-4 py-3 hidden md:table-cell">Contact Phone</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredDoctors.map(d => (
-                    <tr key={d.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={d.photo_url || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200'}
-                            alt={d.name}
-                            className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-2xs"
-                          />
-                          <div>
-                            <button
-                              onClick={() => setSelectedDoctorDetail(d)}
-                              className="font-black text-slate-900 text-xs hover:text-blue-600 transition-colors text-left flex items-center gap-1 group"
-                            >
-                              <span>{d.name}</span>
-                              <ExternalLink className="w-3 h-3 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
-                            <span className="text-[10px] text-slate-400 font-mono block">
-                              {d.registration_number ? `Reg #: ${d.registration_number}` : (d.experience_years || 'Staff Specialist')}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <Badge className="bg-purple-50 text-purple-800 border border-purple-200 text-[10px] font-bold">
-                          {d.qualification || 'BPT, MPT'}
-                        </Badge>
-                      </td>
-
-                      <td className="px-4 py-3 text-slate-700 font-medium">
-                        {d.specialization ?? 'Physiotherapy Specialist'}
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50/60 font-medium flex items-center gap-1 w-fit text-[10px]">
-                          <Building2 className="h-3 w-3" /> {d.centreName ?? 'New Friends Colony, New Delhi'}
-                        </Badge>
-                      </td>
-
-                      {isAdmin && (
-                        <td className="px-4 py-3 text-right">
-                          <span className="font-extrabold text-emerald-700 block">{formatCurrency(d.revenue || 0)}</span>
-                          <span className="text-[10px] text-muted-foreground block">{d.visitCount || 0} visits</span>
-                        </td>
-                      )}
-
-                      <td className="px-4 py-3 text-center">
-                        <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200 text-xs font-bold">
-                          ⭐ {d.avgRating}
-                        </Badge>
-                      </td>
-
-                      <td className="px-4 py-3 text-muted-foreground font-mono hidden md:table-cell">{d.phone ?? '—'}</td>
-
-                      <td className="px-4 py-3">
-                        <Switch checked={d.is_active} onCheckedChange={() => toggleActive(d)} />
-                      </td>
-
-                      <td className="px-4 py-3 text-right space-x-1">
-                        <Button size="sm" variant="ghost" onClick={() => setSelectedDoctorDetail(d)} title="View Doctor Profile & Financials">
-                          <User className="h-4 w-4 text-blue-600" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => openEdit(d)} title="Edit Profile">
-                          <Pencil className="h-4 w-4 text-slate-600" />
-                        </Button>
-                        {isAdmin && (
-                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteId(d.id)} title="Delete Doctor">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Add / Edit Doctor Profile Modal */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl bg-white rounded-2xl border-slate-200">
-          <DialogHeader className="border-b border-slate-100 pb-3">
-            <DialogTitle className="text-lg font-black text-slate-900">
-              {editing ? 'Edit Doctor Profile & Qualifications' : 'Add New Doctor Profile'}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-1">
-            {/* Photo Upload */}
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-slate-700">Doctor Profile Photo</Label>
-              <div className="flex items-center gap-4">
-                <img 
-                  src={form.photo_url || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200'} 
-                  alt="Doctor Preview" 
-                  className="w-14 h-14 rounded-xl object-cover border border-slate-200 shadow-2xs"
-                />
-                <div className="space-y-1.5 flex-1">
-                  <Input
-                    value={form.photo_url}
-                    onChange={e => setForm(p => ({ ...p, photo_url: e.target.value }))}
-                    placeholder="Photo Image URL (https://...)"
-                    className="h-8 text-xs font-mono"
-                  />
-                  <div className="flex items-center gap-2">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      id="doc-photo-upload" 
-                      onChange={handleImageFileUpload}
-                    />
-                    <label 
-                      htmlFor="doc-photo-upload"
-                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer transition-colors"
-                    >
-                      <Upload className="w-3.5 h-3.5" /> Upload File
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Doctor Full Name *</Label>
-                <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Dr. Rajesh Sharma" className="h-9 text-xs" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Specialization *</Label>
-                <Input value={form.specialization} onChange={e => setForm(p => ({ ...p, specialization: e.target.value }))} placeholder="e.g. Orthopedic Physiotherapy" className="h-9 text-xs" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Educational Qualification</Label>
-                <Input value={form.qualification} onChange={e => setForm(p => ({ ...p, qualification: e.target.value }))} placeholder="e.g. BPT, MPT (Orthopedics)" className="h-9 text-xs" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Experience (Years)</Label>
-                <Input value={form.experience_years} onChange={e => setForm(p => ({ ...p, experience_years: e.target.value }))} placeholder="e.g. 10 Years" className="h-9 text-xs" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">DMC Registration #</Label>
-                <Input value={form.registration_number} onChange={e => setForm(p => ({ ...p, registration_number: e.target.value }))} placeholder="e.g. DMC/PT/2018/4892" className="h-9 text-xs font-mono" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Tagged Clinic Centre *</Label>
-                <Select value={form.centre_id} onValueChange={(v: string | null) => setForm(p => ({ ...p, centre_id: v ?? '' }))}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select centre" /></SelectTrigger>
-                  <SelectContent>
-                    {centres.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Contact Phone</Label>
-                <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+91 98111 00000" className="h-9 text-xs font-mono" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Email Address</Label>
-                <Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="doctor@physionautics.com" className="h-9 text-xs" />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs font-bold text-slate-700">Clinical Specialty Bio / Summary</Label>
-              <Textarea 
-                value={form.bio} 
-                onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} 
-                placeholder="Brief description of clinical expertise, specialized procedures, and patient recovery focus..." 
-                className="text-xs min-h-[60px]"
+            <div className="relative w-48 sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                placeholder={activeTab === 'doctors' ? "Search doctor..." : "Search physiotherapist..."}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9 h-9 text-xs bg-white border-slate-200 rounded-xl"
               />
             </div>
+            {isAdmin && (
+              <Select value={centreFilter} onValueChange={(val) => setCentreFilter(val || 'all')}>
+                <SelectTrigger className="w-44 h-9 text-xs bg-white border-slate-200 rounded-xl">
+                  <SelectValue placeholder="All Clinics" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Clinics</SelectItem>
+                  {centres.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name.split(',')[0]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
+        </div>
 
-          <DialogFooter className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)} className="h-9 text-xs rounded-xl">Cancel</Button>
-            <Button onClick={save} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs">
-              {saving ? 'Saving Profile…' : editing ? 'Update Doctor Profile' : 'Save Doctor Profile'}
-            </Button>
-          </DialogFooter>
+        {/* Tab 1: Senior Doctors Content */}
+        <TabsContent value="doctors" className="pt-4">
+          {loading ? (
+            <div className="p-12 text-center text-xs text-slate-500">Loading doctor profiles...</div>
+          ) : filteredDoctors.length === 0 ? (
+            <div className="p-12 text-center text-xs text-slate-500 bg-slate-50 rounded-2xl border">
+              No doctors found matching filter.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredDoctors.map(doc => (
+                <Card key={doc.id} className="border shadow-xs hover:shadow-md transition-shadow bg-white rounded-2xl overflow-hidden flex flex-col justify-between">
+                  <CardContent className="p-5 space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        {doc.photo_url ? (
+                          <img src={doc.photo_url} alt={doc.name} className="w-12 h-12 rounded-2xl object-cover border border-slate-200" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg border border-blue-100">
+                            {doc.name.charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <button
+                            onClick={() => setSelectedDoctorDetail(doc)}
+                            className="font-extrabold text-sm text-slate-900 hover:text-blue-600 transition-colors text-left block"
+                          >
+                            {doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`}
+                          </button>
+                          <p className="text-xs font-semibold text-blue-700">{doc.specialization || 'Physiotherapy Specialist'}</p>
+                          <p className="text-[11px] text-slate-500">{doc.qualification}</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={doc.is_active}
+                        onCheckedChange={() => toggleActive(doc)}
+                        className="data-[state=checked]:bg-emerald-600"
+                      />
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500 font-medium">Assigned Branch:</span>
+                        <Badge variant="outline" className="bg-white text-slate-800 border-slate-200 text-[10px] font-bold">
+                          📍 {doc.centreName || 'All Flagships'}
+                        </Badge>
+                      </div>
+                      {doc.registration_number && (
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-500 font-medium">Medical Reg #:</span>
+                          <span className="font-mono text-slate-700 font-semibold">{doc.registration_number}</span>
+                        </div>
+                      )}
+                      {isAdmin && (
+                        <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/60">
+                          <span className="text-slate-500 font-medium">Tagged Revenue:</span>
+                          <span className="font-extrabold text-emerald-700">{formatCurrency(doc.revenue || 0)}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="ghost" className="h-8 text-xs font-bold text-slate-600 hover:text-blue-600 p-0" onClick={() => openEdit(doc)}>
+                          <Pencil className="h-3.5 w-3.5 mr-1" /> Edit Profile
+                        </Button>
+                      </div>
+                      <Button size="sm" variant="ghost" className="h-8 text-xs font-bold text-rose-600 hover:bg-rose-50" onClick={() => setDeleteId(doc.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Tab 2: Physiotherapists Content */}
+        <TabsContent value="physiotherapists" className="pt-4">
+          {loading ? (
+            <div className="p-12 text-center text-xs text-slate-500">Loading physiotherapists...</div>
+          ) : filteredPhysios.length === 0 ? (
+            <div className="p-12 text-center text-xs text-slate-500 bg-slate-50 rounded-2xl border">
+              No physiotherapists found. Click "Add Physiotherapist" to register staff and tag them to clinics.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredPhysios.map(pt => {
+                const cObj = centres.find(c => c.id === pt.centre_id)
+                return (
+                  <Card key={pt.id} className="border shadow-xs hover:shadow-md transition-shadow bg-white rounded-2xl overflow-hidden flex flex-col justify-between">
+                    <CardContent className="p-5 space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg border border-emerald-100">
+                            {pt.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-extrabold text-sm text-slate-900">{pt.name}</p>
+                            <p className="text-xs font-semibold text-emerald-700">{pt.qualification || 'Physiotherapist'}</p>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={pt.is_active}
+                          onCheckedChange={() => togglePhysioActiveState(pt)}
+                          className="data-[state=checked]:bg-emerald-600"
+                        />
+                      </div>
+
+                      <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 text-xs space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-500 font-medium">Tagged Clinic:</span>
+                          <Badge variant="outline" className="bg-white text-emerald-800 border-emerald-200 text-[10px] font-bold">
+                            📍 {cObj ? cObj.name.split(',')[0] : 'All Clinics'}
+                          </Badge>
+                        </div>
+                        {pt.phone && (
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-500 font-medium">Phone:</span>
+                            <span className="font-mono text-slate-700">{pt.phone}</span>
+                          </div>
+                        )}
+                        {pt.email && (
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-500 font-medium">Email:</span>
+                            <span className="font-mono text-slate-700 truncate max-w-[150px]">{pt.email}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 text-xs">
+                        <Button size="sm" variant="ghost" className="h-8 text-xs font-bold text-slate-600 hover:text-emerald-600 p-0" onClick={() => openEditPhysio(pt)}>
+                          <Pencil className="h-3.5 w-3.5 mr-1" /> Edit Profile
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs font-bold text-rose-600 hover:bg-rose-50" onClick={() => setDeletePhysioId(pt.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Doctor Add/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-md bg-white rounded-2xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-slate-900">
+              {editing ? 'Edit Senior Doctor' : 'Add Senior Doctor'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveDoctor} className="space-y-3 py-2 text-xs">
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-slate-700">Doctor Full Name *</Label>
+              <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Dr. Sarah Jenkins" required className="h-10 text-xs rounded-xl" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Specialization</Label>
+                <Input value={form.specialization} onChange={e => setForm({...form, specialization: e.target.value})} placeholder="e.g. Orthopedics" className="h-10 text-xs rounded-xl" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Qualification</Label>
+                <Input value={form.qualification} onChange={e => setForm({...form, qualification: e.target.value})} placeholder="e.g. BPT, MPT" className="h-10 text-xs rounded-xl" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-slate-700">Tagged Primary Clinic Centre</Label>
+              <Select value={form.centre_id || ''} onValueChange={v => setForm({...form, centre_id: v || ''})}>
+                <SelectTrigger className="h-10 text-xs rounded-xl">
+                  <SelectValue placeholder="Select Clinic" />
+                </SelectTrigger>
+                <SelectContent>
+                  {centres.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Phone</Label>
+                <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+91 98111 00000" className="h-10 text-xs rounded-xl" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Email</Label>
+                <Input value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="doctor@physionautics.com" className="h-10 text-xs rounded-xl" />
+              </div>
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="rounded-xl h-10 text-xs">Cancel</Button>
+              <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl h-10 text-xs">
+                {saving ? 'Saving...' : editing ? 'Update Doctor' : 'Save Doctor'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
-      {/* Excel Bulk Importer Modal */}
-      <ExcelImporter
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        title="Import Doctors via Excel / CSV"
-        description="Download the template below, enter your doctor profiles with clinic names, and upload for automatic branch tagging."
-        templateFileName="Doctors_Import"
-        columns={DOCTOR_IMPORT_COLUMNS}
-        sampleRows={[
-          { name: 'Dr. Neha Verma', specialization: 'Pediatric Physiotherapy', qualification: 'BPT, MPT', phone: '+91 98765 00001', email: 'neha@physio.com', centre_name: 'New Friends Colony, New Delhi' },
-          { name: 'Dr. Arjun Kapoor', specialization: 'Sports Medicine & Rehab', qualification: 'BPT, MPT (Sports)', phone: '+91 98765 00002', email: 'arjun@physio.com', centre_name: 'Vasant Vihar, New Delhi' },
-          { name: 'Dr. Priya Nair', specialization: 'Cardiorespiratory Rehab', qualification: 'BPT, MPT', phone: '+91 98765 00003', email: 'priya@physio.com', centre_name: 'Gurugram – DLF Phase 1' },
-        ]}
-        onImport={handleBulkImport}
-      />
+      {/* Physiotherapist Add/Edit Dialog */}
+      <Dialog open={physioDialogOpen} onOpenChange={setPhysioDialogOpen}>
+        <DialogContent className="max-w-md bg-white rounded-2xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-slate-900">
+              {editingPhysio ? 'Edit Physiotherapist' : 'Add Physiotherapist'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSavePhysio} className="space-y-3 py-2 text-xs">
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-slate-700">Physiotherapist Full Name *</Label>
+              <Input value={physioForm.name} onChange={e => setPhysioForm({...physioForm, name: e.target.value})} placeholder="e.g. PT Ananya Sen" required className="h-10 text-xs rounded-xl" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-slate-700">Qualification</Label>
+              <Input value={physioForm.qualification} onChange={e => setPhysioForm({...physioForm, qualification: e.target.value})} placeholder="e.g. BPT, MPT (Kinesiotherapy)" className="h-10 text-xs rounded-xl" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-slate-700">Tagged Clinic Centre *</Label>
+              <Select value={physioForm.centre_id || ''} onValueChange={v => setPhysioForm({...physioForm, centre_id: v || ''})}>
+                <SelectTrigger className="h-10 text-xs rounded-xl">
+                  <SelectValue placeholder="Select Clinic" />
+                </SelectTrigger>
+                <SelectContent>
+                  {centres.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Phone</Label>
+                <Input value={physioForm.phone} onChange={e => setPhysioForm({...physioForm, phone: e.target.value})} placeholder="+91 98222 00000" className="h-10 text-xs rounded-xl" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-700">Email</Label>
+                <Input value={physioForm.email} onChange={e => setPhysioForm({...physioForm, email: e.target.value})} placeholder="physio@physionautics.com" className="h-10 text-xs rounded-xl" />
+              </div>
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setPhysioDialogOpen(false)} className="rounded-xl h-10 text-xs">Cancel</Button>
+              <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl h-10 text-xs">
+                {saving ? 'Saving...' : editingPhysio ? 'Update Physiotherapist' : 'Save Physiotherapist'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
+      {/* Delete Doctor Alert */}
+      <AlertDialog open={!!deleteId} onOpenChange={open => { if (!open) setDeleteId(null) }}>
+        <AlertDialogContent className="bg-white rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Doctor?</AlertDialogTitle>
-            <AlertDialogDescription>This will remove the doctor from clinic billing and scheduling.</AlertDialogDescription>
+            <AlertDialogTitle className="text-slate-900 font-bold">Remove Doctor Profile?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-600">
+              This will remove the doctor record from the active directory.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogCancel className="rounded-xl text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteDoctor} className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold">
+              Remove Doctor
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete Physiotherapist Alert */}
+      <AlertDialog open={!!deletePhysioId} onOpenChange={open => { if (!open) setDeletePhysioId(null) }}>
+        <AlertDialogContent className="bg-white rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-900 font-bold">Remove Physiotherapist Profile?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-600">
+              This will remove the physiotherapist record from the active clinic directory.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePhysio} className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold">
+              Remove Physiotherapist
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Excel Importer */}
+      <ExcelImporter
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        columns={DOCTOR_IMPORT_COLUMNS}
+        onImport={handleBulkImport}
+        templateFileName="Doctor_Directory_Template.xlsx"
+        title="Import Doctor Directory"
+        description="Import doctor records from XLSX template"
+      />
     </div>
   )
 }

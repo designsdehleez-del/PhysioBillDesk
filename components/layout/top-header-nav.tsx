@@ -16,7 +16,7 @@ import { ClinicWorkflowGuide } from '@/components/clinic-workflow-guide'
 export function TopHeaderNav() {
   const pathname = usePathname()
   const router = useRouter()
-  const { profile, signOut } = useAuth()
+  const { profile, signOut, loginAsRole } = useAuth()
   const { branding } = useClinicBranding()
 
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null)
@@ -246,6 +246,40 @@ export function TopHeaderNav() {
                   <div className="px-2.5 py-1.5 border-b text-xs font-bold text-slate-900">
                     Signed in as <span className="text-blue-600 block text-[11px] font-mono truncate">{profile?.email}</span>
                   </div>
+                  
+                  {/* Quick Role Switcher */}
+                  <div className="py-1 border-b text-[10px] space-y-0.5">
+                    <div className="px-2.5 py-1 font-bold text-slate-400 uppercase tracking-wider">Quick Role Switcher</div>
+                    <button
+                      onClick={() => { loginAsRole('admin'); setProfileOpen(false); router.push('/dashboard') }}
+                      className="w-full text-left px-2.5 py-1 rounded-md hover:bg-purple-50 text-purple-900 font-semibold flex items-center justify-between"
+                    >
+                      <span>👑 Admin Portal</span>
+                      {isAdmin && <span className="text-[9px] bg-purple-200 text-purple-900 font-bold px-1 rounded">Active</span>}
+                    </button>
+                    <button
+                      onClick={() => { loginAsRole('reception_nfc'); setProfileOpen(false); router.push('/dashboard') }}
+                      className="w-full text-left px-2.5 py-1 rounded-md hover:bg-blue-50 text-blue-900 font-semibold flex items-center justify-between"
+                    >
+                      <span>🏥 Clinic Reception (NFC)</span>
+                      {isReception && <span className="text-[9px] bg-blue-200 text-blue-900 font-bold px-1 rounded">Active</span>}
+                    </button>
+                    <button
+                      onClick={() => { loginAsRole('doctor_sarah'); setProfileOpen(false); router.push('/dashboard') }}
+                      className="w-full text-left px-2.5 py-1 rounded-md hover:bg-emerald-50 text-emerald-900 font-semibold flex items-center justify-between"
+                    >
+                      <span>🩺 Dr. Sarah Jenkins</span>
+                      {isDoctor && profile?.doctorId === 'doc-101' && <span className="text-[9px] bg-emerald-200 text-emerald-900 font-bold px-1 rounded">Active</span>}
+                    </button>
+                    <button
+                      onClick={() => { loginAsRole('doctor_rajesh'); setProfileOpen(false); router.push('/dashboard') }}
+                      className="w-full text-left px-2.5 py-1 rounded-md hover:bg-teal-50 text-teal-900 font-semibold flex items-center justify-between"
+                    >
+                      <span>🩺 Dr. Rajesh Sharma</span>
+                      {isDoctor && profile?.doctorId === 'doc-102' && <span className="text-[9px] bg-teal-200 text-teal-900 font-bold px-1 rounded">Active</span>}
+                    </button>
+                  </div>
+
                   <button
                     onClick={handleLockNow}
                     className="w-full text-left flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs hover:bg-slate-50 text-slate-700"

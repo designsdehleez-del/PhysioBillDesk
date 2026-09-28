@@ -28,7 +28,7 @@ import { motion } from 'motion/react'
 
 export default function AuthPage() {
   const router = useRouter()
-  const { user, profile, signIn, signUp, signOut } = useAuth()
+  const { user, profile, signIn, signUp, signOut, loginAsRole } = useAuth()
   const { branding } = useClinicBranding()
   const { cms } = useLandingCMS()
 
@@ -297,17 +297,17 @@ export default function AuthPage() {
             <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-emerald-300 transition-colors">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500">
-                  {isAdmin ? 'Active Clinic Branches' : isDoctor ? 'Patient Rating' : 'Today\'s Collections'}
+                  {isAdmin ? 'Active Clinic Branches' : isDoctor ? 'Patient Rating' : 'Active Clinic Desk'}
                 </span>
                 <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-                  {isAdmin ? <Building2 className="w-4 h-4" /> : isDoctor ? <Star className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
+                  {isAdmin ? <Building2 className="w-4 h-4" /> : isDoctor ? <Star className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
                 </div>
               </div>
               <div className="text-2xl font-black text-slate-900">
-                {isAdmin ? `${hubStats.centreCount} Centres` : isDoctor ? '4.9 / 5.0' : formatCurrency(hubStats.todayRevenue)}
+                {isAdmin ? `${hubStats.centreCount} Centres` : isDoctor ? '4.9 / 5.0' : (profile?.centreName?.split(',')[0] || 'NFC Clinic')}
               </div>
               <div className="text-[11px] text-slate-500 font-medium">
-                {isAdmin ? 'NFC, Vasant Vihar, Gurugram' : isDoctor ? 'Based on 48 verified reviews' : 'Real-time billing counter'}
+                {isAdmin ? 'NFC, Vasant Vihar, Gurugram' : isDoctor ? 'Based on 48 verified reviews' : 'Operational front desk active'}
               </div>
             </Card>
 
@@ -343,7 +343,7 @@ export default function AuthPage() {
                 {isAdmin ? formatCurrency(hubStats.totalRevenue - hubStats.expensesThisMonth) : isDoctor ? '32 hrs / wk' : `${hubStats.totalPatients} Patients`}
               </div>
               <div className="text-[11px] text-slate-500 font-medium">
-                {isAdmin ? `After ₹${(hubStats.expensesThisMonth/1000).toFixed(0)}k expenses` : 'Verified database directory'}
+                {isAdmin ? `After ₹${(hubStats.expensesThisMonth/1000).toFixed(0)}k expenses` : isDoctor ? 'Primary & supervising care' : 'Verified database directory'}
               </div>
             </Card>
 
@@ -685,6 +685,45 @@ export default function AuthPage() {
                       )}
                     </Button>
                   </form>
+
+                  {/* 1-Click Role Login Presets */}
+                  <div className="pt-3 border-t border-slate-100 space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 text-center">Instant Demo Logins (1-Click Switch)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => loginAsRole('admin')}
+                        className="h-9 text-[11px] font-bold border-purple-200 text-purple-700 bg-purple-50/50 hover:bg-purple-100/80 rounded-xl justify-start gap-1.5"
+                      >
+                        👑 Admin Login
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => loginAsRole('reception_nfc')}
+                        className="h-9 text-[11px] font-bold border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100/80 rounded-xl justify-start gap-1.5"
+                      >
+                        🏥 Clinic Reception
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => loginAsRole('doctor_sarah')}
+                        className="h-9 text-[11px] font-bold border-emerald-200 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100/80 rounded-xl justify-start gap-1.5"
+                      >
+                        🩺 Dr. Sarah Jenkins
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => loginAsRole('doctor_rajesh')}
+                        className="h-9 text-[11px] font-bold border-teal-200 text-teal-700 bg-teal-50/50 hover:bg-teal-100/80 rounded-xl justify-start gap-1.5"
+                      >
+                        🩺 Dr. Rajesh Sharma
+                      </Button>
+                    </div>
+                  </div>
 
                   {error && (
                     <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700 font-medium">

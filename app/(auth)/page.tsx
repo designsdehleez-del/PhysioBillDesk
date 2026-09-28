@@ -477,8 +477,12 @@ export default function AuthPage() {
                       <LayoutDashboard className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors">Main Operational Dashboard</div>
-                      <div className="text-[11px] text-slate-500">Live analytics, revenue charts & doctor statistics</div>
+                      <div className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                        {isAdmin ? 'Main Operational Dashboard' : isDoctor ? 'Doctor Portal Dashboard' : 'Reception Desk Overview'}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {isAdmin ? 'Live analytics, revenue charts & doctor statistics' : isDoctor ? 'My tagged revenue, patient list & clinical bills' : 'Daily patient check-ins, billing counter & expense logging'}
+                      </div>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />

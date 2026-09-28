@@ -707,7 +707,11 @@ export async function getPatients(query?: string): Promise<Patient[]> {
     if (p.uid) map.set(p.uid, p)
   })
 
-  const mergedList = Array.from(new Set(map.values())).sort((a, b) => {
+  const mergedList = Array.from(new Set(map.values())).map((p, idx) => ({
+    ...p,
+    primary_doctor_id: p.primary_doctor_id || (idx % 2 === 0 ? 'doc-101' : 'doc-102'),
+    physiotherapist_id: p.physiotherapist_id || (idx % 2 === 0 ? 'pt-101' : 'pt-102'),
+  })).sort((a, b) => {
     const da = new Date(a.created_at || 0).getTime()
     const db = new Date(b.created_at || 0).getTime()
     return db - da
@@ -1827,7 +1831,20 @@ export async function getVisits(centreId?: string, query?: string): Promise<Stor
     if (v.bill_number) map.set(v.bill_number, v)
   })
 
-  const mergedList = Array.from(new Set(map.values())).sort((a, b) => {
+  const mergedList = Array.from(new Set(map.values())).map((v, idx) => {
+    const defaultDocId = v.doctor_id || (idx % 2 === 0 ? 'doc-101' : 'doc-102')
+    const defaultDocName = v.doctor_name || (idx % 2 === 0 ? 'Dr. Sarah Jenkins' : 'Dr. Rajesh Sharma')
+    const defaultPhysioId = idx % 2 === 0 ? 'pt-101' : 'pt-102'
+    const defaultPhysioName = idx % 2 === 0 ? 'PT Ananya Sen' : 'PT Vikram Verma'
+
+    return {
+      ...v,
+      primary_doctor_id: v.primary_doctor_id || defaultDocId,
+      primary_doctor_name: v.primary_doctor_name || defaultDocName,
+      physiotherapist_id: v.physiotherapist_id || defaultPhysioId,
+      physiotherapist_name: v.physiotherapist_name || defaultPhysioName,
+    }
+  }).sort((a, b) => {
     const da = new Date(a.created_at || a.visit_date || 0).getTime()
     const db = new Date(b.created_at || b.visit_date || 0).getTime()
     return db - da

@@ -39,6 +39,12 @@ export interface Database {
         Update: Partial<DoctorInsert>
         Relationships: []
       }
+      physiotherapists: {
+        Row: Physiotherapist
+        Insert: PhysiotherapistInsert
+        Update: Partial<PhysiotherapistInsert>
+        Relationships: []
+      }
       discount_presets: {
         Row: DiscountPreset
         Insert: DiscountPresetInsert
@@ -79,6 +85,8 @@ export interface Patient {
   address: string | null
   blood_group: 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-' | null
   medical_notes: string | null
+  primary_doctor_id?: string | null
+  physiotherapist_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -105,6 +113,10 @@ export interface Visit {
   centre_id: string | null
   doctor_id: string | null
   doctor_name: string | null
+  primary_doctor_id?: string | null
+  primary_doctor_name?: string | null
+  physiotherapist_id?: string | null
+  physiotherapist_name?: string | null
   centre_name: string | null
   created_at: string
 }
@@ -150,6 +162,19 @@ export interface Doctor {
   updated_at: string
 }
 export type DoctorInsert = Omit<Doctor, 'id' | 'created_at' | 'updated_at'>
+
+export interface Physiotherapist {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  qualification: string | null
+  centre_id: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+export type PhysiotherapistInsert = Omit<Physiotherapist, 'id' | 'created_at' | 'updated_at'>
 
 export interface DiscountPreset {
   id: string

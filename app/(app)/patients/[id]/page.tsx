@@ -11,10 +11,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
-import type { Patient, VisitWithServices } from '@/lib/supabase/types'
+import type { Patient, VisitWithServices, ClinicalAssessment } from '@/lib/supabase/types'
 
 import { PrintableInvoiceModal } from '@/components/billing/printable-invoice-modal'
-import { StoredVisit, getPatients, getVisits, getPatientAssessments, addPatientAssessment, type PatientAssessment } from '@/lib/data-store'
+import { StoredVisit, getPatients, getVisits, getPatientAssessments, addPatientAssessment, getAssessments, type PatientAssessment } from '@/lib/data-store'
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -22,6 +22,7 @@ export default function PatientDetailPage() {
   const [patient, setPatient] = useState<Patient | null>(null)
   const [visits, setVisits] = useState<VisitWithServices[]>([])
   const [assessments, setAssessments] = useState<PatientAssessment[]>([])
+  const [clinicalAssessments, setClinicalAssessments] = useState<ClinicalAssessment[]>([])
   const [loading, setLoading] = useState(true)
   const [modalVisit, setModalVisit] = useState<StoredVisit | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -116,6 +117,10 @@ export default function PatientDetailPage() {
       
       const assList = await getPatientAssessments(id)
       setAssessments(assList)
+
+      const cAssList = await getAssessments(id)
+      setClinicalAssessments(cAssList)
+
       setLoading(false)
     }
     load()
@@ -229,11 +234,67 @@ export default function PatientDetailPage() {
                 <span className="font-medium text-right text-gray-900 break-all">{val}</span>
               </div>
             ))}
-            {patient.medical_notes && (
-              <div className="pt-2 border-t">
-                <p className="text-xs text-muted-foreground mb-1">Medical Notes</p>
-                <p className="text-sm text-gray-900 whitespace-pre-wrap">{patient.medical_notes}</p>
+          </CardContent>
+        </Card>
+
+        {/* Clinical Assessments & Diagnostic Reports Card */}
+        <Card className="lg:col-span-1 border-blue-200/80 shadow-xs rounded-2xl bg-white overflow-hidden">
+          <CardHeader className="pb-3 border-b bg-blue-50/50 flex items-center justify-between">
+            <CardTitle className="text-sm font-bold text-blue-950 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-blue-600" />
+              Clinical Assessments & Reports ({clinicalAssessments.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            {clinicalAssessments.length === 0 ? (
+              <div className="text-center py-4 text-xs text-slate-500 space-y-2">
+                <p>No formal assessment logged yet.</p>
+                <div className="flex gap-2 justify-center">
+                  <Button size="sm" variant="outline" className="text-[11px] h-7 rounded-lg" onClick={() => router.push(`/patients/${patient.id}/assessment?type=physiotherapy`)}>
+                    + Physio
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-[11px] h-7 rounded-lg" onClick={() => router.push(`/patients/${patient.id}/assessment?type=neurotherapy`)}>
+                    + Neuro
+                  </Button>
+                </div>
               </div>
+            ) : (
+              clinicalAssessments.map(ass => (
+                <div key={ass.id} className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2 text-xs hover:border-blue-300 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <Badge className={ass.type === 'physiotherapy' ? 'bg-blue-100 text-blue-800 text-[10px]' : 'bg-purple-100 text-purple-800 text-[10px]'}>
+                      {ass.type === 'physiotherapy' ? '🩺 Physiotherapy' : '🧠 Neurotherapy'}
+                    </Badge>
+                    <span className="text-[10px] text-slate-500 font-mono">{ass.assessment_date}</span>
+                  </div>
+
+                  <div>
+                    <span className="font-bold text-slate-900 block truncate">
+                      {ass.data?.clinical_diagnosis || ass.data?.main_problem || 'Clinical Assessment Logged'}
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Dr. {ass.doctor_name || 'Clinical Specialist'} • VAS Pain: <span className="font-bold text-rose-600">{ass.vas_score || 'N/A'}/10</span>
+                    </span>
+                  </div>
+
+                  {ass.data?.treatment_modalities?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {ass.data.treatment_modalities.slice(0, 3).map((m: string) => (
+                        <Badge key={m} variant="secondary" className="bg-white text-slate-700 border text-[9px] px-1.5 py-0">{m}</Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => router.push(`/patients/${patient.id}/assessment?type=${ass.type}`)}
+                    className="w-full h-7 text-[11px] font-bold text-blue-700 border-blue-200 hover:bg-blue-50 mt-1"
+                  >
+                    View Branded Assessment Report →
+                  </Button>
+                </div>
+              ))
             )}
           </CardContent>
         </Card>

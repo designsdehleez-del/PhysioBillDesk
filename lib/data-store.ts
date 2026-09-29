@@ -4684,6 +4684,162 @@ export function exportMonthlyPersonAttendanceToExcel(options: MonthlyAttendanceE
 }
 
 // ================= CLINICAL ASSESSMENTS (PHYSIO & NEURO) =================
+export const DEFAULT_CLINICAL_ASSESSMENTS: ClinicalAssessment[] = [
+  {
+    id: 'ass-seed-101',
+    patient_id: 'pat-1',
+    patient_uid: 'CLN-202609-0001',
+    type: 'physiotherapy',
+    assessment_date: new Date(Date.now() - 86400000 * 5).toISOString().split('T')[0],
+    doctor_id: 'doc-101',
+    doctor_name: 'Dr. Sarah Jenkins',
+    vas_score: 7,
+    created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+    data: {
+      main_problem: 'L4-L5 Lumbar Disc Herniation with Right Sciatica Radiation',
+      onset_date: new Date(Date.now() - 86400000 * 20).toISOString().split('T')[0],
+      cause: 'Lifting heavy equipment at home',
+      pain_description: 'Sharp shooting pain into right buttock & calf',
+      aggravating_factors: 'Forward bending, prolonged sitting over 20 mins',
+      relieving_factors: 'Lying supine with knees flexed, hot fermentation',
+      previous_treatment: 'Oral analgesics & muscle relaxants',
+      medical_history_checks: ['High Blood Pressure'],
+      current_medications: 'Tab Pregabalin 75mg, Tab Pantoprazole 40mg',
+      allergies: 'None',
+      activity_limitations: 'Difficulty walking > 500m and prolonged desk work',
+      work_status: 'Working',
+      type_of_work: 'IT Senior Consultant / Desk Job',
+      hobbies_sports: 'Badminton (currently paused)',
+      posture_observation: 'Antalgic lumbar lordosis flattening with right sciatic list',
+      rom_findings: 'Lumbar flexion 40% restricted & painful; Extension full',
+      mmt_findings: 'EHL Grade 4/5, Quadriceps 5/5',
+      special_tests: 'SLR Positive at 40° Right, Lasegue test positive',
+      clinical_diagnosis: 'Acute L4-L5 Lumbar Disc Radiculopathy with Piriformis Tightness',
+      short_term_goals: 'Reduce VAS pain score from 7/10 to 3/10 within 6 sessions',
+      long_term_goals: 'Full lumbar flexional ROM & return to recreational sports',
+      treatment_modalities: ['Manual Therapy', 'Electrotherapy', 'Postural Training', 'Ergonomic Advice'],
+      physio_name: 'Dr. Sarah Jenkins',
+      patient_consent: true,
+    }
+  },
+  {
+    id: 'ass-seed-102',
+    patient_id: 'pat-2',
+    patient_uid: 'CLN-202609-0002',
+    type: 'physiotherapy',
+    assessment_date: new Date(Date.now() - 86400000 * 4).toISOString().split('T')[0],
+    doctor_id: 'doc-102',
+    doctor_name: 'Dr. Rajesh Sharma',
+    vas_score: 6,
+    created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
+    data: {
+      main_problem: 'Cervical Spondylosis & Trapezius Myofascial Trigger Points',
+      onset_date: new Date(Date.now() - 86400000 * 14).toISOString().split('T')[0],
+      cause: 'Prolonged computer monitor screen time',
+      pain_description: 'Dull aching stiffness spreading to upper back & neck',
+      aggravating_factors: 'End-of-day desk work, neck rotation',
+      relieving_factors: 'Neck stretching, warm shower',
+      previous_treatment: 'Physiotherapy 1 year ago',
+      medical_history_checks: ['Diabetes'],
+      current_medications: 'Metformin 500mg',
+      allergies: 'None',
+      activity_limitations: 'Neck stiffness while driving and overhead reading',
+      work_status: 'Working',
+      type_of_work: 'Corporate Executive',
+      posture_observation: 'Forward head posture with rounded shoulders',
+      rom_findings: 'Cervical lateral flexion restricted bilaterally 25%',
+      mmt_findings: 'Deep cervical flexors 3+/5',
+      special_tests: 'Spurling test negative',
+      clinical_diagnosis: 'Cervical Myofascial Pain Syndrome & Postural Upper Cross Syndrome',
+      short_term_goals: 'Relieve upper trapezius spasm & restore neck rotation',
+      long_term_goals: 'Postural correction and workplace ergonomic compliance',
+      treatment_modalities: ['Manual Therapy', 'Postural Training', 'Ergonomic Advice'],
+      physio_name: 'Dr. Rajesh Sharma',
+      patient_consent: true,
+    }
+  },
+  {
+    id: 'ass-seed-103',
+    patient_id: 'pat-101',
+    patient_uid: 'CLN-202609-0001',
+    type: 'neurotherapy',
+    assessment_date: new Date(Date.now() - 86400000 * 3).toISOString().split('T')[0],
+    doctor_id: 'doc-201',
+    doctor_name: 'Dr. Emily Watson',
+    vas_score: 4,
+    created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+    data: {
+      diagnosis_condition: 'Post-Ischemic Stroke Right Hemiparesis',
+      mode_of_onset: 'Stroke / Vascular Event',
+      presenting_symptoms: 'Right arm spasticity, circumductory gait, mild dysarthria',
+      main_concerns: 'Improve independent walking and right hand grasping',
+      has_pain: 'Yes',
+      pain_location: 'Right Shoulder',
+      medical_history_checks: ['High Blood Pressure', 'Neurological Conditions'],
+      current_medications: 'Aspirin 75mg, Atorvastatin 20mg, Amlodipine 5mg',
+      allergies: 'None',
+      history_of_falls: 'Yes',
+      fall_frequency: '1 fall last month during pivot turn',
+      assistive_devices_used: 'Yes',
+      assistive_device_type: 'Single Point Quad Cane',
+      mobility_status: 'With Assistance',
+      adls_status: 'Needs Assistance',
+      sitting_balance: 'Good',
+      standing_balance: 'Fair',
+      transfers_status: 'Assisted',
+      gait_type: 'Hemiplegic',
+      communication_status: 'Impaired',
+      cognition_status: 'Intact',
+      muscle_tone: 'Spastic',
+      ashworth_scale: 'Grade 1+ on right elbow flexors',
+      rom_findings: 'Right shoulder abduction limited to 110° due to tightness',
+      sensation_status: 'Impaired',
+      reflexes_status: 'Hyperreflexia',
+      clinical_diagnosis: 'Post-Stroke Right Subacute Hemiparesis with Shoulder Subluxation Risk',
+      short_term_goals: 'Improve standing balance to Good & independent sit-to-stand',
+      long_term_goals: 'Independent outdoor gait without cane assistance',
+      treatment_modalities: ['NDT (Neurodevelopmental)', 'PNF Techniques', 'Balance Training', 'Gait Retraining'],
+      physio_name: 'Dr. Emily Watson',
+      patient_consent: true,
+    }
+  },
+  {
+    id: 'ass-seed-104',
+    patient_id: 'pat-102',
+    patient_uid: 'CLN-202609-0002',
+    type: 'physiotherapy',
+    assessment_date: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0],
+    doctor_id: 'doc-202',
+    doctor_name: 'Dr. Michael Chang',
+    vas_score: 8,
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    data: {
+      main_problem: 'Adhesive Capsulitis (Right Frozen Shoulder - Freezing Stage)',
+      onset_date: new Date(Date.now() - 86400000 * 30).toISOString().split('T')[0],
+      cause: 'Idiopathic / post-minor strain',
+      pain_description: 'Severe night pain & deep joint aching',
+      aggravating_factors: 'Reaching behind back, comb hair, sleeping on right side',
+      relieving_factors: 'Ice packs & arm sling support',
+      previous_treatment: 'Intra-articular steroid injection 2 weeks ago',
+      medical_history_checks: ['Diabetes'],
+      current_medications: 'Tab Glimepiride 1mg',
+      allergies: 'None',
+      activity_limitations: 'Unable to wear shirt independently',
+      work_status: 'Working',
+      posture_observation: 'Elevated right scapula with guarding posture',
+      rom_findings: 'External rotation 10°, Abduction 70°, Flexion 90°',
+      mmt_findings: 'Rotator cuff muscles painful 4/5',
+      special_tests: 'Hawkins-Kennedy positive, Painful Arc positive',
+      clinical_diagnosis: 'Stage 2 Adhesive Capsulitis Right Glenohumeral Joint',
+      short_term_goals: 'Night pain reduction & increase abduction to 120°',
+      long_term_goals: 'Restore full multi-planar shoulder ROM',
+      treatment_modalities: ['Manual Therapy', 'Electrotherapy', 'Exercise Therapy'],
+      physio_name: 'Dr. Michael Chang',
+      patient_consent: true,
+    }
+  }
+]
+
 export async function getAssessments(patientId?: string): Promise<ClinicalAssessment[]> {
   const CACHE_KEY = 'physio_clinical_assessments_v1'
   let list: ClinicalAssessment[] = []
@@ -4693,9 +4849,16 @@ export async function getAssessments(patientId?: string): Promise<ClinicalAssess
     if (cached) {
       try {
         const parsed = JSON.parse(cached)
-        if (Array.isArray(parsed)) list = parsed
+        if (Array.isArray(parsed) && parsed.length > 0) list = parsed
       } catch (_) {}
     }
+    
+    if (list.length === 0) {
+      list = DEFAULT_CLINICAL_ASSESSMENTS
+      localStorage.setItem(CACHE_KEY, JSON.stringify(DEFAULT_CLINICAL_ASSESSMENTS))
+    }
+  } else {
+    list = DEFAULT_CLINICAL_ASSESSMENTS
   }
 
   if (patientId) {

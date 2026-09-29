@@ -8,9 +8,10 @@ import {
   Building2, ArrowRight, Sparkles, User, Lock, Activity, CheckCircle2, ShieldCheck,
   Calendar, FileText, Phone, MapPin, ChevronRight, LogOut, LayoutDashboard, Dumbbell,
   Zap, Target, RefreshCw, UserPlus, CreditCard, Clock, Check, Star, ArrowUpRight,
-  Users, DollarSign, TrendingUp, Filter, Shield, Settings, FileSpreadsheet, MessageCircle, UserCheck
+  Users, DollarSign, TrendingUp, Filter, Shield, Settings, FileSpreadsheet, MessageCircle, UserCheck, Wallet
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
+import { useToast } from '@/components/ui/use-toast'
 import { useClinicBranding } from '@/lib/settings-store'
 import { useLandingCMS } from '@/lib/landing-cms-store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,7 +21,8 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ContainerScroll } from '@/components/ui/container-scroll-animation'
 import { NCRMapVisualizer } from '@/components/ncr-map-visualizer'
-import { getVisits, getPatients, getCentres, getDoctors, getExpenses } from '@/lib/data-store'
+import { getVisits, getPatients, getCentres, getDoctors, getExpenses, saveAttendanceRecord } from '@/lib/data-store'
+import { ExpenseLoggingModal } from '@/components/dashboard/expense-logging-modal'
 import { formatCurrency } from '@/lib/utils'
 import { TopHeaderNav } from '@/components/layout/top-header-nav'
 import { OrbitingCards } from '@/components/ui/orbiting-cards'
@@ -28,6 +30,7 @@ import { motion } from 'motion/react'
 
 export default function AuthPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const { user, profile, signIn, signUp, signOut, loginAsRole } = useAuth()
   const { branding } = useClinicBranding()
   const { cms } = useLandingCMS()
@@ -240,114 +243,168 @@ export default function AuthPage() {
 
               {/* Launcher CTA Buttons */}
               <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-                <Button 
-                  onClick={() => router.push('/billing')}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2"
-                >
-                  <CreditCard className="w-4 h-4" /> Create Invoice
-                </Button>
-                <Button 
-                  onClick={() => router.push('/patients')}
-                  className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2"
-                >
-                  <Users className="w-4 h-4" /> Patient Directory
-                </Button>
-                <Button 
-                  onClick={() => router.push('/attendance')}
-                  className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2"
-                >
-                  <UserCheck className="w-4 h-4" /> Attendance Roster
-                </Button>
+                {isDoctor ? (
+                  <>
+                    <Button 
+                      onClick={async () => {
+                        try {
+                          const todayDate = new Date().toISOString().split('T')[0]
+                          const checkInTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                          await saveAttendanceRecord({
+                            staff_id: profile?.id || 'doc-101',
+                            staff_name: profile?.name || 'Doctor',
+                            role: 'doctor',
+                            centre_id: profile?.centreId || 'c1111111-1111-1111-1111-111111111111',
+                            centre_name: profile?.centreName || 'Physionautics Clinic',
+                            date: todayDate,
+                            status: 'Present',
+                            check_in_time: checkInTime,
+                          })
+                          toast({ title: 'Attendance Marked!', description: `Checked in as Present today at ${checkInTime}.` })
+                        } catch (err) {
+                          toast({ title: 'Error', description: 'Failed to mark attendance.', variant: 'destructive' })
+                        }
+                      }}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> Mark My Attendance
+                    </Button>
+                    <ExpenseLoggingModal
+                      centres={hubStats.centresList}
+                      userCentreId={profile?.centreId}
+                      userCentreName={profile?.centreName}
+                      userName={profile?.name}
+                      onExpenseAdded={() => getExpenses().then(eData => setHubStats(prev => ({ ...prev, expensesThisMonth: eData.reduce((s, e: any) => s + (e.amount || 0), 0) })))}
+                      trigger={
+                        <Button className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2">
+                          <Wallet className="w-4 h-4" /> Log Expense
+                        </Button>
+                      }
+                    />
+                    <Button 
+                      onClick={() => router.push('/patients')}
+                      className="bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2"
+                    >
+                      <Users className="w-4 h-4" /> Patient Directory
+                    </Button>
+                    <Button 
+                      onClick={() => router.push('/billing')}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2"
+                    >
+                      <CreditCard className="w-4 h-4" /> Create Bill
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      onClick={() => router.push('/billing')}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2"
+                    >
+                      <CreditCard className="w-4 h-4" /> Create Invoice
+                    </Button>
+                    <Button 
+                      onClick={() => router.push('/patients')}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2"
+                    >
+                      <Users className="w-4 h-4" /> Patient Directory
+                    </Button>
+                    {!isDoctor && (
+                      <Button 
+                        onClick={() => router.push('/attendance')}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2"
+                      >
+                        <UserCheck className="w-4 h-4" /> Attendance Roster
+                      </Button>
+                    )}
+                    <ExpenseLoggingModal
+                      centres={hubStats.centresList}
+                      userCentreId={profile?.centreId}
+                      userCentreName={profile?.centreName}
+                      userName={profile?.name}
+                      onExpenseAdded={() => getExpenses().then(eData => setHubStats(prev => ({ ...prev, expensesThisMonth: eData.reduce((s, e: any) => s + (e.amount || 0), 0) })))}
+                      trigger={
+                        <Button className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2">
+                          <Wallet className="w-4 h-4" /> Log Expense
+                        </Button>
+                      }
+                    />
+                  </>
+                )}
+                
                 <Button 
                   onClick={() => signOut()}
                   variant="outline"
                   className="bg-red-500/10 hover:bg-red-500/20 text-red-300 border-red-500/30 font-bold text-xs h-10 px-4 rounded-xl shadow-md gap-2"
                 >
-                  <LogOut className="w-4 h-4 text-red-400" /> Sign Out Session
+                  <LogOut className="w-4 h-4 text-red-400" /> Sign Out
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* 4 Role-Adaptive Metric Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            
-            {/* Card 1 */}
-            <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-blue-300 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500">
-                  {isAdmin ? 'Total Network Revenue' : isDoctor ? 'My Patients Today' : 'Today\'s Patients'}
-                </span>
-                <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
-                  {isAdmin ? <DollarSign className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+          {/* Metric Cards: 4 for Admin, Exactly 2 for Doctor & Reception */}
+          {isAdmin ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-blue-300 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500">Total Network Revenue</span>
+                  <div className="p-2 rounded-xl bg-blue-50 text-blue-600"><DollarSign className="w-4 h-4" /></div>
                 </div>
-              </div>
-              <div className="text-2xl font-black text-slate-900">
-                {isAdmin ? formatCurrency(hubStats.totalRevenue) : isDoctor ? `${hubStats.todayPatients} Patients` : `${hubStats.todayPatients} Scheduled`}
-              </div>
-              <div className="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
-                <span className="text-emerald-600 font-bold flex items-center">
-                  <TrendingUp className="w-3 h-3 mr-0.5" /> +14.2%
-                </span>
-                {isAdmin ? 'vs last month' : 'for current shift'}
-              </div>
-            </Card>
-
-            {/* Card 2 */}
-            <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-emerald-300 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500">
-                  {isAdmin ? 'Active Clinic Branches' : isDoctor ? 'Patient Rating' : 'Active Clinic Desk'}
-                </span>
-                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-                  {isAdmin ? <Building2 className="w-4 h-4" /> : isDoctor ? <Star className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                <div className="text-2xl font-black text-slate-900">{formatCurrency(hubStats.totalRevenue)}</div>
+                <div className="text-[11px] text-slate-500 font-medium">vs last month</div>
+              </Card>
+              <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-emerald-300 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500">Active Clinic Branches</span>
+                  <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600"><Building2 className="w-4 h-4" /></div>
                 </div>
-              </div>
-              <div className="text-2xl font-black text-slate-900">
-                {isAdmin ? `${hubStats.centreCount} Centres` : isDoctor ? '4.9 / 5.0' : (profile?.centreName?.split(',')[0] || 'NFC Clinic')}
-              </div>
-              <div className="text-[11px] text-slate-500 font-medium">
-                {isAdmin ? 'NFC, Vasant Vihar, Gurugram' : isDoctor ? 'Based on 48 verified reviews' : 'Operational front desk active'}
-              </div>
-            </Card>
-
-            {/* Card 3 */}
-            <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-amber-300 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500">
-                  {isAdmin ? 'Clinical Staff Roster' : isDoctor ? 'Top Procedure' : 'Pending Invoices'}
-                </span>
-                <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
-                  {isAdmin ? <Users className="w-4 h-4" /> : isDoctor ? <Zap className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                <div className="text-2xl font-black text-slate-900">{hubStats.centreCount} Centres</div>
+                <div className="text-[11px] text-slate-500 font-medium">NFC, Vasant Vihar, Gurugram</div>
+              </Card>
+              <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-amber-300 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500">Clinical Staff Roster</span>
+                  <div className="p-2 rounded-xl bg-amber-50 text-amber-600"><Users className="w-4 h-4" /></div>
                 </div>
-              </div>
-              <div className="text-2xl font-black text-slate-900">
-                {isAdmin ? `${hubStats.doctorCount} Doctors` : isDoctor ? 'Spine Rehab' : `${hubStats.pendingInvoices} Unpaid`}
-              </div>
-              <div className="text-[11px] text-slate-500 font-medium">
-                {isAdmin ? 'Across 3 active branches' : isDoctor ? 'Disc decompression focus' : 'Requires cashier follow-up'}
-              </div>
-            </Card>
-
-            {/* Card 4 */}
-            <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-purple-300 transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500">
-                  {isAdmin ? 'Net Monthly Profit' : isDoctor ? 'Consultation Hours' : 'Total Patients Registered'}
-                </span>
-                <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
-                  {isAdmin ? <Activity className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                <div className="text-2xl font-black text-slate-900">{hubStats.doctorCount} Doctors</div>
+                <div className="text-[11px] text-slate-500 font-medium">Across active branches</div>
+              </Card>
+              <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-purple-300 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500">Net Monthly Profit</span>
+                  <div className="p-2 rounded-xl bg-purple-50 text-purple-600"><Activity className="w-4 h-4" /></div>
                 </div>
-              </div>
-              <div className="text-2xl font-black text-slate-900">
-                {isAdmin ? formatCurrency(hubStats.totalRevenue - hubStats.expensesThisMonth) : isDoctor ? '32 hrs / wk' : `${hubStats.totalPatients} Patients`}
-              </div>
-              <div className="text-[11px] text-slate-500 font-medium">
-                {isAdmin ? `After ₹${(hubStats.expensesThisMonth/1000).toFixed(0)}k expenses` : isDoctor ? 'Primary & supervising care' : 'Verified database directory'}
-              </div>
-            </Card>
+                <div className="text-2xl font-black text-slate-900">{formatCurrency(hubStats.totalRevenue - hubStats.expensesThisMonth)}</div>
+                <div className="text-[11px] text-slate-500 font-medium">After expenses</div>
+              </Card>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Card 1: Total Patients */}
+              <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-6 space-y-2 hover:border-blue-300 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Patients</span>
+                  <div className="p-3 rounded-2xl bg-blue-50 text-blue-600"><Users className="w-6 h-6" /></div>
+                </div>
+                <div className="text-3xl font-black text-slate-900">{hubStats.totalPatients}</div>
+                <div className="text-xs text-blue-700 font-bold flex items-center gap-1">
+                  Registered patient directory
+                </div>
+              </Card>
 
-          </div>
+              {/* Card 2: Total Patients Conducted */}
+              <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-6 space-y-2 hover:border-emerald-300 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Patients Conducted</span>
+                  <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600"><Activity className="w-6 h-6" /></div>
+                </div>
+                <div className="text-3xl font-black text-slate-900">{hubStats.todayPatients}</div>
+                <div className="text-xs text-emerald-700 font-bold flex items-center gap-1">
+                  Consultations & visits completed
+                </div>
+              </Card>
+            </div>
+          )}
 
           {/* Main Content Grid: Primary Role Widget + Quick Action Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

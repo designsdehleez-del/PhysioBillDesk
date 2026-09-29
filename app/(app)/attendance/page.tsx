@@ -68,9 +68,9 @@ export default function AttendancePage() {
     if (profile?.role === 'doctor') {
       toast({
         title: 'Attendance Access Restricted',
-        description: 'Doctors mark attendance directly from their dashboard.',
+        description: 'Doctors mark attendance directly from their home command hub.',
       })
-      router.push('/dashboard')
+      router.push('/')
       return
     }
 

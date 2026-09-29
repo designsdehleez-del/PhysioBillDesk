@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { useToast } from '@/components/ui/use-toast'
 import { 
@@ -44,9 +45,14 @@ interface DoctorStat {
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { toast } = useToast()
   const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
+
+  useEffect(() => {
+    router.replace('/')
+  }, [router])
 
   const [loading, setLoading] = useState(true)
   const [allVisits, setAllVisits] = useState<StoredVisit[]>([])

@@ -883,6 +883,13 @@ export async function registerPatient(input: {
   primary_doctor_id?: string | null
   physiotherapist_id?: string | null
   primary_complaint?: string | null
+  referral_source?: 'Self' | 'Doctor' | 'Walk-in' | 'Patient/Friend' | 'Other' | null
+  referral_doctor_name?: string | null
+  referral_clinic_name?: string | null
+  referral_contact?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  initial_complaint?: string | null
   pain_vas?: number | null
   mobility_score?: number | null
   functional_score?: number | null
@@ -939,6 +946,13 @@ export async function registerPatient(input: {
     medical_notes: input.medical_notes || null,
     primary_doctor_id: input.primary_doctor_id || null,
     physiotherapist_id: input.physiotherapist_id || null,
+    referral_source: input.referral_source || 'Self',
+    referral_doctor_name: input.referral_doctor_name || null,
+    referral_clinic_name: input.referral_clinic_name || null,
+    referral_contact: input.referral_contact || null,
+    emergency_contact_name: input.emergency_contact_name || null,
+    emergency_contact_phone: input.emergency_contact_phone || null,
+    initial_complaint: input.initial_complaint || input.primary_complaint || null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }

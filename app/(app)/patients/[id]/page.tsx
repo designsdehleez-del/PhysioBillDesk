@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Printer, Receipt, User, FileText, Activity, Plus } from 'lucide-react'
+import { ArrowLeft, Printer, Receipt, User, FileText, Activity, Plus, Stethoscope } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -204,13 +204,16 @@ export default function PatientDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" className="border-blue-300 text-blue-700 bg-blue-50/50" onClick={() => setAssessmentModalOpen(true)}>
-            <Activity className="h-4 w-4 mr-1.5 text-blue-600" /> Log Assessment / VAS Score
+          <Button variant="outline" className="border-blue-300 text-blue-700 bg-blue-50/50" onClick={() => router.push(`/patients/${patient.id}/assessment?type=physiotherapy`)}>
+            <Stethoscope className="h-4 w-4 mr-1.5 text-blue-600" /> Physio Assessment
+          </Button>
+          <Button variant="outline" className="border-purple-300 text-purple-700 bg-purple-50/50" onClick={() => router.push(`/patients/${patient.id}/assessment?type=neurotherapy`)}>
+            <Activity className="h-4 w-4 mr-1.5 text-purple-600" /> Neuro Assessment
           </Button>
           <Button variant="outline" onClick={() => router.push(`/patients/${patient.id}/report`)}>
-            <FileText className="h-4 w-4 mr-1.5 text-blue-600" /> View Report Card
+            <FileText className="h-4 w-4 mr-1.5 text-slate-600" /> View Report Card
           </Button>
-          <Button onClick={() => router.push(`/billing?patientId=${patient.id}`)}>
+          <Button onClick={() => router.push(`/billing?patientId=${patient.id}`)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
             <Receipt className="h-4 w-4 mr-1.5" /> New Bill
           </Button>
         </div>

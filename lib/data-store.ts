@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import type { Centre, Doctor, Patient, Physiotherapist, Service, DiscountPreset, PackagePreset, PatientPackageCredit, PatientFeedback, FeedbackFormTemplate, FormField, ClinicExpense, ExpenseCategory } from '@/lib/supabase/types'
+import type { Centre, Doctor, Patient, Physiotherapist, Service, DiscountPreset, PackagePreset, PatientPackageCredit, PatientFeedback, FeedbackFormTemplate, FormField, ClinicExpense, ExpenseCategory, ClinicalAssessment } from '@/lib/supabase/types'
 import * as XLSX from 'xlsx'
 
 const DEFAULT_CENTRES: Centre[] = [
@@ -4667,4 +4667,51 @@ export function exportMonthlyPersonAttendanceToExcel(options: MonthlyAttendanceE
     : '_All_Staff'
 
   XLSX.writeFile(wb, `Physionautics_Attendance_Report_${options.month}${fileNamePersonTag}.xlsx`)
+}
+
+// ================= CLINICAL ASSESSMENTS (PHYSIO & NEURO) =================
+export async function getAssessments(patientId?: string): Promise<ClinicalAssessment[]> {
+  const CACHE_KEY = 'physio_clinical_assessments_v1'
+  let list: ClinicalAssessment[] = []
+
+  if (typeof window !== 'undefined') {
+    const cached = localStorage.getItem(CACHE_KEY)
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed)) list = parsed
+      } catch (_) {}
+    }
+  }
+
+  if (patientId) {
+    return list.filter(a => a.patient_id === patientId || a.patient_uid === patientId)
+  }
+  return list
+}
+
+export async function saveAssessment(assessment: Partial<ClinicalAssessment>): Promise<ClinicalAssessment> {
+  const CACHE_KEY = 'physio_clinical_assessments_v1'
+  const current = await getAssessments()
+
+  const newRecord: ClinicalAssessment = {
+    id: assessment.id || `ass-${Date.now()}`,
+    patient_id: assessment.patient_id || '',
+    patient_uid: assessment.patient_uid || 'CLN-PATIENT',
+    type: assessment.type || 'physiotherapy',
+    assessment_date: assessment.assessment_date || new Date().toISOString().split('T')[0],
+    doctor_id: assessment.doctor_id || null,
+    doctor_name: assessment.doctor_name || null,
+    vas_score: assessment.vas_score ?? null,
+    data: assessment.data || {},
+    created_at: assessment.created_at || new Date().toISOString(),
+  }
+
+  const updated = [newRecord, ...current.filter(a => a.id !== newRecord.id)]
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(updated))
+  }
+
+  return newRecord
 }

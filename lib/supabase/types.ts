@@ -87,10 +87,30 @@ export interface Patient {
   medical_notes: string | null
   primary_doctor_id?: string | null
   physiotherapist_id?: string | null
+  referral_source?: 'Self' | 'Doctor' | 'Walk-in' | 'Patient/Friend' | 'Other' | null
+  referral_doctor_name?: string | null
+  referral_clinic_name?: string | null
+  referral_contact?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  initial_complaint?: string | null
   created_at: string
   updated_at: string
 }
 export type PatientInsert = Omit<Patient, 'id' | 'created_at' | 'updated_at'>
+
+export interface ClinicalAssessment {
+  id: string
+  patient_id: string
+  patient_uid: string
+  type: 'physiotherapy' | 'neurotherapy'
+  assessment_date: string
+  doctor_id?: string | null
+  doctor_name?: string | null
+  vas_score?: number | null
+  data: Record<string, any>
+  created_at: string
+}
 
 export interface Service {
   id: string

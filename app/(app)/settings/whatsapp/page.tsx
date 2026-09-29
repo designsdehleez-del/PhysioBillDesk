@@ -3,26 +3,32 @@ import { useState, useEffect } from 'react'
 import { 
   MessageCircle, Send, Sparkles, Check, Copy, RefreshCw, 
   Settings, Key, Globe, Smartphone, HelpCircle, CheckCircle2,
-  AlertCircle, ArrowRight, ExternalLink, ShieldCheck, Tag
+  AlertCircle, ArrowRight, ExternalLink, ShieldCheck, Tag,
+  Users, Image as ImageIcon, Layers, Play, CheckSquare, Square, Filter, Search, Clock
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   getWhatsAppConfig,
   saveWhatsAppConfig,
   renderWhatsAppMessage,
+  renderBroadcastMessage,
   testWhatsAppApiConnection,
+  sendWhatsAppMediaMessageAPI,
   DEFAULT_WHATSAPP_TEMPLATE,
   PRESET_TEMPLATES,
+  PRESET_BROADCAST_CAMPAIGNS,
   AVAILABLE_VARIABLES,
   type WhatsAppConfig,
+  type BroadcastCampaign,
 } from '@/lib/whatsapp'
-import type { StoredVisit } from '@/lib/data-store'
+import { getPatients, getCentres, type StoredVisit } from '@/lib/data-store'
 
-// Sample visit data for real-time live preview
+// Sample visit data for real-time live billing preview
 const SAMPLE_VISIT: StoredVisit = {
   id: 'vis-sample',
   bill_number: 'INV-202609-0042',
@@ -50,6 +56,9 @@ const SAMPLE_VISIT: StoredVisit = {
 }
 
 export default function WhatsAppSettingsPage() {
+  const [activeTab, setActiveTab] = useState<'broadcast' | 'settings'>('broadcast')
+
+  // Settings State
   const [config, setConfig] = useState<WhatsAppConfig>({
     mode: 'deeplink',
     apiProvider: 'meta',
@@ -59,38 +68,151 @@ export default function WhatsAppSettingsPage() {
     messageTemplate: DEFAULT_WHATSAPP_TEMPLATE,
     includeFeedbackLink: true,
   })
-
   const [savedSuccess, setSavedSuccess] = useState(false)
   const [testPhone, setTestPhone] = useState('')
   const [testLoading, setTestLoading] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
-  const [copiedTag, setCopiedTag] = useState<string | null>(null)
+
+  // Patients Data & Broadcast State
+  const [patients, setPatients] = useState<any[]>([])
+  const [centres, setCentres] = useState<any[]>([])
+  const [selectedPatientIds, setSelectedPatientIds] = useState<Set<string>>(new Set())
+  const [selectedCentre, setSelectedCentre] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+
+  // Broadcast Message Composer State
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('camp_spine_health')
+  const [broadcastImageUrl, setBroadcastImageUrl] = useState<string>(PRESET_BROADCAST_CAMPAIGNS[0].imageUrl)
+  const [broadcastTemplate, setBroadcastTemplate] = useState<string>(PRESET_BROADCAST_CAMPAIGNS[0].template)
+
+  // Broadcast Execution State
+  const [isBroadcasting, setIsBroadcasting] = useState(false)
+  const [broadcastProgress, setBroadcastProgress] = useState({ current: 0, total: 0, currentName: '' })
+  const [broadcastLogs, setBroadcastLogs] = useState<{ name: string; phone: string; status: 'sent' | 'failed'; time: string }[]>([])
+  const [broadcastFinishedModal, setBroadcastFinishedModal] = useState(false)
 
   useEffect(() => {
-    const loaded = getWhatsAppConfig()
-    setConfig(loaded)
+    const loadedConfig = getWhatsAppConfig()
+    setConfig(loadedConfig)
+
+    async function loadData() {
+      try {
+        const [patList, centreList] = await Promise.all([getPatients(), getCentres()])
+        setPatients(patList)
+        setCentres(centreList)
+        // Default select all patients
+        const ids = new Set(patList.map((p: any) => p.id || p.uid))
+        setSelectedPatientIds(ids)
+      } catch (err) {
+        console.error('Failed to load broadcast patients:', err)
+      }
+    }
+    loadData()
   }, [])
 
-  const handleSave = () => {
+  const handleSaveConfig = () => {
     saveWhatsAppConfig(config)
     setSavedSuccess(true)
     setTimeout(() => setSavedSuccess(false), 3000)
   }
 
-  const handleInsertTag = (tag: string) => {
-    setConfig(prev => ({
-      ...prev,
-      messageTemplate: prev.messageTemplate + (prev.messageTemplate.endsWith(' ') ? '' : ' ') + tag,
-    }))
-    setCopiedTag(tag)
-    setTimeout(() => setCopiedTag(null), 1500)
+  const handleInsertTag = (tag: string, target: 'settings' | 'broadcast') => {
+    if (target === 'settings') {
+      setConfig(prev => ({
+        ...prev,
+        messageTemplate: prev.messageTemplate + (prev.messageTemplate.endsWith(' ') ? '' : ' ') + tag,
+      }))
+    } else {
+      setBroadcastTemplate(prev => prev + (prev.endsWith(' ') ? '' : ' ') + tag)
+    }
   }
 
-  const handleApplyPreset = (template: string) => {
-    setConfig(prev => ({
-      ...prev,
-      messageTemplate: template,
-    }))
+  const handleSelectCampaignPreset = (camp: BroadcastCampaign) => {
+    setSelectedCampaignId(camp.id)
+    setBroadcastImageUrl(camp.imageUrl)
+    setBroadcastTemplate(camp.template)
+  }
+
+  // Filtered patients for broadcast selection
+  const filteredPatients = patients.filter((p: any) => {
+    const matchesCentre = selectedCentre === 'all' || p.centre_name?.toLowerCase().includes(selectedCentre.toLowerCase()) || p.centre_id === selectedCentre
+    const matchesQuery = !searchQuery.trim() || 
+      (p.full_name || p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.phone || '').includes(searchQuery) ||
+      (p.uid || '').toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesCentre && matchesQuery
+  })
+
+  const toggleSelectPatient = (id: string) => {
+    const next = new Set(selectedPatientIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedPatientIds(next)
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedPatientIds.size === filteredPatients.length) {
+      setSelectedPatientIds(new Set())
+    } else {
+      const allIds = new Set(filteredPatients.map(p => p.id || p.uid))
+      setSelectedPatientIds(allIds)
+    }
+  }
+
+  // Execute Bulk Broadcast Dispatch
+  const handleStartBroadcast = async () => {
+    const targets = filteredPatients.filter(p => selectedPatientIds.has(p.id || p.uid))
+    if (targets.length === 0) {
+      alert('Please select at least 1 patient to send broadcast.')
+      return
+    }
+
+    setIsBroadcasting(true)
+    setBroadcastProgress({ current: 0, total: targets.length, currentName: '' })
+    setBroadcastLogs([])
+
+    const logs: { name: string; phone: string; status: 'sent' | 'failed'; time: string }[] = []
+
+    for (let i = 0; i < targets.length; i++) {
+      const patient = targets[i]
+      const pName = patient.full_name || patient.name || 'Patient'
+      const pPhone = patient.phone || ''
+      setBroadcastProgress({ current: i + 1, total: targets.length, currentName: pName })
+
+      const renderedText = renderBroadcastMessage(broadcastTemplate, patient)
+
+      if (config.mode === 'api' && config.accessToken && config.phoneNumberId) {
+        // Send via Meta Cloud API
+        const res = await sendWhatsAppMediaMessageAPI(pPhone, renderedText, broadcastImageUrl, config)
+        logs.push({
+          name: pName,
+          phone: pPhone,
+          status: res.success ? 'sent' : 'failed',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        })
+      } else {
+        // Queue Deep Link Mode - Open window per patient or open formatted web link
+        const cleanPhone = (pPhone || '').replace(/[^0-9]/g, '')
+        const fullMsg = (broadcastImageUrl ? `[PROMO BANNER: ${broadcastImageUrl}]\n\n` : '') + renderedText
+        const encoded = encodeURIComponent(fullMsg)
+        const waUrl = cleanPhone ? `https://wa.me/91${cleanPhone}?text=${encoded}` : `https://wa.me/?text=${encoded}`
+        
+        window.open(waUrl, '_blank')
+        logs.push({
+          name: pName,
+          phone: pPhone,
+          status: 'sent',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        })
+        // Short delay for browser tab popup
+        await new Promise(r => setTimeout(r, 600))
+      }
+
+      setBroadcastLogs([...logs])
+    }
+
+    setIsBroadcasting(false)
+    setBroadcastFinishedModal(true)
   }
 
   const handleTestSend = async () => {
@@ -110,371 +232,639 @@ export default function WhatsAppSettingsPage() {
     }
   }
 
-  // Live rendered preview
-  const previewText = renderWhatsAppMessage(config.messageTemplate || DEFAULT_WHATSAPP_TEMPLATE, SAMPLE_VISIT)
+  // Live rendered previews
+  const billingPreviewText = renderWhatsAppMessage(config.messageTemplate || DEFAULT_WHATSAPP_TEMPLATE, SAMPLE_VISIT)
+  
+  const samplePatient = filteredPatients[0] || { full_name: 'Vikram Malhotra', uid: 'CLN-202609-0018', centre_name: 'New Friends Colony, New Delhi', centre_phone: '08383936905', primary_doctor_name: 'Dr. Sarah Jenkins' }
+  const broadcastPreviewText = renderBroadcastMessage(broadcastTemplate, samplePatient)
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-emerald-50/80 border border-emerald-200 p-5 rounded-2xl">
+    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto pb-16">
+      {/* Page Title & Navigation Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-emerald-50/90 border border-emerald-200/90 p-5 rounded-2xl shadow-xs">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Badge className="bg-emerald-600 text-white font-medium gap-1">
-              <MessageCircle className="h-3 w-3" /> WhatsApp Communication Hub
+            <Badge className="bg-emerald-600 text-white font-semibold gap-1 text-xs">
+              <MessageCircle className="h-3.5 w-3.5" /> WhatsApp Business Communication Center
             </Badge>
-            <span className="text-xs text-emerald-800 font-semibold">Invoices & Patient Engagement</span>
+            <span className="text-xs text-emerald-800 font-bold">Physionautics Marketing & Care Hub</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">WhatsApp API & Message Studio</h1>
-          <p className="text-xs text-muted-foreground">
-            Configure WhatsApp Business API credentials and customize the prewritten message sent with patient bills & feedback links.
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            WhatsApp Bulk Broadcast & Messaging Studio
+          </h1>
+          <p className="text-xs text-slate-600">
+            Dispatch customizable Picture + Text bulk business announcements, festival greetings, and post-session billing receipts.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {savedSuccess && (
-            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 gap-1 animate-fadeIn">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Saved Successfully!
-            </Badge>
-          )}
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 text-xs h-9 shadow-sm" onClick={handleSave}>
-            <Check className="h-4 w-4" /> Save WhatsApp Settings
-          </Button>
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-2xs">
+          <button
+            onClick={() => setActiveTab('broadcast')}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+              activeTab === 'broadcast'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" /> Bulk Broadcast Studio
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+              activeTab === 'settings'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5" /> API & Billing Settings
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: API Mode & Template Studio (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* 1. Integration Mode Selection */}
-          <Card className="shadow-sm border">
-            <CardHeader className="pb-3 border-b bg-gray-50/60">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Settings className="h-4 w-4 text-emerald-600" /> 1. WhatsApp Delivery Mode
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Choose how WhatsApp messages should be dispatched when billing patients
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-5 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Mode 1: Deep Link */}
-                <button
-                  type="button"
-                  onClick={() => setConfig(prev => ({ ...prev, mode: 'deeplink' }))}
-                  className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
-                    config.mode === 'deeplink'
-                      ? 'border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-400/20 shadow-xs'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  {config.mode === 'deeplink' && (
-                    <span className="absolute top-3 right-3 text-emerald-600">
-                      <CheckCircle2 className="h-4 w-4" />
-                    </span>
-                  )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="h-4 w-4 text-emerald-600" />
-                      <p className="text-xs font-bold text-gray-900">Direct Web / App Deep-Link</p>
-                    </div>
-                    <Badge variant="outline" className="text-[9px] bg-emerald-50 text-emerald-700 border-emerald-200 mt-1">
-                      ⭐ Recommended · Zero Setup
-                    </Badge>
-                    <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-                      Opens patient chat instantly in WhatsApp Web or Mobile app with pre-filled formatted invoice & feedback link. Works 100% reliably on all devices without Meta approval.
-                    </p>
-                  </div>
-                </button>
-
-                {/* Mode 2: Cloud API */}
-                <button
-                  type="button"
-                  onClick={() => setConfig(prev => ({ ...prev, mode: 'api' }))}
-                  className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
-                    config.mode === 'api'
-                      ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-400/20 shadow-xs'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  {config.mode === 'api' && (
-                    <span className="absolute top-3 right-3 text-blue-600">
-                      <CheckCircle2 className="h-4 w-4" />
-                    </span>
-                  )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-blue-600" />
-                      <p className="text-xs font-bold text-gray-900">WhatsApp Business Cloud API</p>
-                    </div>
-                    <Badge variant="outline" className="text-[9px] bg-blue-50 text-blue-700 border-blue-200 mt-1">
-                      Automated Background API
-                    </Badge>
-                    <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-                      Sends automated background WhatsApp messages via Meta WhatsApp Cloud API or custom Webhook gateway using your verified business phone number.
-                    </p>
-                  </div>
-                </button>
-              </div>
-
-              {/* API Credentials Input (if API mode is active) */}
-              {config.mode === 'api' && (
-                <div className="mt-4 p-4 bg-blue-50/60 border border-blue-200 rounded-xl space-y-3 animate-fadeIn">
-                  <div className="flex items-center gap-2">
-                    <Key className="h-4 w-4 text-blue-700" />
-                    <p className="text-xs font-bold text-blue-950">Meta Cloud API Credentials</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-[11px] font-semibold">Meta Phone Number ID</Label>
-                      <Input
-                        placeholder="e.g. 104829104810928"
-                        className="text-xs bg-white"
-                        value={config.phoneNumberId || ''}
-                        onChange={e => setConfig(prev => ({ ...prev, phoneNumberId: e.target.value }))}
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-[11px] font-semibold">Custom API / Webhook Endpoint (Optional)</Label>
-                      <Input
-                        placeholder="https://graph.facebook.com/v19.0/..."
-                        className="text-xs bg-white"
-                        value={config.apiUrl || ''}
-                        onChange={e => setConfig(prev => ({ ...prev, apiUrl: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-semibold">System User Access Token / API Key</Label>
-                    <Input
-                      type="password"
-                      placeholder="EAABw..."
-                      className="text-xs bg-white font-mono"
-                      value={config.accessToken || ''}
-                      onChange={e => setConfig(prev => ({ ...prev, accessToken: e.target.value }))}
-                    />
-                    <p className="text-[10px] text-blue-800">
-                      Tokens are securely stored in your local clinic storage.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* 2. Prewritten Message Template Studio */}
-          <Card className="shadow-sm border">
-            <CardHeader className="pb-3 border-b bg-gray-50/60 flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-emerald-600" /> 2. Prewritten WhatsApp Bill Template
+      {/* ================= TAB 1: BULK BROADCAST STUDIO ================= */}
+      {activeTab === 'broadcast' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left 7 Columns: Campaign Composer & Patient Selector */}
+          <div className="lg:col-span-7 space-y-6">
+            
+            {/* 1. Select Campaign Preset & Image Header */}
+            <Card className="shadow-xs border border-slate-200/80 rounded-2xl bg-white">
+              <CardHeader className="pb-3 border-b bg-slate-50/60 rounded-t-2xl">
+                <CardTitle className="text-sm font-bold flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-emerald-600" /> 1. Select Campaign Preset & Media Banner
+                  </span>
+                  <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                    Picture + Text Support
+                  </Badge>
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Format the exact text, emojis, and billing breakdown sent to the patient
+                  Choose a prebuilt clinic campaign template or upload custom banner image & body text
                 </CardDescription>
-              </div>
-              <Button
-                size="xs"
-                variant="outline"
-                className="text-[11px] gap-1 border-gray-300 text-gray-700"
-                onClick={() => setConfig(prev => ({ ...prev, messageTemplate: DEFAULT_WHATSAPP_TEMPLATE }))}
-              >
-                <RefreshCw className="h-3 w-3" /> Reset Default
-              </Button>
-            </CardHeader>
-            <CardContent className="p-5 space-y-4">
-              {/* Preset Selector */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-700">Quick-Load Preset Templates:</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {PRESET_TEMPLATES.map(preset => (
+              </CardHeader>
+              <CardContent className="p-5 space-y-4">
+                {/* Campaign Presets Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {PRESET_BROADCAST_CAMPAIGNS.map(camp => (
                     <button
-                      key={preset.id}
+                      key={camp.id}
                       type="button"
-                      onClick={() => handleApplyPreset(preset.template)}
-                      className="p-2.5 rounded-lg border text-left bg-gray-50 hover:bg-emerald-50/70 hover:border-emerald-300 transition-all text-xs"
+                      onClick={() => handleSelectCampaignPreset(camp)}
+                      className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
+                        selectedCampaignId === camp.id
+                          ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-400/20 shadow-xs'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                      }`}
                     >
-                      <p className="font-bold text-gray-900 truncate">{preset.title}</p>
-                      <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">{preset.description}</p>
+                      <div>
+                        <p className="font-bold text-xs text-slate-900">{camp.title}</p>
+                        <p className="text-[10.5px] text-slate-500 mt-1 line-clamp-2">{camp.description}</p>
+                      </div>
                     </button>
                   ))}
                 </div>
-              </div>
 
-              {/* Dynamic Variables / Tags */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-700 flex items-center justify-between">
-                  <span>Click to Insert Dynamic Tag:</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">Replaces with live bill data</span>
-                </Label>
-                <div className="flex flex-wrap gap-1.5 p-2.5 bg-gray-50 rounded-xl border max-h-32 overflow-y-auto">
-                  {AVAILABLE_VARIABLES.map(v => (
-                    <button
-                      key={v.tag}
-                      type="button"
-                      onClick={() => handleInsertTag(v.tag)}
-                      title={`Example: ${v.example}`}
-                      className="inline-flex items-center gap-1 text-[11px] font-mono font-medium px-2 py-1 bg-white border rounded-md hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 transition-colors shadow-2xs"
-                    >
-                      <Tag className="h-2.5 w-2.5 text-emerald-600" />
-                      {v.tag}
-                    </button>
-                  ))}
+                {/* Banner Image URL input & Thumbnail preview */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <Label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> Banner Picture URL (High-Res Image Header)
+                  </Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      placeholder="https://images.unsplash.com/... or https://your-clinic.com/banner.jpg"
+                      className="text-xs bg-white flex-1 font-mono"
+                      value={broadcastImageUrl}
+                      onChange={e => setBroadcastImageUrl(e.target.value)}
+                    />
+                  </div>
+                  {broadcastImageUrl && (
+                    <div className="relative h-28 w-full rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
+                      <img
+                        src={broadcastImageUrl}
+                        alt="Campaign Banner"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none'
+                        }}
+                      />
+                      <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-xs">
+                        📷 Attached Header Media
+                      </span>
+                    </div>
+                  )}
                 </div>
-              </div>
 
-              {/* Editor Textarea */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Message Text & Layout</Label>
-                <textarea
-                  rows={14}
-                  className="w-full font-mono text-xs p-3.5 border rounded-xl bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 leading-relaxed resize-y"
-                  value={config.messageTemplate}
-                  onChange={e => setConfig(prev => ({ ...prev, messageTemplate: e.target.value }))}
-                  placeholder="Enter your custom message template here..."
-                />
-              </div>
+                {/* Text Composer & Dynamic Variable Tags */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <Label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <span>Message Text & Personalization:</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Supports *bold*, _italics_, emojis & tags</span>
+                  </Label>
 
-              {/* Quick Options */}
-              <div className="pt-2 border-t flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs text-muted-foreground">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
-                    checked={config.includeFeedbackLink !== false}
-                    onChange={e => setConfig(prev => ({ ...prev, includeFeedbackLink: e.target.checked }))}
+                  <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200/80 max-h-24 overflow-y-auto">
+                    {AVAILABLE_VARIABLES.map(v => (
+                      <button
+                        key={v.tag}
+                        type="button"
+                        onClick={() => handleInsertTag(v.tag, 'broadcast')}
+                        className="inline-flex items-center gap-1 text-[10.5px] font-mono font-semibold px-2 py-0.5 bg-white border border-slate-200 rounded-md hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 transition-colors shadow-2xs"
+                      >
+                        <Tag className="h-2.5 w-2.5 text-emerald-600" />
+                        {v.tag}
+                      </button>
+                    ))}
+                  </div>
+
+                  <textarea
+                    rows={10}
+                    className="w-full font-mono text-xs p-3.5 border border-slate-200 rounded-xl bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 leading-relaxed resize-y"
+                    value={broadcastTemplate}
+                    onChange={e => setBroadcastTemplate(e.target.value)}
+                    placeholder="Type your WhatsApp broadcast message here..."
                   />
-                  <span>Always ensure <strong>{`{feedback_url}`}</strong> rating link is active</span>
-                </label>
-
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1.5 shadow-sm" onClick={handleSave}>
-                  <Check className="h-3.5 w-3.5" /> Save Template
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column: Live WhatsApp Chat Simulator & Connection Test (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Live Mobile WhatsApp Chat Mockup */}
-          <Card className="shadow-md border overflow-hidden">
-            <div className="bg-[#075e54] text-white p-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-emerald-400 flex items-center justify-center font-bold text-gray-900 text-xs">
-                  PN
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* 2. Patient Filter & Recipient Selection Table */}
+            <Card className="shadow-xs border border-slate-200/80 rounded-2xl bg-white">
+              <CardHeader className="pb-3 border-b bg-slate-50/60 rounded-t-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs font-bold leading-tight">Physionautics Clinic 🌿</p>
-                  <p className="text-[10px] text-emerald-200">Official Patient Channel</p>
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Users className="h-4 w-4 text-emerald-600" /> 2. Target Patient Recipient List
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Select active clinic patients to receive this bulk campaign
+                  </CardDescription>
                 </div>
-              </div>
-              <Badge className="bg-emerald-700/80 text-white text-[10px] border-none font-normal">
-                Live Preview
-              </Badge>
-            </div>
-
-            <div 
-              className="p-4 space-y-3 min-h-[460px] max-h-[550px] overflow-y-auto bg-[#efeae2]"
-              style={{
-                backgroundImage: 'radial-gradient(#d1d7db 1px, transparent 1px)',
-                backgroundSize: '16px 16px',
-              }}
-            >
-              {/* Date divider */}
-              <div className="text-center">
-                <span className="text-[10px] bg-white/90 text-gray-600 px-2.5 py-0.5 rounded-full shadow-2xs font-medium">
-                  TODAY
-                </span>
-              </div>
-
-              {/* Chat Balloon */}
-              <div className="flex justify-end">
-                <div className="max-w-[92%] bg-[#d9fdd3] text-gray-900 p-3.5 rounded-2xl rounded-tr-xs shadow-xs text-xs whitespace-pre-wrap leading-relaxed space-y-2 border border-emerald-100">
-                  <div className="font-sans text-[11.5px] leading-relaxed break-words">
-                    {previewText}
+                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs font-bold px-3 py-1 rounded-full shrink-0">
+                  Targeting {selectedPatientIds.size} / {filteredPatients.length} Patients
+                </Badge>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                {/* Search & Centre Filters */}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                    <Input
+                      placeholder="Search patient by name, UID or mobile number..."
+                      className="text-xs pl-9 bg-white"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                    />
                   </div>
-                  <div className="flex justify-end items-center gap-1 text-[9px] text-gray-500 pt-1">
-                    <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    <span className="text-blue-600">✓✓</span>
+
+                  <div className="flex items-center gap-2">
+                    <Select value={selectedCentre} onValueChange={(val) => setSelectedCentre(val || 'all')}>
+                      <SelectTrigger className="text-xs h-9 w-[180px] bg-white">
+                        <SelectValue placeholder="Filter by Centre" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Clinic Branches</SelectItem>
+                        {centres.map(c => (
+                          <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={toggleSelectAll}
+                      className="text-xs font-semibold shrink-0 gap-1 border-slate-200"
+                    >
+                      {selectedPatientIds.size === filteredPatients.length ? (
+                        <> <CheckSquare className="w-3.5 h-3.5 text-emerald-600" /> Deselect All </>
+                      ) : (
+                        <> <Square className="w-3.5 h-3.5 text-slate-400" /> Select All ({filteredPatients.length}) </>
+                      )}
+                    </Button>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <CardContent className="p-3.5 bg-gray-50 border-t flex items-center justify-between text-xs text-muted-foreground">
-              <span>Preview rendered using sample patient data</span>
-              <Button
-                size="xs"
-                variant="ghost"
-                className="text-emerald-700 hover:text-emerald-800 gap-1 text-[11px]"
-                onClick={() => {
-                  navigator.clipboard.writeText(previewText)
-                  alert('Sample rendered message copied to clipboard!')
-                }}
-              >
-                <Copy className="h-3 w-3" /> Copy Sample
-              </Button>
-            </CardContent>
-          </Card>
+                {/* Patient List Table */}
+                <div className="border border-slate-200/70 rounded-xl overflow-hidden max-h-72 overflow-y-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-50 border-b text-slate-600 font-semibold sticky top-0">
+                      <tr>
+                        <th className="p-3 w-10 text-center">
+                          <input
+                            type="checkbox"
+                            className="rounded text-emerald-600 h-4 w-4"
+                            checked={selectedPatientIds.size === filteredPatients.length && filteredPatients.length > 0}
+                            onChange={toggleSelectAll}
+                          />
+                        </th>
+                        <th className="p-3">Patient Name</th>
+                        <th className="p-3">Patient UID</th>
+                        <th className="p-3">Mobile Number</th>
+                        <th className="p-3">Primary Branch</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {filteredPatients.map(p => {
+                        const pid = p.id || p.uid
+                        const isSelected = selectedPatientIds.has(pid)
+                        return (
+                          <tr
+                            key={pid}
+                            onClick={() => toggleSelectPatient(pid)}
+                            className={`cursor-pointer transition-colors ${
+                              isSelected ? 'bg-emerald-50/50 hover:bg-emerald-50/80' : 'hover:bg-slate-50'
+                            }`}
+                          >
+                            <td className="p-3 text-center" onClick={e => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                className="rounded text-emerald-600 h-4 w-4"
+                                checked={isSelected}
+                                onChange={() => toggleSelectPatient(pid)}
+                              />
+                            </td>
+                            <td className="p-3 font-bold text-slate-900">{p.full_name || p.name}</td>
+                            <td className="p-3 font-mono text-slate-500">{p.uid || 'CLN-PATIENT'}</td>
+                            <td className="p-3 font-medium text-slate-700">{p.phone || '+91 98765 43210'}</td>
+                            <td className="p-3 text-slate-500 truncate max-w-[140px]">{p.centre_name || 'New Friends Colony'}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
 
-          {/* Live Test Sender */}
-          <Card className="shadow-sm border">
-            <CardHeader className="pb-3 border-b bg-gray-50/60">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Send className="h-4 w-4 text-emerald-600" /> Test WhatsApp Delivery
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Send a live test message to verify formatting and delivery
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 space-y-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Test Mobile Number (10 Digits)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="e.g. 9876543210"
-                    className="text-xs flex-1 bg-white"
-                    value={testPhone}
-                    onChange={e => setTestPhone(e.target.value)}
-                  />
+                {/* Action Trigger Button */}
+                <div className="pt-2 flex flex-col sm:flex-row justify-between items-center gap-3">
+                  <div className="text-xs text-slate-500">
+                    Mode: <span className="font-bold text-slate-800">{config.mode === 'api' ? '⚡ Automated Meta WhatsApp Cloud API' : '📲 WhatsApp Web / App Queue Link'}</span>
+                  </div>
+
                   <Button
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 shrink-0"
-                    onClick={handleTestSend}
-                    disabled={testLoading}
+                    size="lg"
+                    onClick={handleStartBroadcast}
+                    disabled={isBroadcasting || selectedPatientIds.size === 0}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md gap-2 w-full sm:w-auto"
                   >
-                    {testLoading ? (
-                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                    {isBroadcasting ? (
+                      <> <RefreshCw className="w-4 h-4 animate-spin" /> Dispatching ({broadcastProgress.current}/{broadcastProgress.total})... </>
                     ) : (
-                      <Send className="h-3.5 w-3.5" />
+                      <> <Send className="w-4 h-4" /> Start Bulk Broadcast ({selectedPatientIds.size} Patients) </>
                     )}
-                    Send Test
                   </Button>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              {testResult && (
-                <div className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
-                  testResult.success ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-red-50 border-red-200 text-red-900'
-                }`}>
-                  {testResult.success ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
-                  )}
+          </div>
+
+          {/* Right 5 Columns: Live Phone Preview Simulator */}
+          <div className="lg:col-span-5 space-y-6">
+            <Card className="shadow-md border border-slate-200 overflow-hidden sticky top-6">
+              <div className="bg-[#075e54] text-white p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-emerald-400 flex items-center justify-center font-bold text-slate-900 text-xs shadow-xs">
+                    PN
+                  </div>
                   <div>
-                    <p className="font-bold">{testResult.success ? 'Delivery Success' : 'Delivery Notice'}</p>
-                    <p className="text-[11px] mt-0.5">{testResult.message}</p>
+                    <p className="text-xs font-bold leading-tight">Physionautics Clinic 🌿</p>
+                    <p className="text-[10px] text-emerald-200">Official Patient Channel</p>
                   </div>
                 </div>
-              )}
-            </CardContent>
+                <Badge className="bg-emerald-700/80 text-white text-[10px] border-none font-normal">
+                  Live Phone Preview
+                </Badge>
+              </div>
+
+              {/* Chat Canvas */}
+              <div 
+                className="p-4 space-y-3 min-h-[520px] max-h-[600px] overflow-y-auto bg-[#efeae2]"
+                style={{
+                  backgroundImage: 'radial-gradient(#d1d7db 1px, transparent 1px)',
+                  backgroundSize: '16px 16px',
+                }}
+              >
+                {/* Date tag */}
+                <div className="text-center">
+                  <span className="text-[10px] bg-white/90 text-slate-600 px-2.5 py-0.5 rounded-full shadow-2xs font-medium">
+                    TODAY
+                  </span>
+                </div>
+
+                {/* Broadcast Chat Bubble */}
+                <div className="flex justify-end">
+                  <div className="max-w-[94%] bg-[#d9fdd3] text-slate-900 p-3 rounded-2xl rounded-tr-xs shadow-xs text-xs whitespace-pre-wrap leading-relaxed space-y-2 border border-emerald-100 overflow-hidden">
+                    
+                    {/* Header Image if available */}
+                    {broadcastImageUrl && (
+                      <div className="rounded-xl overflow-hidden border border-emerald-200/80 max-h-48">
+                        <img
+                          src={broadcastImageUrl}
+                          alt="Broadcast Media Header"
+                          className="w-full h-36 object-cover"
+                          onError={(e) => { (e.target as HTMLElement).style.display = 'none' }}
+                        />
+                      </div>
+                    )}
+
+                    <div className="font-sans text-[11.5px] leading-relaxed break-words pt-1">
+                      {broadcastPreviewText}
+                    </div>
+
+                    <div className="flex justify-end items-center gap-1 text-[9px] text-slate-500 pt-1">
+                      <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-blue-600">✓✓</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <CardContent className="p-3.5 bg-slate-50 border-t flex items-center justify-between text-xs text-slate-500">
+                <span>Renders preview for <strong>{samplePatient.full_name || samplePatient.name}</strong></span>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  className="text-emerald-700 hover:text-emerald-800 gap-1 text-[11px]"
+                  onClick={() => {
+                    navigator.clipboard.writeText(broadcastPreviewText)
+                    alert('Broadcast message copied to clipboard!')
+                  }}
+                >
+                  <Copy className="h-3 w-3" /> Copy Message
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ================= TAB 2: API & BILLING SETTINGS ================= */}
+      {activeTab === 'settings' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column: API Mode & Billing Template Studio (7 cols) */}
+          <div className="lg:col-span-7 space-y-6">
+            <Card className="shadow-xs border border-slate-200/80 rounded-2xl bg-white">
+              <CardHeader className="pb-3 border-b bg-slate-50/60 rounded-t-2xl">
+                <CardTitle className="text-sm font-bold flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-emerald-600" /> 1. WhatsApp Delivery Mode
+                  </span>
+                  {savedSuccess && (
+                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 gap-1 animate-fadeIn">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Saved!
+                    </Badge>
+                  )}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Choose how WhatsApp messages should be dispatched when billing patients
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-5 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Mode 1: Deep Link */}
+                  <button
+                    type="button"
+                    onClick={() => setConfig(prev => ({ ...prev, mode: 'deeplink' }))}
+                    className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
+                      config.mode === 'deeplink'
+                        ? 'border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-400/20 shadow-xs'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    {config.mode === 'deeplink' && (
+                      <span className="absolute top-3 right-3 text-emerald-600">
+                        <CheckCircle2 className="h-4 w-4" />
+                      </span>
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="h-4 w-4 text-emerald-600" />
+                        <p className="text-xs font-bold text-slate-900">Direct Web / App Deep-Link</p>
+                      </div>
+                      <Badge variant="outline" className="text-[9px] bg-emerald-50 text-emerald-700 border-emerald-200 mt-1">
+                        ⭐ Recommended · Zero Setup
+                      </Badge>
+                      <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                        Opens patient chat instantly in WhatsApp Web or Mobile app with pre-filled formatted invoice & feedback link. Works 100% reliably on all devices without Meta approval.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Mode 2: Cloud API */}
+                  <button
+                    type="button"
+                    onClick={() => setConfig(prev => ({ ...prev, mode: 'api' }))}
+                    className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
+                      config.mode === 'api'
+                        ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-400/20 shadow-xs'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    {config.mode === 'api' && (
+                      <span className="absolute top-3 right-3 text-blue-600">
+                        <CheckCircle2 className="h-4 w-4" />
+                      </span>
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-blue-600" />
+                        <p className="text-xs font-bold text-slate-900">WhatsApp Business Cloud API</p>
+                      </div>
+                      <Badge variant="outline" className="text-[9px] bg-blue-50 text-blue-700 border-blue-200 mt-1">
+                        Automated Background API
+                      </Badge>
+                      <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                        Sends automated background WhatsApp messages via Meta WhatsApp Cloud API or custom Webhook gateway using your verified business phone number.
+                      </p>
+                    </div>
+                  </button>
+                </div>
+
+                {/* API Credentials Input */}
+                {config.mode === 'api' && (
+                  <div className="mt-4 p-4 bg-blue-50/60 border border-blue-200 rounded-xl space-y-3 animate-fadeIn">
+                    <div className="flex items-center gap-2">
+                      <Key className="h-4 w-4 text-blue-700" />
+                      <p className="text-xs font-bold text-blue-950">Meta Cloud API Credentials</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-semibold">Meta Phone Number ID</Label>
+                        <Input
+                          placeholder="e.g. 104829104810928"
+                          className="text-xs bg-white font-mono"
+                          value={config.phoneNumberId || ''}
+                          onChange={e => setConfig(prev => ({ ...prev, phoneNumberId: e.target.value }))}
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-semibold">Custom API / Webhook Endpoint (Optional)</Label>
+                        <Input
+                          placeholder="https://graph.facebook.com/v19.0/..."
+                          className="text-xs bg-white font-mono"
+                          value={config.apiUrl || ''}
+                          onChange={e => setConfig(prev => ({ ...prev, apiUrl: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-semibold">System User Access Token / API Key</Label>
+                      <Input
+                        type="password"
+                        placeholder="EAABw..."
+                        className="text-xs bg-white font-mono"
+                        value={config.accessToken || ''}
+                        onChange={e => setConfig(prev => ({ ...prev, accessToken: e.target.value }))}
+                      />
+                      <p className="text-[10px] text-blue-800">
+                        Tokens are securely stored in your local clinic storage.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Prewritten Billing Template Studio */}
+            <Card className="shadow-xs border border-slate-200/80 rounded-2xl bg-white">
+              <CardHeader className="pb-3 border-b bg-slate-50/60 rounded-t-2xl flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-emerald-600" /> 2. Prewritten WhatsApp Bill Template
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Format the exact text, emojis, and billing breakdown sent to the patient
+                  </CardDescription>
+                </div>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  className="text-[11px] gap-1 border-slate-300 text-slate-700"
+                  onClick={() => setConfig(prev => ({ ...prev, messageTemplate: DEFAULT_WHATSAPP_TEMPLATE }))}
+                >
+                  <RefreshCw className="h-3 w-3" /> Reset Default
+                </Button>
+              </CardHeader>
+              <CardContent className="p-5 space-y-4">
+                {/* Preset Selector */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700">Quick-Load Preset Templates:</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {PRESET_TEMPLATES.map(preset => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setConfig(prev => ({ ...prev, messageTemplate: preset.template }))}
+                        className="p-2.5 rounded-lg border text-left bg-slate-50 hover:bg-emerald-50/70 hover:border-emerald-300 transition-all text-xs"
+                      >
+                        <p className="font-bold text-slate-900 truncate">{preset.title}</p>
+                        <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">{preset.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Editor Textarea */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Message Text & Layout</Label>
+                  <textarea
+                    rows={12}
+                    className="w-full font-mono text-xs p-3.5 border rounded-xl bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 leading-relaxed resize-y"
+                    value={config.messageTemplate}
+                    onChange={e => setConfig(prev => ({ ...prev, messageTemplate: e.target.value }))}
+                  />
+                </div>
+
+                <div className="pt-2 border-t flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs text-slate-500">
+                  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1.5 shadow-xs" onClick={handleSaveConfig}>
+                    <Check className="h-3.5 w-3.5" /> Save WhatsApp Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column: Live Billing Preview & Connection Test */}
+          <div className="lg:col-span-5 space-y-6">
+            <Card className="shadow-md border border-slate-200 overflow-hidden sticky top-6">
+              <div className="bg-[#075e54] text-white p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-emerald-400 flex items-center justify-center font-bold text-slate-900 text-xs">
+                    PN
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold leading-tight">Physionautics Billing 🌿</p>
+                    <p className="text-[10px] text-emerald-200">Invoice Receipt Channel</p>
+                  </div>
+                </div>
+                <Badge className="bg-emerald-700/80 text-white text-[10px] border-none font-normal">
+                  Invoice Preview
+                </Badge>
+              </div>
+
+              <div 
+                className="p-4 space-y-3 min-h-[460px] max-h-[550px] overflow-y-auto bg-[#efeae2]"
+                style={{
+                  backgroundImage: 'radial-gradient(#d1d7db 1px, transparent 1px)',
+                  backgroundSize: '16px 16px',
+                }}
+              >
+                <div className="flex justify-end">
+                  <div className="max-w-[92%] bg-[#d9fdd3] text-slate-900 p-3.5 rounded-2xl rounded-tr-xs shadow-xs text-xs whitespace-pre-wrap leading-relaxed space-y-2 border border-emerald-100">
+                    <div className="font-sans text-[11.5px] leading-relaxed break-words">
+                      {billingPreviewText}
+                    </div>
+                    <div className="flex justify-end items-center gap-1 text-[9px] text-slate-500 pt-1">
+                      <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-blue-600">✓✓</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Broadcast Finished Dialog Modal */}
+      {broadcastFinishedModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <Card className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200 space-y-4 p-6">
+            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="text-lg font-extrabold text-slate-900">Broadcast Completed!</h3>
+              <p className="text-xs text-slate-500">
+                Bulk campaign dispatched to {broadcastLogs.length} target patient recipients.
+              </p>
+            </div>
+
+            <div className="max-h-48 overflow-y-auto border border-slate-200/80 rounded-xl divide-y divide-slate-100 text-xs">
+              {broadcastLogs.map((log, idx) => (
+                <div key={idx} className="p-2.5 flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-slate-900">{log.name}</p>
+                    <p className="text-[10px] text-slate-400">{log.phone}</p>
+                  </div>
+                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-semibold">
+                    Sent ✓
+                  </Badge>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              onClick={() => setBroadcastFinishedModal(false)}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl"
+            >
+              Done & Close
+            </Button>
           </Card>
         </div>
-      </div>
+      )}
     </div>
   )
 }

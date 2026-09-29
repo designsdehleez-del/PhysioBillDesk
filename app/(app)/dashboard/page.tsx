@@ -16,9 +16,10 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
+import { useToast } from '@/components/ui/use-toast'
 import { 
   getVisits, getCentres, getPatientFeedback, getDoctors, exportBillsToExcel, 
-  getExpenses, deleteExpense, exportExpensesToExcel, getPatients, type StoredVisit 
+  getExpenses, deleteExpense, exportExpensesToExcel, getPatients, saveAttendanceRecord, type StoredVisit 
 } from '@/lib/data-store'
 import { FinancialTrackingView } from '@/components/dashboard/financial-tracking-view'
 import { ExpenseLoggingModal } from '@/components/dashboard/expense-logging-modal'
@@ -43,6 +44,7 @@ interface DoctorStat {
 }
 
 export default function DashboardPage() {
+  const { toast } = useToast()
   const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
 
@@ -565,57 +567,39 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Operational Reception Cards (Financial Growth & Network Revenue Masked) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Card 1: Patients Registered Today */}
+        {/* Operational Reception Metric Cards - Exactly 2 Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Card 1: Total Patients */}
           <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
             <Card className="border border-blue-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-blue-50/30 rounded-2xl h-full">
-              <CardContent className="p-5 flex items-center justify-between">
+              <CardContent className="p-6 flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Patients Registered Today</p>
-                  <p className="text-3xl font-black text-blue-950">{patientsRegisteredToday.length}</p>
-                  <p className="text-[11px] text-blue-700 font-bold flex items-center gap-1">
-                    <UserPlus className="h-3 w-3 text-blue-600" /> New Patient Profiles
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Patients</p>
+                  <p className="text-4xl font-black text-blue-950">{patients.length}</p>
+                  <p className="text-xs text-blue-700 font-bold flex items-center gap-1 mt-1">
+                    <Users className="h-3.5 w-3.5 text-blue-600" /> Registered Clinic Patients
                   </p>
                 </div>
-                <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-sm">
-                  <UserPlus className="h-6 w-6" />
+                <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-sm">
+                  <Users className="h-8 w-8" />
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* Card 2: Invoices Generated Today */}
+          {/* Card 2: Total Patients Conducted / Seen */}
           <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
             <Card className="border border-emerald-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-emerald-50/30 rounded-2xl h-full">
-              <CardContent className="p-5 flex items-center justify-between">
+              <CardContent className="p-6 flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Invoices Generated Today</p>
-                  <p className="text-3xl font-black text-emerald-950">{todayVisitsList.length}</p>
-                  <p className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
-                    <Receipt className="h-3 w-3 text-emerald-600" /> Clinical Bills Created
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Patients Conducted</p>
+                  <p className="text-4xl font-black text-emerald-950">{filteredVisits.length}</p>
+                  <p className="text-xs text-emerald-700 font-bold flex items-center gap-1 mt-1">
+                    <Activity className="h-3.5 w-3.5 text-emerald-600" /> Consultations & Visits Logged
                   </p>
                 </div>
-                <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-sm">
-                  <Receipt className="h-6 w-6" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Card 3: Expenses Logged Today */}
-          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
-            <Card className="border border-rose-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-rose-50/30 rounded-2xl h-full">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Expenses Logged Today</p>
-                  <p className="text-3xl font-black text-rose-950">{formatCurrency(todayExpensesAmount)}</p>
-                  <p className="text-[11px] text-rose-700 font-bold flex items-center gap-1">
-                    <Wallet className="h-3 w-3 text-rose-600" /> {todayExpensesList.length} Entries Logged
-                  </p>
-                </div>
-                <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-sm">
-                  <Wallet className="h-6 w-6" />
+                <div className="p-4 bg-emerald-600 text-white rounded-2xl shadow-sm">
+                  <Activity className="h-8 w-8" />
                 </div>
               </CardContent>
             </Card>
@@ -648,9 +632,9 @@ export default function DashboardPage() {
                 </Button>
               }
             />
-            <Link href="/settings/whatsapp" className="w-full">
-              <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs h-11 rounded-xl shadow-xs gap-2">
-                <MessageCircle className="h-4 w-4" /> WhatsApp Receipt
+            <Link href="/attendance" className="w-full">
+              <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs h-11 rounded-xl shadow-xs gap-2">
+                <Clock className="h-4 w-4" /> Manage Attendance
               </Button>
             </Link>
           </div>
@@ -768,6 +752,35 @@ export default function DashboardPage() {
   }
 
   if (profile?.role === 'doctor') {
+    const handleMarkAttendance = async () => {
+      try {
+        const todayDate = new Date().toISOString().split('T')[0]
+        const checkInTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+        
+        await saveAttendanceRecord({
+          staff_id: activeDoctorId || profile.id || 'doc-101',
+          staff_name: profile.name || 'Doctor',
+          role: 'doctor',
+          centre_id: profile.centreId || 'c1111111-1111-1111-1111-111111111111',
+          centre_name: profile.centreName || 'Physionautics Clinic',
+          date: todayDate,
+          status: 'Present',
+          check_in_time: checkInTime,
+        })
+        
+        toast({
+          title: 'Attendance Marked!',
+          description: `Checked in as Present today at ${checkInTime}.`,
+        })
+      } catch (err) {
+        toast({
+          title: 'Error Marking Attendance',
+          description: 'Failed to record attendance.',
+          variant: 'destructive',
+        })
+      }
+    }
+
     return (
       <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
         {/* Doctor Portal Header Banner */}
@@ -788,93 +801,79 @@ export default function DashboardPage() {
               Welcome, Dr. {profile?.name ? profile.name.replace(/^dr\.\s*/i, '') : 'Doctor'}
             </h1>
             <p className="text-xs sm:text-sm text-teal-100/80">
-              100% Net Tagged Revenue, Assigned Patients & Clinical Billing History
+              Assigned Patients, Clinical Consultations & Expense Logging
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 bg-teal-950/70 p-2.5 rounded-2xl border border-teal-800/80">
+            <Button 
+              size="sm" 
+              onClick={handleMarkAttendance}
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold gap-1.5 h-9 rounded-xl shadow-xs"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" /> Mark My Attendance
+            </Button>
+            
+            <ExpenseLoggingModal
+              centres={centres}
+              userCentreId={profile?.centreId}
+              userCentreName={profile?.centreName}
+              userName={profile?.name}
+              onExpenseAdded={() => getExpenses().then(setExpenses)}
+              trigger={
+                <Button size="sm" className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold gap-1.5 h-9 rounded-xl shadow-xs">
+                  <Wallet className="h-3.5 w-3.5" /> Log Expense
+                </Button>
+              }
+            />
+
             <Link href="/patients">
               <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 h-9 rounded-xl">
                 <UserPlus className="h-3.5 w-3.5" /> Register Patient
               </Button>
             </Link>
+            
             <Link href="/billing">
               <Button size="sm" variant="outline" className="bg-teal-900 hover:bg-teal-800 text-teal-100 border-teal-700 text-xs font-bold gap-1.5 h-9 rounded-xl">
-                <Receipt className="h-3.5 w-3.5 text-emerald-400" /> New Clinical Bill
+                <Receipt className="h-3.5 w-3.5 text-emerald-400" /> New Bill
               </Button>
             </Link>
           </div>
         </motion.div>
 
-        {/* My Tagged Revenue Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: This Month Tagged Revenue */}
-          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
-            <Card className="border border-emerald-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-emerald-50/30 rounded-2xl h-full">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">My Tagged Revenue (This Month)</p>
-                  <p className="text-2xl font-black text-emerald-950">{formatCurrency(thisMonthTaggedRevenue)}</p>
-                  <p className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
-                    <Tag className="h-3 w-3 text-emerald-600" /> 100% Primary Doctor Tagged
-                  </p>
-                </div>
-                <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-sm">
-                  <DollarSign className="h-6 w-6" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Card 2: YTD Tagged Revenue */}
-          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
-            <Card className="border border-blue-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-blue-50/30 rounded-2xl h-full">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">My Tagged Revenue (YTD)</p>
-                  <p className="text-2xl font-black text-blue-950">{formatCurrency(ytdTaggedRevenue)}</p>
-                  <p className="text-[11px] text-blue-700 font-bold flex items-center gap-1">
-                    <Calendar className="h-3 w-3 text-blue-600" /> Year-To-Date Total
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-sm">
-                  <TrendingUp className="h-6 w-6" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Card 3: Total Tagged Revenue */}
-          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
-            <Card className="border border-purple-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-purple-50/30 rounded-2xl h-full">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Tagged Revenue</p>
-                  <p className="text-2xl font-black text-purple-950">{formatCurrency(totalTaggedRevenue)}</p>
-                  <p className="text-[11px] text-purple-700 font-bold flex items-center gap-1">
-                    <Wallet className="h-3 w-3 text-purple-600" /> {primaryTaggedVisits.length} Primary Invoices
-                  </p>
-                </div>
-                <div className="p-3 bg-purple-600 text-white rounded-2xl shadow-sm">
-                  <Award className="h-6 w-6" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Card 4: My Patients Count */}
+        {/* Doctor Metric Cards - Exactly 2 Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Card 1: Total Patients */}
           <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
             <Card className="border border-teal-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-teal-50/30 rounded-2xl h-full">
-              <CardContent className="p-5 flex items-center justify-between">
+              <CardContent className="p-6 flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">My Primary Patients</p>
-                  <p className="text-2xl font-black text-teal-950">{myPatients.length}</p>
-                  <p className="text-[11px] text-teal-700 font-bold flex items-center gap-1">
-                    <Users className="h-3 w-3 text-teal-600" /> Registered & Attended
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Patients</p>
+                  <p className="text-4xl font-black text-teal-950">{myPatients.length}</p>
+                  <p className="text-xs text-teal-700 font-bold flex items-center gap-1 mt-1">
+                    <Users className="h-3.5 w-3.5 text-teal-600" /> Assigned Primary Patients
                   </p>
                 </div>
-                <div className="p-3 bg-teal-600 text-white rounded-2xl shadow-sm">
-                  <Stethoscope className="h-6 w-6" />
+                <div className="p-4 bg-teal-600 text-white rounded-2xl shadow-sm">
+                  <Stethoscope className="h-8 w-8" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Card 2: Total Patients Conducted / Seen */}
+          <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.2 }}>
+            <Card className="border border-blue-200/90 shadow-xs hover:shadow-md transition-shadow bg-gradient-to-br from-white to-blue-50/30 rounded-2xl h-full">
+              <CardContent className="p-6 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Patients Conducted</p>
+                  <p className="text-4xl font-black text-blue-950">{doctorVisits.length}</p>
+                  <p className="text-xs text-blue-700 font-bold flex items-center gap-1 mt-1">
+                    <Activity className="h-3.5 w-3.5 text-blue-600" /> Consultations & Visits Completed
+                  </p>
+                </div>
+                <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-sm">
+                  <Activity className="h-8 w-8" />
                 </div>
               </CardContent>
             </Card>

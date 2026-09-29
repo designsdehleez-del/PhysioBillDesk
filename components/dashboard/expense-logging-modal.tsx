@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Plus, DollarSign, Wallet, Calendar, Building2, CreditCard, Tag, RefreshCw } from 'lucide-react'
 import { 
   Dialog, DialogContent, DialogDescription, 
@@ -52,6 +52,14 @@ export function ExpenseLoggingModal({
   const [description, setDescription] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Bank Transfer' | 'UPI' | 'Card'>('UPI')
   const [selectedCentreId, setSelectedCentreId] = useState<string>(userCentreId || (centres[0]?.id ?? 'c1111111-1111-1111-1111-111111111111'))
+
+  useEffect(() => {
+    if (userCentreId) {
+      setSelectedCentreId(userCentreId)
+    } else if (centres && centres.length > 0) {
+      setSelectedCentreId(prev => (prev ? prev : centres[0].id))
+    }
+  }, [userCentreId, centres])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

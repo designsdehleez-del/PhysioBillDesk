@@ -63,12 +63,21 @@ export default function AttendancePage() {
   const [staffList, setStaffList] = useState(DEFAULT_STAFF_MEMBERS)
   const [loading, setLoading] = useState(true)
 
-  // Synchronize clinic selection based on user role
+  // Synchronize clinic selection based on user role and restrict doctor access
   useEffect(() => {
+    if (profile?.role === 'doctor') {
+      toast({
+        title: 'Attendance Access Restricted',
+        description: 'Doctors mark attendance directly from their dashboard.',
+      })
+      router.push('/dashboard')
+      return
+    }
+
     if (!isAdmin && profile?.centreId) {
       setSelectedCentre(profile.centreId)
     }
-  }, [isAdmin, profile])
+  }, [isAdmin, profile, router, toast])
 
   const loadData = useCallback(async () => {
     setLoading(true)

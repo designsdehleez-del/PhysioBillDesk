@@ -119,6 +119,21 @@ Thank you!`,
 
 export const PRESET_BROADCAST_CAMPAIGNS: BroadcastCampaign[] = [
   {
+    id: 'camp_custom',
+    title: '✏️ Custom Message & Announcement',
+    description: 'Compose your own custom broadcast message from scratch or edit your saved draft.',
+    imageUrl: '',
+    template: `🏥 *PHYSIONAUTICS CLINIC ANNOUNCEMENT* 🌿
+━━━━━━━━━━━━━━━━━━━━
+Dear *{patient_name}*,
+
+[Write your custom message or clinic announcement here...]
+
+Warm regards,
+*Physionautics Team ({centre_name})*
+📞 Contact: {centre_phone}`,
+  },
+  {
     id: 'camp_spine_health',
     title: '🌿 Free Spine & Posture Health Camp',
     description: 'Promotional announcement for special consultation camp with banner.',
@@ -202,6 +217,20 @@ To a healthier, pain-free life! 🌿
 *Physionautics Clinic*`,
   },
 ]
+
+export function getSavedCustomBroadcast(): { imageUrl: string; template: string } {
+  if (typeof window === 'undefined') return { imageUrl: '', template: '' }
+  try {
+    const saved = localStorage.getItem('physio_custom_broadcast_draft_v1')
+    if (saved) return JSON.parse(saved)
+  } catch (_) {}
+  return { imageUrl: '', template: '' }
+}
+
+export function saveCustomBroadcast(imageUrl: string, template: string) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('physio_custom_broadcast_draft_v1', JSON.stringify({ imageUrl, template }))
+}
 
 export const AVAILABLE_VARIABLES = [
   { tag: '{patient_name}', label: 'Patient Full Name', example: 'Rahul Verma' },

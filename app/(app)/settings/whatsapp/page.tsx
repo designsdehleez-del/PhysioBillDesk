@@ -4,7 +4,8 @@ import {
   MessageCircle, Send, Sparkles, Check, Copy, RefreshCw, 
   Settings, Key, Globe, Smartphone, HelpCircle, CheckCircle2,
   AlertCircle, ArrowRight, ExternalLink, ShieldCheck, Tag,
-  Users, Image as ImageIcon, Layers, Play, CheckSquare, Square, Filter, Search, Clock
+  Users, Image as ImageIcon, Layers, Play, CheckSquare, Square, Filter, Search, Clock,
+  Upload, Trash2, Plus, FileText, X, ImagePlus, Save, RotateCcw
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,8 @@ import {
   renderBroadcastMessage,
   testWhatsAppApiConnection,
   sendWhatsAppMediaMessageAPI,
+  getSavedCustomBroadcast,
+  saveCustomBroadcast,
   DEFAULT_WHATSAPP_TEMPLATE,
   PRESET_TEMPLATES,
   PRESET_BROADCAST_CAMPAIGNS,
@@ -81,9 +84,11 @@ export default function WhatsAppSettingsPage() {
   const [searchQuery, setSearchQuery] = useState<string>('')
 
   // Broadcast Message Composer State
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('camp_spine_health')
-  const [broadcastImageUrl, setBroadcastImageUrl] = useState<string>(PRESET_BROADCAST_CAMPAIGNS[0].imageUrl)
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('camp_custom')
+  const [broadcastImageUrl, setBroadcastImageUrl] = useState<string>('')
   const [broadcastTemplate, setBroadcastTemplate] = useState<string>(PRESET_BROADCAST_CAMPAIGNS[0].template)
+  const [uploadedFileName, setUploadedFileName] = useState<string>('')
+  const [savedCustomNotice, setSavedCustomNotice] = useState(false)
 
   // Broadcast Execution State
   const [isBroadcasting, setIsBroadcasting] = useState(false)
@@ -94,6 +99,13 @@ export default function WhatsAppSettingsPage() {
   useEffect(() => {
     const loadedConfig = getWhatsAppConfig()
     setConfig(loadedConfig)
+
+    // Load saved custom broadcast if available
+    const savedCustom = getSavedCustomBroadcast()
+    if (savedCustom.template || savedCustom.imageUrl) {
+      setBroadcastImageUrl(savedCustom.imageUrl)
+      setBroadcastTemplate(savedCustom.template)
+    }
 
     async function loadData() {
       try {
@@ -129,8 +141,60 @@ export default function WhatsAppSettingsPage() {
 
   const handleSelectCampaignPreset = (camp: BroadcastCampaign) => {
     setSelectedCampaignId(camp.id)
-    setBroadcastImageUrl(camp.imageUrl)
-    setBroadcastTemplate(camp.template)
+    if (camp.id === 'camp_custom') {
+      const saved = getSavedCustomBroadcast()
+      if (saved.template || saved.imageUrl) {
+        setBroadcastImageUrl(saved.imageUrl)
+        setBroadcastTemplate(saved.template)
+      } else {
+        setBroadcastImageUrl(camp.imageUrl)
+        setBroadcastTemplate(camp.template)
+      }
+    } else {
+      setBroadcastImageUrl(camp.imageUrl)
+      setBroadcastTemplate(camp.template)
+    }
+  }
+
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Image file size exceeds 8MB. Please choose a smaller image.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      const dataUrl = evt.target?.result as string
+      if (dataUrl) {
+        setBroadcastImageUrl(dataUrl)
+        setUploadedFileName(file.name)
+        if (selectedCampaignId === 'camp_custom') {
+          saveCustomBroadcast(dataUrl, broadcastTemplate)
+        }
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleClearImage = () => {
+    setBroadcastImageUrl('')
+    setUploadedFileName('')
+    if (selectedCampaignId === 'camp_custom') {
+      saveCustomBroadcast('', broadcastTemplate)
+    }
+  }
+
+  const handleSaveCustomDraft = () => {
+    saveCustomBroadcast(broadcastImageUrl, broadcastTemplate)
+    setSavedCustomNotice(true)
+    setTimeout(() => setSavedCustomNotice(false), 3000)
+  }
+
+  const handleClearTemplate = () => {
+    setBroadcastTemplate('')
   }
 
   // Filtered patients for broadcast selection
@@ -193,7 +257,7 @@ export default function WhatsAppSettingsPage() {
       } else {
         // Queue Deep Link Mode - Open window per patient or open formatted web link
         const cleanPhone = (pPhone || '').replace(/[^0-9]/g, '')
-        const fullMsg = (broadcastImageUrl ? `[PROMO BANNER: ${broadcastImageUrl}]\n\n` : '') + renderedText
+        const fullMsg = (broadcastImageUrl && !broadcastImageUrl.startsWith('data:') ? `[PROMO BANNER: ${broadcastImageUrl}]\n\n` : '') + renderedText
         const encoded = encodeURIComponent(fullMsg)
         const waUrl = cleanPhone ? `https://wa.me/91${cleanPhone}?text=${encoded}` : `https://wa.me/?text=${encoded}`
         
@@ -293,95 +357,194 @@ export default function WhatsAppSettingsPage() {
               <CardHeader className="pb-3 border-b bg-slate-50/60 rounded-t-2xl">
                 <CardTitle className="text-sm font-bold flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-emerald-600" /> 1. Select Campaign Preset & Media Banner
+                    <Sparkles className="h-4 w-4 text-emerald-600" /> 1. Select Preset Campaign or Write Custom Message
                   </span>
                   <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
                     Picture + Text Support
                   </Badge>
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Choose a prebuilt clinic campaign template or upload custom banner image & body text
+                  Choose a clinic template or create a custom broadcast message with custom uploaded media banner
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-5 space-y-4">
+              <CardContent className="p-5 space-y-5">
                 {/* Campaign Presets Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {PRESET_BROADCAST_CAMPAIGNS.map(camp => (
-                    <button
-                      key={camp.id}
-                      type="button"
-                      onClick={() => handleSelectCampaignPreset(camp)}
-                      className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
-                        selectedCampaignId === camp.id
-                          ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-400/20 shadow-xs'
-                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div>
-                        <p className="font-bold text-xs text-slate-900">{camp.title}</p>
-                        <p className="text-[10.5px] text-slate-500 mt-1 line-clamp-2">{camp.description}</p>
-                      </div>
-                    </button>
-                  ))}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-slate-700">Select Campaign Template / Mode:</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {PRESET_BROADCAST_CAMPAIGNS.map(camp => (
+                      <button
+                        key={camp.id}
+                        type="button"
+                        onClick={() => handleSelectCampaignPreset(camp)}
+                        className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
+                          selectedCampaignId === camp.id
+                            ? 'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-400/20 shadow-xs'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-1">
+                            <p className="font-bold text-xs text-slate-900">{camp.title}</p>
+                            {camp.id === 'camp_custom' && (
+                              <Badge className="bg-emerald-600 text-white text-[9px] px-1.5 py-0">Custom</Badge>
+                            )}
+                          </div>
+                          <p className="text-[10.5px] text-slate-500 mt-1 line-clamp-2">{camp.description}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Banner Image URL input & Thumbnail preview */}
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <Label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> Banner Picture URL (High-Res Image Header)
-                  </Label>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      placeholder="https://images.unsplash.com/... or https://your-clinic.com/banner.jpg"
-                      className="text-xs bg-white flex-1 font-mono"
-                      value={broadcastImageUrl}
-                      onChange={e => setBroadcastImageUrl(e.target.value)}
-                    />
+                {/* Banner Image Upload & URL input */}
+                <div className="space-y-2.5 pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5 text-emerald-600" /> Header Media Banner (Upload File or Enter Image Link)
+                    </Label>
+                    {broadcastImageUrl && (
+                      <button
+                        type="button"
+                        onClick={handleClearImage}
+                        className="text-[10.5px] font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" /> Remove Image
+                      </button>
+                    )}
                   </div>
+
+                  {/* Dual Upload Mode Controls */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    {/* Local File Upload Button */}
+                    <label className="flex-1 cursor-pointer">
+                      <div className="flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 text-xs font-bold rounded-xl border border-dashed border-emerald-300 transition-all text-center shadow-2xs">
+                        <Upload className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="truncate">{uploadedFileName ? `Change Image (${uploadedFileName})` : 'Upload Image File'}</span>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageFileUpload}
+                      />
+                    </label>
+
+                    <span className="text-[10px] font-bold text-slate-400 text-center uppercase">or</span>
+
+                    {/* Image URL Input */}
+                    <div className="flex-1 relative">
+                      <Input
+                        placeholder="Paste image web URL (https://...)"
+                        className="text-xs bg-white font-mono h-9"
+                        value={broadcastImageUrl.startsWith('data:') ? '' : broadcastImageUrl}
+                        onChange={e => {
+                          setUploadedFileName('')
+                          setBroadcastImageUrl(e.target.value)
+                          if (selectedCampaignId === 'camp_custom') {
+                            saveCustomBroadcast(e.target.value, broadcastTemplate)
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Thumbnail Preview Card */}
                   {broadcastImageUrl && (
-                    <div className="relative h-28 w-full rounded-xl overflow-hidden border border-slate-200 shadow-2xs">
+                    <div className="relative h-32 w-full rounded-xl overflow-hidden border border-slate-200 shadow-2xs group bg-slate-900/5">
                       <img
                         src={broadcastImageUrl}
-                        alt="Campaign Banner"
+                        alt="Campaign Media Header"
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           (e.target as HTMLElement).style.display = 'none'
                         }}
                       />
-                      <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-xs">
-                        📷 Attached Header Media
-                      </span>
+                      <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                        <span className="bg-slate-900/80 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
+                          <ImageIcon className="w-2.5 h-2.5" />
+                          {uploadedFileName ? `File: ${uploadedFileName}` : 'Attached Header Media'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleClearImage}
+                        className="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white p-1 rounded-full shadow-md transition-colors"
+                        title="Remove image"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   )}
                 </div>
 
-                {/* Text Composer & Dynamic Variable Tags */}
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <Label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                    <span>Message Text & Personalization:</span>
-                    <span className="text-[10px] text-slate-400 font-normal">Supports *bold*, _italics_, emojis & tags</span>
-                  </Label>
+                {/* Text Composer, Toolbar & Personalization Tags */}
+                <div className="space-y-2.5 pt-3 border-t border-slate-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <Label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Broadcast Message Body Text:</span>
+                    </Label>
 
-                  <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200/80 max-h-24 overflow-y-auto">
-                    {AVAILABLE_VARIABLES.map(v => (
-                      <button
-                        key={v.tag}
+                    {/* Toolbar Actions */}
+                    <div className="flex items-center gap-1.5">
+                      {selectedCampaignId === 'camp_custom' && (
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant="outline"
+                          onClick={handleSaveCustomDraft}
+                          className="text-[10.5px] h-7 bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 font-semibold gap-1"
+                        >
+                          <Save className="w-3 h-3" />
+                          {savedCustomNotice ? 'Saved!' : 'Save Custom Draft'}
+                        </Button>
+                      )}
+
+                      <Button
                         type="button"
-                        onClick={() => handleInsertTag(v.tag, 'broadcast')}
-                        className="inline-flex items-center gap-1 text-[10.5px] font-mono font-semibold px-2 py-0.5 bg-white border border-slate-200 rounded-md hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 transition-colors shadow-2xs"
+                        size="xs"
+                        variant="ghost"
+                        onClick={handleClearTemplate}
+                        className="text-[10.5px] h-7 text-slate-500 hover:text-slate-800 gap-1"
                       >
-                        <Tag className="h-2.5 w-2.5 text-emerald-600" />
-                        {v.tag}
-                      </button>
-                    ))}
+                        <Trash2 className="w-3 h-3" /> Clear Text
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Variable Tag Insert Chips */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-[10.5px] text-slate-500">
+                      <span>Click tag to insert into message:</span>
+                      <span className="text-[10px] text-slate-400">Formatting: *bold*, _italics_</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200/80 max-h-24 overflow-y-auto">
+                      {AVAILABLE_VARIABLES.map(v => (
+                        <button
+                          key={v.tag}
+                          type="button"
+                          onClick={() => handleInsertTag(v.tag, 'broadcast')}
+                          className="inline-flex items-center gap-1 text-[10.5px] font-mono font-semibold px-2 py-0.5 bg-white border border-slate-200 rounded-md hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 transition-colors shadow-2xs"
+                        >
+                          <Tag className="h-2.5 w-2.5 text-emerald-600" />
+                          {v.tag}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <textarea
                     rows={10}
                     className="w-full font-mono text-xs p-3.5 border border-slate-200 rounded-xl bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 leading-relaxed resize-y"
                     value={broadcastTemplate}
-                    onChange={e => setBroadcastTemplate(e.target.value)}
-                    placeholder="Type your WhatsApp broadcast message here..."
+                    onChange={e => {
+                      setBroadcastTemplate(e.target.value)
+                      if (selectedCampaignId === 'camp_custom') {
+                        saveCustomBroadcast(broadcastImageUrl, e.target.value)
+                      }
+                    }}
+                    placeholder="Type your custom WhatsApp broadcast message here... Use tags like {patient_name} to personalize."
                   />
                 </div>
               </CardContent>

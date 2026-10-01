@@ -39,7 +39,7 @@ interface DoctorStat {
   feedbacks: PatientFeedback[]
   visits: StoredVisit[]
   topProcedures: string[]
-  rawCentreId?: string | null
+  rawCentreId: string | null
 }
 
 export function ExecutiveFinancialDashboard() {
@@ -88,8 +88,8 @@ export function ExecutiveFinancialDashboard() {
     loadData()
 
     const handleExpensesUpdated = (e: any) => {
-      if (e.detail) setExpenses(e.detail)
-      else getExpenses().then(setExpenses)
+      if (e?.detail) setExpenses(e.detail)
+      else getExpenses().then(data => setExpenses(data || []))
     }
 
     window.addEventListener('physio-expenses-updated', handleExpensesUpdated)
@@ -105,14 +105,14 @@ export function ExecutiveFinancialDashboard() {
     const now = new Date()
     const todayStr = now.toISOString().split('T')[0]
     
-    return allVisits.filter(v => {
+    return (allVisits || []).filter(v => {
       if (!v) return false
       if (!isAdmin && userCentreId) {
         const matchStaff = v.centre_id === userCentreId || 
           (v.centre_name && profile?.centreName && v.centre_name.toLowerCase().includes(profile.centreName.toLowerCase()))
         if (!matchStaff) return false
       } else if (selectedFilterCentre !== 'all') {
-        const selectedCentreObj = centres.find(c => c && c.id === selectedFilterCentre)
+        const selectedCentreObj = (centres || []).find(c => c && c.id === selectedFilterCentre)
         const selectedCentreName = selectedCentreObj?.name ? selectedCentreObj.name.toLowerCase() : ''
         const vCentreName = v.centre_name ? v.centre_name.toLowerCase() : ''
         const matchCentre = v.centre_id === selectedFilterCentre || 
@@ -140,14 +140,14 @@ export function ExecutiveFinancialDashboard() {
     const now = new Date()
     const todayStr = now.toISOString().split('T')[0]
 
-    return expenses.filter(e => {
+    return (expenses || []).filter(e => {
       if (!e) return false
       if (!isAdmin && userCentreId) {
         const matchStaff = e.centre_id === userCentreId || 
           (e.centre_name && profile?.centreName && e.centre_name.toLowerCase().includes(profile.centreName.toLowerCase()))
         if (!matchStaff) return false
       } else if (selectedFilterCentre !== 'all') {
-        const selectedCentreObj = centres.find(c => c && c.id === selectedFilterCentre)
+        const selectedCentreObj = (centres || []).find(c => c && c.id === selectedFilterCentre)
         const selectedCentreName = selectedCentreObj?.name ? selectedCentreObj.name.toLowerCase() : ''
         const eCentreName = e.centre_name ? e.centre_name.toLowerCase() : ''
         const matchCentre = e.centre_id === selectedFilterCentre || 
@@ -171,111 +171,117 @@ export function ExecutiveFinancialDashboard() {
 
   // Key Financial Indicators
   const todayStr = new Date().toISOString().split('T')[0]
-  const todayVisitsList = filteredVisits.filter(v => v && v.visit_date === todayStr)
-  const todayRevenue = todayVisitsList.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
-  const filteredRevenue = filteredVisits.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
-  const totalExpenses = filteredExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+  const todayVisitsList = (filteredVisits || []).filter(v => v && v.visit_date === todayStr)
+  const todayRevenue = todayVisitsList.reduce((sum, v) => sum + (Number(v?.total) || 0), 0)
+  const filteredRevenue = (filteredVisits || []).reduce((sum, v) => sum + (Number(v?.total) || 0), 0)
+  const totalExpenses = (filteredExpenses || []).reduce((sum, e) => sum + (Number(e?.amount) || 0), 0)
   const netRevenue = filteredRevenue - totalExpenses
   const netMarginPct = filteredRevenue > 0 ? ((netRevenue / filteredRevenue) * 100).toFixed(1) : '0.0'
   const avgBillSize = filteredVisits.length > 0 ? Math.round(filteredRevenue / filteredVisits.length) : 0
 
   // Feedback Metrics
   const relevantFeedbacks = useMemo(() => {
+    const fbList = feedbacks || []
     if (!isAdmin && profile?.centreName) {
       const cName = profile.centreName.toLowerCase()
-      return feedbacks.filter(f => f && f.centre_name && f.centre_name.toLowerCase().includes(cName))
+      return fbList.filter(f => f && f.centre_name && f.centre_name.toLowerCase().includes(cName))
     }
     if (isAdmin && selectedFilterCentre !== 'all') {
-      const selectedCentreObj = centres.find(c => c && c.id === selectedFilterCentre)
-      const selectedCentreName = selectedCentreObj?.name ? selectedCentreObj.name.toLowerCase() : selectedFilterCentre.toLowerCase()
-      return feedbacks.filter(f => {
-        if (!f || !f.centre_name) return false
-        const fCentreName = f.centre_name.toLowerCase()
-        return fCentreName.includes(selectedCentreName) || selectedCentreName.includes(fCentreName)
+      const selectedCentreObj = (centres || []).find(c => c && c.id === selectedFilterCentre)
+      const selectedCentreName = selectedCentreObj?.name ? selectedCentreObj.name.toLowerCase() : ''
+      return fbList.filter(f => {
+        if (!f) return false
+        const fCentreName = f.centre_name ? f.centre_name.toLowerCase() : ''
+        if (selectedCentreName && fCentreName) {
+          return fCentreName.includes(selectedCentreName) || selectedCentreName.includes(fCentreName)
+        }
+        return false
       })
     }
-    return feedbacks
+    return fbList
   }, [feedbacks, isAdmin, profile, selectedFilterCentre, centres])
 
   const avgFeedbackScore = useMemo(() => {
     if (!relevantFeedbacks || relevantFeedbacks.length === 0) return '5.0'
-    const sum = relevantFeedbacks.reduce((acc, f) => acc + (f.rating || 5), 0)
+    const sum = relevantFeedbacks.reduce((acc, f) => acc + (f?.rating || 5), 0)
     return (sum / relevantFeedbacks.length).toFixed(1)
   }, [relevantFeedbacks])
 
   // Doctor-Wise Performance Stats
   const doctorStats: DoctorStat[] = useMemo(() => {
     if (!doctors || !Array.isArray(doctors)) return []
-    return doctors
-      .filter(Boolean)
-      .map(doc => {
-        const docRawName = doc.name ? doc.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase() : ''
-        
-        const docVisits = filteredVisits.filter(v => {
-          if (!v) return false
-          if (v.primary_doctor_id && v.primary_doctor_id === doc.id) return true
-          if (v.doctor_id && v.doctor_id === doc.id) return true
-          if (v.primary_doctor_name && docRawName) {
-            const pDocName = v.primary_doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
-            if (pDocName.includes(docRawName) || docRawName.includes(pDocName)) return true
-          }
-          if (v.doctor_name && docRawName) {
-            const vDocName = v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
-            return vDocName.includes(docRawName) || docRawName.includes(vDocName)
-          }
-          return false
-        })
+    const validDoctors = doctors.filter((doc): doc is Doctor => Boolean(doc && doc.id))
 
-        const revenue = docVisits.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
-        const patientCount = docVisits.length
-        const avgTicket = patientCount > 0 ? Math.round(revenue / patientCount) : 0
-
-        const docFeedbacks = feedbacks.filter(f => {
-          if (!f || !f.doctor_name || !docRawName) return false
-          const fDocName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
-          return fDocName.includes(docRawName) || docRawName.includes(fDocName)
-        })
-
-        const avgRating = docFeedbacks.length > 0 
-          ? (docFeedbacks.reduce((sum, f) => sum + (f.rating || 5), 0) / docFeedbacks.length).toFixed(1)
-          : '5.0'
-
-        const serviceCounts: Record<string, number> = {}
-        docVisits.forEach(v => {
-          v.items?.forEach(i => {
-            if (i && i.service_name) {
-              serviceCounts[i.service_name] = (serviceCounts[i.service_name] || 0) + (i.quantity || 1)
-            }
-          })
-        })
-        const topProcedures = Object.entries(serviceCounts)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 3)
-          .map(([name]) => name)
-
-        const centreObj = centres.find(c => c && c.id === doc.centre_id)
-        const docCentreName = (doc as any).centre_name || (centreObj ? centreObj.name : 'Physionautics Multispecialty')
-
-        return {
-          id: doc.id,
-          name: doc.name ? (doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`) : 'Doctor',
-          specialization: doc.specialization || 'Physiotherapy Specialist',
-          centre_name: docCentreName,
-          revenue,
-          patientCount,
-          avgTicket,
-          avgRating,
-          feedbackCount: docFeedbacks.length,
-          feedbacks: docFeedbacks,
-          visits: docVisits,
-          topProcedures,
-          rawCentreId: doc.centre_id,
+    const stats: DoctorStat[] = validDoctors.map(doc => {
+      const docRawName = doc.name ? doc.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase() : ''
+      
+      const docVisits = (filteredVisits || []).filter(v => {
+        if (!v) return false
+        if (v.primary_doctor_id && v.primary_doctor_id === doc.id) return true
+        if (v.doctor_id && v.doctor_id === doc.id) return true
+        if (v.primary_doctor_name && docRawName) {
+          const pDocName = v.primary_doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+          if (pDocName.includes(docRawName) || docRawName.includes(pDocName)) return true
         }
+        if (v.doctor_name && docRawName) {
+          const vDocName = v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+          return vDocName.includes(docRawName) || docRawName.includes(vDocName)
+        }
+        return false
       })
+
+      const revenue = docVisits.reduce((sum, v) => sum + (Number(v?.total) || 0), 0)
+      const patientCount = docVisits.length
+      const avgTicket = patientCount > 0 ? Math.round(revenue / patientCount) : 0
+
+      const docFeedbacks = (feedbacks || []).filter(f => {
+        if (!f || !f.doctor_name || !docRawName) return false
+        const fDocName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+        return fDocName.includes(docRawName) || docRawName.includes(fDocName)
+      })
+
+      const avgRating = docFeedbacks.length > 0 
+        ? (docFeedbacks.reduce((sum, f) => sum + (f?.rating || 5), 0) / docFeedbacks.length).toFixed(1)
+        : '5.0'
+
+      const serviceCounts: Record<string, number> = {}
+      docVisits.forEach(v => {
+        v?.items?.forEach(i => {
+          if (i && i.service_name) {
+            serviceCounts[i.service_name] = (serviceCounts[i.service_name] || 0) + (i.quantity || 1)
+          }
+        })
+      })
+      const topProcedures = Object.entries(serviceCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([name]) => name)
+
+      const centreObj = (centres || []).find(c => c && c.id === doc.centre_id)
+      const docCentreName = (doc as any)?.centre_name || (centreObj ? centreObj.name : 'Physionautics Multispecialty')
+
+      return {
+        id: doc.id,
+        name: doc.name ? (doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`) : 'Doctor',
+        specialization: doc.specialization || 'Physiotherapy Specialist',
+        centre_name: docCentreName,
+        revenue,
+        patientCount,
+        avgTicket,
+        avgRating,
+        feedbackCount: docFeedbacks.length,
+        feedbacks: docFeedbacks,
+        visits: docVisits,
+        topProcedures,
+        rawCentreId: doc.centre_id || null,
+      }
+    })
+
+    return stats
       .filter(doc => {
         if (selectedFilterCentre === 'all') return true
         const matchesCentreId = doc.rawCentreId === selectedFilterCentre
-        const selectedCentreObj = centres.find(c => c && c.id === selectedFilterCentre)
+        const selectedCentreObj = (centres || []).find(c => c && c.id === selectedFilterCentre)
         const selectedCentreName = selectedCentreObj?.name ? selectedCentreObj.name.toLowerCase() : ''
         const matchesCentreName = Boolean(selectedCentreName && doc.centre_name && doc.centre_name.toLowerCase().includes(selectedCentreName))
         const hasVisitsInFilter = doc.patientCount > 0
@@ -296,8 +302,8 @@ export function ExecutiveFinancialDashboard() {
     }
 
     return modes.map(mode => {
-      const matching = filteredVisits.filter(v => v && v.payment_mode === mode)
-      const amount = matching.reduce((s, v) => s + (Number(v.total) || 0), 0)
+      const matching = (filteredVisits || []).filter(v => v && v.payment_mode === mode)
+      const amount = matching.reduce((s, v) => s + (Number(v?.total) || 0), 0)
       const pct = filteredRevenue > 0 ? Math.round((amount / filteredRevenue) * 100) : 0
       return { mode, count: matching.length, amount, pct, color: colors[mode] }
     }).filter(p => p.count > 0 || filteredRevenue === 0)
@@ -316,8 +322,8 @@ export function ExecutiveFinancialDashboard() {
     ]
 
     return categories.map(cat => {
-      const matching = filteredExpenses.filter(e => e && e.category === cat)
-      const amount = matching.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+      const matching = (filteredExpenses || []).filter(e => e && e.category === cat)
+      const amount = matching.reduce((s, e) => s + (Number(e?.amount) || 0), 0)
       const pct = totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0
       return { category: cat, count: matching.length, amount, pct }
     }).filter(c => c.amount > 0)
@@ -331,13 +337,13 @@ export function ExecutiveFinancialDashboard() {
       { id: 'c3333333-3333-3333-3333-333333333333', name: 'Gurugram – DLF Phase 1', short: 'Gurugram DLF', color: '#d97706' },
     ]
 
-    const selectedCentreObj = centres.find(c => c && c.id === selectedFilterCentre)
+    const selectedCentreObj = (centres || []).find(c => c && c.id === selectedFilterCentre)
     const targetList = selectedFilterCentre !== 'all'
       ? defaultList.filter(c => c.id === selectedFilterCentre || (selectedCentreObj?.name && c.name.toLowerCase().includes(selectedCentreObj.name.toLowerCase())))
       : defaultList
 
     const maxRev = Math.max(...targetList.map(c => {
-      const matching = filteredVisits.filter(v => 
+      const matching = (filteredVisits || []).filter(v => 
         v && (
           v.centre_id === c.id || 
           (v.centre_name && v.centre_name.toLowerCase().includes(c.short.toLowerCase())) ||
@@ -346,11 +352,11 @@ export function ExecutiveFinancialDashboard() {
           (c.id.includes('3333') && v.centre_name && v.centre_name.includes('Gurugram'))
         )
       )
-      return matching.reduce((s, v) => s + (Number(v.total) || 0), 0)
+      return matching.reduce((s, v) => s + (Number(v?.total) || 0), 0)
     }), 1000)
 
     return targetList.map(c => {
-      const matching = filteredVisits.filter(v => 
+      const matching = (filteredVisits || []).filter(v => 
         v && (
           v.centre_id === c.id || 
           (v.centre_name && v.centre_name.toLowerCase().includes(c.short.toLowerCase())) ||
@@ -359,7 +365,7 @@ export function ExecutiveFinancialDashboard() {
           (c.id.includes('3333') && v.centre_name && v.centre_name.includes('Gurugram'))
         )
       )
-      const amount = matching.reduce((s, v) => s + (Number(v.total) || 0), 0)
+      const amount = matching.reduce((s, v) => s + (Number(v?.total) || 0), 0)
       const count = matching.length
       const barHeightPct = Math.min(Math.round((amount / maxRev) * 100), 100)
       return { ...c, amount, count, barHeightPct }
@@ -377,8 +383,8 @@ export function ExecutiveFinancialDashboard() {
       const dateStr = d.toISOString().split('T')[0]
       const label = d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' })
       
-      const dayVisits = filteredVisits.filter(v => v && v.visit_date === dateStr)
-      const amount = dayVisits.reduce((s, v) => s + (Number(v.total) || 0), 0)
+      const dayVisits = (filteredVisits || []).filter(v => v && v.visit_date === dateStr)
+      const amount = dayVisits.reduce((s, v) => s + (Number(v?.total) || 0), 0)
       
       days.push({ label, date: dateStr, amount, count: dayVisits.length })
     }
@@ -434,8 +440,8 @@ export function ExecutiveFinancialDashboard() {
               <SelectValue placeholder="All Branches" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-xs font-medium">All 3 Clinic Branches</SelectItem>
-              {centres.map(c => (
+              <SelectItem value="all" className="text-xs font-medium">All Clinic Branches</SelectItem>
+              {(centres || []).map(c => (
                 <SelectItem key={c.id} value={c.id} className="text-xs font-medium">{c.name}</SelectItem>
               ))}
             </SelectContent>
@@ -474,7 +480,7 @@ export function ExecutiveFinancialDashboard() {
             userCentreId={profile?.centreId}
             userCentreName={profile?.centreName}
             userName={profile?.name}
-            onExpenseAdded={() => getExpenses().then(setExpenses)}
+            onExpenseAdded={() => getExpenses().then(data => setExpenses(data || []))}
           />
 
           <Button
@@ -576,10 +582,10 @@ export function ExecutiveFinancialDashboard() {
           <div>
             <CardTitle className="text-base font-extrabold text-indigo-950 flex items-center gap-2">
               <UserCog className="h-5 w-5 text-indigo-600" />
-              Doctor-Wise Financials & Customer Satisfaction Performance
+              Doctor-Wise Financials & Customer Satisfaction Performance Leaderboard
             </CardTitle>
             <CardDescription className="text-xs text-indigo-900/70">
-              Track individual consultant billings, total patients attended, and verbatim patient feedback
+              Track individual consultant billings, total patients attended, avg ticket size, CSAT star ratings, contribution index %, and top procedures
             </CardDescription>
           </div>
           <Badge className="bg-indigo-600 text-white text-xs w-fit">
@@ -600,13 +606,13 @@ export function ExecutiveFinancialDashboard() {
                   className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group hover:border-indigo-300"
                 >
                   <div className="space-y-3">
-                    {/* Doctor Header */}
+                    {/* Doctor Header & Rank */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div 
                           className="flex items-center gap-1.5 cursor-pointer group/name"
                           onClick={() => {
-                            const fullDoc: Doctor = doctors.find(d => d.id === doc.id) || {
+                            const fullDoc: Doctor = (doctors || []).find(d => d && d.id === doc.id) || {
                               id: doc.id,
                               name: doc.name,
                               specialization: doc.specialization,
@@ -646,15 +652,19 @@ export function ExecutiveFinancialDashboard() {
                       </div>
                     </div>
 
-                    {/* Revenue & Visits Grid */}
-                    <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2.5 rounded-lg text-xs">
+                    {/* Revenue, Visits, Avg Ticket Grid */}
+                    <div className="grid grid-cols-3 gap-1.5 bg-gray-50 p-2.5 rounded-lg text-xs">
                       <div>
-                        <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Total Revenue</span>
-                        <span className="font-extrabold text-emerald-700 text-sm">{formatCurrency(doc.revenue)}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Revenue</span>
+                        <span className="font-extrabold text-emerald-700 text-xs">{formatCurrency(doc.revenue)}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Patients Treated</span>
-                        <span className="font-bold text-gray-900 text-sm">{doc.patientCount} visits</span>
+                        <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Patients</span>
+                        <span className="font-bold text-gray-900 text-xs">{doc.patientCount} visits</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Avg Ticket</span>
+                        <span className="font-bold text-blue-700 text-xs">{formatCurrency(doc.avgTicket)}</span>
                       </div>
                     </div>
 
@@ -672,12 +682,24 @@ export function ExecutiveFinancialDashboard() {
                       </div>
                     </div>
 
+                    {/* Top Procedures Badges */}
+                    {doc.topProcedures && doc.topProcedures.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1 pt-1">
+                        <span className="text-[10px] text-muted-foreground font-semibold">Top Procedures:</span>
+                        {doc.topProcedures.map(proc => (
+                          <Badge key={proc} variant="outline" className="text-[10px] py-0 px-1.5 bg-indigo-50/60 text-indigo-800 border-indigo-200 font-medium">
+                            {proc}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Patient Feedback Quote */}
-                    {doc.feedbacks.length > 0 ? (
+                    {doc.feedbacks && doc.feedbacks.length > 0 ? (
                       <div className="bg-rose-50/50 border border-rose-100 rounded-lg p-2 text-[11px] text-gray-700 italic">
-                        <p className="line-clamp-2">&ldquo;{doc.feedbacks[0].comments}&rdquo;</p>
+                        <p className="line-clamp-2">&ldquo;{doc.feedbacks[0]?.comments || ''}&rdquo;</p>
                         <span className="text-[9px] text-rose-700 font-semibold block mt-1">
-                          — {doc.feedbacks[0].patient_name} ({doc.feedbacks[0].rating}★)
+                          — {doc.feedbacks[0]?.patient_name || 'Patient'} ({doc.feedbacks[0]?.rating || 5}★)
                         </span>
                       </div>
                     ) : (
@@ -693,7 +715,7 @@ export function ExecutiveFinancialDashboard() {
                     variant="outline" 
                     className="w-full mt-3 text-xs gap-1.5 border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100 font-semibold"
                     onClick={() => {
-                      const fullDoc: Doctor = doctors.find(d => d.id === doc.id) || {
+                      const fullDoc: Doctor = (doctors || []).find(d => d && d.id === doc.id) || {
                         id: doc.id,
                         name: doc.name,
                         specialization: doc.specialization,
@@ -773,7 +795,7 @@ export function ExecutiveFinancialDashboard() {
                     <div>
                       <div className="font-bold text-slate-900">{e.description}</div>
                       <div className="text-[10px] text-slate-500 flex items-center gap-2">
-                        <span>{e.category}</span> • <span>{formatDate(e.expense_date)}</span> • <span className="font-mono text-blue-600">{e.centre_name}</span>
+                        <span>{e.category}</span> • <span>{formatDate(e.expense_date)}</span> • <span className="font-mono text-blue-600">{e.centre_name || 'Clinic Branch'}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -902,7 +924,7 @@ export function ExecutiveFinancialDashboard() {
         onOpenChange={(open) => { if (!open) setSelectedDoctorForModal(null) }}
         visits={allVisits}
         feedbacks={feedbacks}
-        centreName={selectedDoctorForModal ? centres.find(c => c.id === selectedDoctorForModal.centre_id)?.name : undefined}
+        centreName={selectedDoctorForModal ? (centres || []).find(c => c && c.id === selectedDoctorForModal.centre_id)?.name : undefined}
       />
     </div>
   )

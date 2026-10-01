@@ -25,6 +25,7 @@ import { getVisits, getPatients, getCentres, getDoctors, getExpenses, saveAttend
 import { ExpenseLoggingModal } from '@/components/dashboard/expense-logging-modal'
 import { formatCurrency } from '@/lib/utils'
 import { TopHeaderNav } from '@/components/layout/top-header-nav'
+import { ExecutiveFinancialDashboard } from '@/components/dashboard/executive-financial-dashboard'
 import { OrbitingCards } from '@/components/ui/orbiting-cards'
 import { motion } from 'motion/react'
 
@@ -342,42 +343,9 @@ export default function AuthPage() {
             </div>
           </div>
 
-          {/* Metric Cards: 4 for Admin, Exactly 2 for Doctor & Reception */}
+          {/* Render Full Executive Financial Dashboard for Admin */}
           {isAdmin ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-blue-300 transition-colors">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500">Total Network Revenue</span>
-                  <div className="p-2 rounded-xl bg-blue-50 text-blue-600"><DollarSign className="w-4 h-4" /></div>
-                </div>
-                <div className="text-2xl font-black text-slate-900">{formatCurrency(hubStats.totalRevenue)}</div>
-                <div className="text-[11px] text-slate-500 font-medium">vs last month</div>
-              </Card>
-              <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-emerald-300 transition-colors">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500">Active Clinic Branches</span>
-                  <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600"><Building2 className="w-4 h-4" /></div>
-                </div>
-                <div className="text-2xl font-black text-slate-900">{hubStats.centreCount} Centres</div>
-                <div className="text-[11px] text-slate-500 font-medium">NFC, Vasant Vihar, Gurugram</div>
-              </Card>
-              <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-amber-300 transition-colors">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500">Clinical Staff Roster</span>
-                  <div className="p-2 rounded-xl bg-amber-50 text-amber-600"><Users className="w-4 h-4" /></div>
-                </div>
-                <div className="text-2xl font-black text-slate-900">{hubStats.doctorCount} Doctors</div>
-                <div className="text-[11px] text-slate-500 font-medium">Across active branches</div>
-              </Card>
-              <Card className="border-slate-200/90 shadow-2xs rounded-2xl bg-white p-5 space-y-2 hover:border-purple-300 transition-colors">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500">Net Monthly Profit</span>
-                  <div className="p-2 rounded-xl bg-purple-50 text-purple-600"><Activity className="w-4 h-4" /></div>
-                </div>
-                <div className="text-2xl font-black text-slate-900">{formatCurrency(hubStats.totalRevenue - hubStats.expensesThisMonth)}</div>
-                <div className="text-[11px] text-slate-500 font-medium">After expenses</div>
-              </Card>
-            </div>
+            <ExecutiveFinancialDashboard />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Card 1: Total Patients */}

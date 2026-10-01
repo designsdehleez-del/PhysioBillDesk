@@ -48,7 +48,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { profile } = useAuth()
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = !profile || profile?.role === 'admin' || (profile?.role !== 'clinic_reception' && profile?.role !== 'doctor')
 
   const [loading, setLoading] = useState(true)
   const [allVisits, setAllVisits] = useState<StoredVisit[]>([])

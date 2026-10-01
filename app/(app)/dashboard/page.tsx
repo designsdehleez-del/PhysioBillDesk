@@ -50,10 +50,6 @@ export default function DashboardPage() {
   const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
 
-  useEffect(() => {
-    router.replace('/')
-  }, [router])
-
   const [loading, setLoading] = useState(true)
   const [allVisits, setAllVisits] = useState<StoredVisit[]>([])
   const [centres, setCentres] = useState<Centre[]>([])

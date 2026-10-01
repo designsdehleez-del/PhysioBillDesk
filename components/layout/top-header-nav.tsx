@@ -59,10 +59,10 @@ export function TopHeaderNav() {
       label: 'Operations & Billing',
       icon: LayoutDashboard,
       items: [
-        { label: 'Financials & KPIs', href: '/', icon: LayoutDashboard, desc: 'Real-time revenue & CSAT' },
+        { label: 'Financials & KPIs', href: '/dashboard', icon: LayoutDashboard, desc: 'Real-time revenue & CSAT' },
         { label: 'Register Patient', href: '/patients/register', icon: UserPlus, desc: 'Add new patient record' },
         { label: 'Billing & Invoices', href: '/billing', icon: Receipt, desc: 'Create bills & ledger' },
-        { label: 'Expenses Logging', href: '/', icon: Wallet, desc: 'Log & manage expenses' },
+        { label: 'Expenses Logging', href: '/dashboard', icon: Wallet, desc: 'Log & manage expenses' },
         { label: 'Feedback Studio', href: '/feedback-builder', icon: FileText, desc: 'Patient feedback forms' },
       ],
     },

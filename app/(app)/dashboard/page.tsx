@@ -114,6 +114,7 @@ export default function DashboardPage() {
     const todayStr = now.toISOString().split('T')[0]
     
     return allVisits.filter(v => {
+      if (!v) return false
       // If staff, lock to their clinic
       if (!isAdmin && userCentreId) {
         const matchStaff = v.centre_id === userCentreId || 
@@ -121,11 +122,15 @@ export default function DashboardPage() {
         if (!matchStaff) return false
       } else if (selectedFilterCentre !== 'all') {
         // Admin centre filter
-        const selectedCentreObj = centres.find(c => c.id === selectedFilterCentre)
+        const selectedCentreObj = centres.find(c => c && c.id === selectedFilterCentre)
+        const selectedCentreName = selectedCentreObj?.name ? selectedCentreObj.name.toLowerCase() : ''
+        const vCentreName = v.centre_name ? v.centre_name.toLowerCase() : ''
         const matchCentre = v.centre_id === selectedFilterCentre || 
-          (v.centre_name && selectedCentreObj && v.centre_name.toLowerCase().includes(selectedCentreObj.name.toLowerCase()))
+          (vCentreName && selectedCentreName && vCentreName.includes(selectedCentreName))
         if (!matchCentre) return false
       }
+
+      if (!v.visit_date) return true
 
       // Timeframe Filter
       if (selectedTimeframe === 'today') {
@@ -151,18 +156,21 @@ export default function DashboardPage() {
     const todayStr = now.toISOString().split('T')[0]
 
     return expenses.filter(e => {
+      if (!e) return false
       if (!isAdmin && userCentreId) {
         const matchStaff = e.centre_id === userCentreId || 
           (e.centre_name && profile?.centreName && e.centre_name.toLowerCase().includes(profile.centreName.toLowerCase()))
         if (!matchStaff) return false
       } else if (selectedFilterCentre !== 'all') {
-        const selectedCentreObj = centres.find(c => c.id === selectedFilterCentre)
+        const selectedCentreObj = centres.find(c => c && c.id === selectedFilterCentre)
+        const selectedCentreName = selectedCentreObj?.name ? selectedCentreObj.name.toLowerCase() : ''
+        const eCentreName = e.centre_name ? e.centre_name.toLowerCase() : ''
         const matchCentre = e.centre_id === selectedFilterCentre || 
-          (e.centre_name && selectedCentreObj && e.centre_name.toLowerCase().includes(selectedCentreObj.name.toLowerCase())) ||
-          (selectedCentreObj && e.centre_name && selectedCentreObj.name.toLowerCase().includes(e.centre_name.toLowerCase()))
+          (eCentreName && selectedCentreName && (eCentreName.includes(selectedCentreName) || selectedCentreName.includes(eCentreName)))
         if (!matchCentre) return false
       }
 
+      if (!e.expense_date) return true
       if (selectedTimeframe === 'today') return e.expense_date === todayStr
       if (selectedTimeframe === '7days') {
         const d = new Date(e.expense_date)
@@ -178,7 +186,7 @@ export default function DashboardPage() {
 
   // Revenue & Expense Financial Indicators
   const todayStr = new Date().toISOString().split('T')[0]
-  const todayVisitsList = filteredVisits.filter(v => v.visit_date === todayStr)
+  const todayVisitsList = filteredVisits.filter(v => v && v.visit_date === todayStr)
   const todayRevenue = todayVisitsList.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
   const filteredRevenue = filteredVisits.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
   const totalExpenses = filteredExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
@@ -191,36 +199,37 @@ export default function DashboardPage() {
     if (!isAdmin && profile?.centreName) {
       const cName = profile.centreName.toLowerCase()
       return feedbacks.filter(f => 
-        f.centre_name && f.centre_name.toLowerCase().includes(cName)
+        f && f.centre_name && f.centre_name.toLowerCase().includes(cName)
       )
     }
     if (isAdmin && selectedFilterCentre !== 'all') {
-      const selectedCentreObj = centres.find(c => c.id === selectedFilterCentre)
+      const selectedCentreObj = centres.find(c => c && c.id === selectedFilterCentre)
+      const selectedCentreName = selectedCentreObj?.name ? selectedCentreObj.name.toLowerCase() : selectedFilterCentre.toLowerCase()
       return feedbacks.filter(f => {
-        if (!f.centre_name) return false
-        if (selectedCentreObj) {
-          return f.centre_name.toLowerCase().includes(selectedCentreObj.name.toLowerCase()) ||
-                 selectedCentreObj.name.toLowerCase().includes(f.centre_name.toLowerCase())
-        }
-        return f.centre_name.toLowerCase().includes(selectedFilterCentre.toLowerCase())
+        if (!f || !f.centre_name) return false
+        const fCentreName = f.centre_name.toLowerCase()
+        return fCentreName.includes(selectedCentreName) || selectedCentreName.includes(fCentreName)
       })
     }
     return feedbacks
   }, [feedbacks, isAdmin, profile, selectedFilterCentre, centres])
 
   const avgFeedbackScore = useMemo(() => {
-    if (relevantFeedbacks.length === 0) return '5.0'
+    if (!relevantFeedbacks || relevantFeedbacks.length === 0) return '5.0'
     const sum = relevantFeedbacks.reduce((acc, f) => acc + (f.rating || 5), 0)
     return (sum / relevantFeedbacks.length).toFixed(1)
   }, [relevantFeedbacks])
 
   // Doctor-Wise Financials & Performance Hub (Strictly scoped)
   const doctorStats: DoctorStat[] = useMemo(() => {
+    if (!doctors || !Array.isArray(doctors)) return []
     return doctors
+      .filter(Boolean)
       .map(doc => {
         const docRawName = doc.name ? doc.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase() : ''
         
         const docVisits = filteredVisits.filter(v => {
+          if (!v) return false
           if (v.primary_doctor_id && v.primary_doctor_id === doc.id) return true
           if (v.doctor_id && v.doctor_id === doc.id) return true
           if (v.primary_doctor_name && docRawName) {
@@ -239,7 +248,7 @@ export default function DashboardPage() {
         const avgTicket = patientCount > 0 ? Math.round(revenue / patientCount) : 0
 
         const docFeedbacks = feedbacks.filter(f => {
-          if (!f.doctor_name || !docRawName) return false
+          if (!f || !f.doctor_name || !docRawName) return false
           const fDocName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
           return fDocName.includes(docRawName) || docRawName.includes(fDocName)
         })
@@ -261,13 +270,14 @@ export default function DashboardPage() {
           .slice(0, 3)
           .map(([name]) => name)
 
-        const centreObj = centres.find(c => c.id === doc.centre_id)
+        const centreObj = centres.find(c => c && c.id === doc.centre_id)
+        const docCentreName = (doc as any).centre_name || (centreObj ? centreObj.name : 'Physionautics Multispecialty')
 
         return {
           id: doc.id,
           name: doc.name ? (doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`) : 'Doctor',
           specialization: doc.specialization || 'Physiotherapy Specialist',
-          centre_name: centreObj ? centreObj.name : 'Physionautics Multispecialty',
+          centre_name: docCentreName,
           revenue,
           patientCount,
           avgTicket,
@@ -282,8 +292,9 @@ export default function DashboardPage() {
       .filter(doc => {
         if (selectedFilterCentre === 'all') return true
         const matchesCentreId = doc.rawCentreId === selectedFilterCentre
-        const selectedCentreObj = centres.find(c => c.id === selectedFilterCentre)
-        const matchesCentreName = selectedCentreObj && doc.centre_name.toLowerCase().includes(selectedCentreObj.name.toLowerCase())
+        const selectedCentreObj = centres.find(c => c && c.id === selectedFilterCentre)
+        const selectedCentreName = selectedCentreObj?.name ? selectedCentreObj.name.toLowerCase() : ''
+        const matchesCentreName = Boolean(selectedCentreName && doc.centre_name && doc.centre_name.toLowerCase().includes(selectedCentreName))
         const hasVisitsInFilter = doc.patientCount > 0
         return matchesCentreId || matchesCentreName || hasVisitsInFilter
       })

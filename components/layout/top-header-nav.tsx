@@ -59,10 +59,8 @@ export function TopHeaderNav() {
       label: 'Operations & Billing',
       icon: LayoutDashboard,
       items: [
-        { label: 'Financials & KPIs', href: '/dashboard', icon: LayoutDashboard, desc: 'Real-time revenue & CSAT' },
         { label: 'Register Patient', href: '/patients/register', icon: UserPlus, desc: 'Add new patient record' },
         { label: 'Billing & Invoices', href: '/billing', icon: Receipt, desc: 'Create bills & ledger' },
-        { label: 'Expenses Logging', href: '/dashboard', icon: Wallet, desc: 'Log & manage expenses' },
         { label: 'Feedback Studio', href: '/feedback-builder', icon: FileText, desc: 'Patient feedback forms' },
       ],
     },
@@ -105,7 +103,6 @@ export function TopHeaderNav() {
         { label: 'Reception Command Hub', href: '/', icon: LayoutDashboard, desc: 'Daily reception overview' },
         { label: 'Patients', href: '/patients', icon: Users, desc: 'Patient directory & registration' },
         { label: 'Billing', href: '/billing', icon: Receipt, desc: 'Generate bills & receipts' },
-        { label: 'Expenses', href: '/', icon: Wallet, desc: 'Log clinic branch expenses' },
         { label: 'WhatsApp', href: '/settings/whatsapp', icon: MessageCircle, desc: 'WhatsApp receipt messaging' },
       ],
     },

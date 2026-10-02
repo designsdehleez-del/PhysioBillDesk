@@ -32,12 +32,10 @@ export function Sidebar() {
     : (profile?.centreName || 'Clinic Reception Desk')
 
   const adminNav = [
-    { label: 'Financials & Dashboard', href: '/dashboard', icon: DollarSign },
+    { label: 'Executive Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Patients Directory', href: '/patients', icon: Users },
     { label: 'Billing & Invoices', href: '/billing', icon: Receipt },
     { label: 'Doctors & Physios', href: '/doctors', icon: UserCog },
-    { label: 'Expenses Logging', href: '/dashboard', icon: Wallet },
-    { label: 'Analytics & CSAT', href: '/dashboard', icon: TrendingUp },
     { label: 'Centres Management', href: '/centres', icon: Building2 },
     { label: 'Staff & Logins', href: '/staff', icon: ShieldAlert },
     { label: 'Services & Pricing', href: '/services', icon: Stethoscope },
@@ -51,7 +49,6 @@ export function Sidebar() {
     { label: 'Reception Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Patients', href: '/patients', icon: Users },
     { label: 'Billing', href: '/billing', icon: Receipt },
-    { label: 'Expenses', href: '/dashboard', icon: Wallet },
     { label: 'WhatsApp', href: '/settings/whatsapp', icon: MessageCircle },
   ]
 

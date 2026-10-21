@@ -35,6 +35,7 @@ export function Sidebar() {
     { label: 'Executive Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Patients Directory', href: '/patients', icon: Users },
     { label: 'Billing & Invoices', href: '/billing', icon: Receipt },
+    { label: 'Expense Ledger', href: '/expenses', icon: Wallet },
     { label: 'Doctors & Physios', href: '/doctors', icon: UserCog },
     { label: 'Centres Management', href: '/centres', icon: Building2 },
     { label: 'Staff & Logins', href: '/staff', icon: ShieldAlert },
@@ -49,6 +50,7 @@ export function Sidebar() {
     { label: 'Reception Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Patients', href: '/patients', icon: Users },
     { label: 'Billing', href: '/billing', icon: Receipt },
+    { label: 'Expenses', href: '/expenses', icon: Wallet },
     { label: 'WhatsApp', href: '/settings/whatsapp', icon: MessageCircle },
   ]
 

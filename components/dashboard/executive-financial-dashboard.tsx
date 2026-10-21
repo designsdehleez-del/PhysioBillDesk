@@ -760,14 +760,25 @@ export function ExecutiveFinancialDashboard() {
               </CardTitle>
               <CardDescription className="text-xs">Category-wise breakdown of clinic operational expenditure</CardDescription>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => exportExpensesToExcel(filteredExpenses)}
-              className="text-xs border-rose-200 text-rose-700 hover:bg-rose-50 h-8 gap-1"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-rose-600" /> Export Expenses
-            </Button>
+            <div className="flex items-center gap-1.5">
+              <Link href="/expenses">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs border-slate-200 text-slate-700 hover:bg-slate-50 h-8 gap-1"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-blue-600" /> View Ledger
+                </Button>
+              </Link>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => exportExpensesToExcel(filteredExpenses)}
+                className="text-xs border-rose-200 text-rose-700 hover:bg-rose-50 h-8 gap-1"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-rose-600" /> Export
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-5 space-y-4">
             {expenseCategoryBreakdown.length === 0 ? (
@@ -790,8 +801,13 @@ export function ExecutiveFinancialDashboard() {
 
             {/* Recent Expense Logs List */}
             <div className="pt-3 border-t border-slate-100 space-y-2">
-              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                Recent Expense Entries ({filteredExpenses.length})
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Recent Expense Entries ({filteredExpenses.length})
+                </span>
+                <Link href="/expenses" className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1">
+                  View Full Ledger & Edit <ChevronRight className="w-3 h-3" />
+                </Link>
               </div>
               <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                 {filteredExpenses.map(e => (

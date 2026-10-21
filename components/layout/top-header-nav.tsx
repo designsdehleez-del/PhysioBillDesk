@@ -61,6 +61,7 @@ export function TopHeaderNav() {
       items: [
         { label: 'Register Patient', href: '/patients/register', icon: UserPlus, desc: 'Add new patient record' },
         { label: 'Billing & Invoices', href: '/billing', icon: Receipt, desc: 'Create bills & ledger' },
+        { label: 'Expense Ledger', href: '/expenses', icon: Wallet, desc: 'Track, edit & export expenses' },
         { label: 'Feedback Studio', href: '/feedback-builder', icon: FileText, desc: 'Patient feedback forms' },
       ],
     },
@@ -103,6 +104,7 @@ export function TopHeaderNav() {
         { label: 'Reception Command Hub', href: '/', icon: LayoutDashboard, desc: 'Daily reception overview' },
         { label: 'Patients', href: '/patients', icon: Users, desc: 'Patient directory & registration' },
         { label: 'Billing', href: '/billing', icon: Receipt, desc: 'Generate bills & receipts' },
+        { label: 'Expense Log', href: '/expenses', icon: Wallet, desc: 'Clinic branch expenses' },
         { label: 'WhatsApp', href: '/settings/whatsapp', icon: MessageCircle, desc: 'WhatsApp receipt messaging' },
       ],
     },

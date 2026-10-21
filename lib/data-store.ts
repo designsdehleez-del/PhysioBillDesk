@@ -4411,6 +4411,35 @@ export async function addExpense(expense: Omit<ClinicExpense, 'id' | 'created_at
   return newExp
 }
 
+export async function updateExpense(id: string, updates: Partial<ClinicExpense>): Promise<ClinicExpense | null> {
+  try {
+    const supabase = createClient()
+    await supabase.from('clinic_expenses').update(updates).eq('id', id)
+  } catch (err) {
+    console.warn('Supabase updateExpense sync warning:', err)
+  }
+
+  try {
+    const current = await getExpenses()
+    let updatedObj: ClinicExpense | null = null
+    const updated = current.map(e => {
+      if (e.id === id) {
+        updatedObj = { ...e, ...updates }
+        return updatedObj
+      }
+      return e
+    })
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(updated))
+      window.dispatchEvent(new CustomEvent('physio-expenses-updated', { detail: updated }))
+    }
+    return updatedObj
+  } catch (err) {
+    console.error('Failed to update expense:', err)
+    return null
+  }
+}
+
 export async function deleteExpense(id: string): Promise<void> {
   try {
     const supabase = createClient()

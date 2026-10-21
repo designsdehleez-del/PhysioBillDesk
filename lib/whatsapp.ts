@@ -476,7 +476,8 @@ export async function sendWhatsAppMediaMessageAPI(
 
   try {
     const endpoint = cfg.apiUrl || `https://graph.facebook.com/v19.0/${cfg.phoneNumberId}/messages`
-    const payload = imageUrl
+    const hasValidHttpImage = Boolean(imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')))
+    const payload = hasValidHttpImage
       ? {
           messaging_product: 'whatsapp',
           recipient_type: 'individual',

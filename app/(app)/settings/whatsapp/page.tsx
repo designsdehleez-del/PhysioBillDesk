@@ -29,7 +29,7 @@ import {
   type WhatsAppConfig,
   type BroadcastCampaign,
 } from '@/lib/whatsapp'
-import { getPatients, getCentres, type StoredVisit } from '@/lib/data-store'
+import { getPatients, getCentres, uploadBroadcastMedia, type StoredVisit } from '@/lib/data-store'
 
 // Sample visit data for real-time live billing preview
 const SAMPLE_VISIT: StoredVisit = {
@@ -89,6 +89,8 @@ export default function WhatsAppSettingsPage() {
   const [broadcastTemplate, setBroadcastTemplate] = useState<string>(PRESET_BROADCAST_CAMPAIGNS[0].template)
   const [uploadedFileName, setUploadedFileName] = useState<string>('')
   const [savedCustomNotice, setSavedCustomNotice] = useState(false)
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false)
+  const [copiedImageNotice, setCopiedImageNotice] = useState(false)
 
   // Broadcast Execution State
   const [isBroadcasting, setIsBroadcasting] = useState(false)
@@ -156,7 +158,7 @@ export default function WhatsAppSettingsPage() {
     }
   }
 
-  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -165,18 +167,52 @@ export default function WhatsAppSettingsPage() {
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = (evt) => {
-      const dataUrl = evt.target?.result as string
-      if (dataUrl) {
-        setBroadcastImageUrl(dataUrl)
-        setUploadedFileName(file.name)
+    setIsUploadingMedia(true)
+    setUploadedFileName(file.name)
+
+    try {
+      // 1. Upload to Supabase Storage to get permanent public HTTPS URL
+      const publicUrl = await uploadBroadcastMedia(file)
+      if (publicUrl) {
+        setBroadcastImageUrl(publicUrl)
         if (selectedCampaignId === 'camp_custom') {
-          saveCustomBroadcast(dataUrl, broadcastTemplate)
+          saveCustomBroadcast(publicUrl, broadcastTemplate)
         }
       }
+    } catch (err) {
+      console.error('Failed to upload broadcast media to Supabase:', err)
+      const reader = new FileReader()
+      reader.onload = (evt) => {
+        const dataUrl = evt.target?.result as string
+        if (dataUrl) {
+          setBroadcastImageUrl(dataUrl)
+          if (selectedCampaignId === 'camp_custom') {
+            saveCustomBroadcast(dataUrl, broadcastTemplate)
+          }
+        }
+      }
+      reader.readAsDataURL(file)
+    } finally {
+      setIsUploadingMedia(false)
     }
-    reader.readAsDataURL(file)
+  }
+
+  const handleCopyImageToClipboard = async () => {
+    if (!broadcastImageUrl) return
+    try {
+      const response = await fetch(broadcastImageUrl)
+      const blob = await response.blob()
+      await navigator.clipboard.write([
+        new ClipboardItem({ [blob.type]: blob })
+      ])
+      setCopiedImageNotice(true)
+      setTimeout(() => setCopiedImageNotice(false), 3000)
+    } catch (err) {
+      console.warn('Clipboard write failed, copying URL instead:', err)
+      navigator.clipboard.writeText(broadcastImageUrl)
+      setCopiedImageNotice(true)
+      setTimeout(() => setCopiedImageNotice(false), 3000)
+    }
   }
 
   const handleClearImage = () => {
@@ -257,7 +293,9 @@ export default function WhatsAppSettingsPage() {
       } else {
         // Queue Deep Link Mode - Open window per patient or open formatted web link
         const cleanPhone = (pPhone || '').replace(/[^0-9]/g, '')
-        const fullMsg = (broadcastImageUrl && !broadcastImageUrl.startsWith('data:') ? `[PROMO BANNER: ${broadcastImageUrl}]\n\n` : '') + renderedText
+        const fullMsg = (broadcastImageUrl && !broadcastImageUrl.startsWith('data:'))
+          ? `${renderedText}\n\n🖼️ Campaign Image: ${broadcastImageUrl}`
+          : renderedText
         const encoded = encodeURIComponent(fullMsg)
         const waUrl = cleanPhone ? `https://wa.me/91${cleanPhone}?text=${encoded}` : `https://wa.me/?text=${encoded}`
         
@@ -419,13 +457,20 @@ export default function WhatsAppSettingsPage() {
                     {/* Local File Upload Button */}
                     <label className="flex-1 cursor-pointer">
                       <div className="flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 text-xs font-bold rounded-xl border border-dashed border-emerald-300 transition-all text-center shadow-2xs">
-                        <Upload className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="truncate">{uploadedFileName ? `Change Image (${uploadedFileName})` : 'Upload Image File'}</span>
+                        {isUploadingMedia ? (
+                          <RefreshCw className="w-4 h-4 text-emerald-600 animate-spin shrink-0" />
+                        ) : (
+                          <Upload className="w-4 h-4 text-emerald-600 shrink-0" />
+                        )}
+                        <span className="truncate">
+                          {isUploadingMedia ? 'Uploading to Supabase...' : (uploadedFileName ? `Change Image (${uploadedFileName})` : 'Upload Image File')}
+                        </span>
                       </div>
                       <input
                         type="file"
                         accept="image/*"
                         className="hidden"
+                        disabled={isUploadingMedia}
                         onChange={handleImageFileUpload}
                       />
                     </label>
@@ -451,29 +496,58 @@ export default function WhatsAppSettingsPage() {
 
                   {/* Thumbnail Preview Card */}
                   {broadcastImageUrl && (
-                    <div className="relative h-32 w-full rounded-xl overflow-hidden border border-slate-200 shadow-2xs group bg-slate-900/5">
-                      <img
-                        src={broadcastImageUrl}
-                        alt="Campaign Media Header"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none'
-                        }}
-                      />
-                      <div className="absolute top-2 left-2 flex items-center gap-1.5">
-                        <span className="bg-slate-900/80 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
-                          <ImageIcon className="w-2.5 h-2.5" />
-                          {uploadedFileName ? `File: ${uploadedFileName}` : 'Attached Header Media'}
-                        </span>
+                    <div className="space-y-2">
+                      <div className="relative h-36 w-full rounded-xl overflow-hidden border border-slate-200 shadow-2xs group bg-slate-900/5">
+                        <img
+                          src={broadcastImageUrl}
+                          alt="Campaign Media Header"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none'
+                          }}
+                        />
+                        <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                          <span className="bg-slate-900/80 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
+                            <ImageIcon className="w-2.5 h-2.5" />
+                            {uploadedFileName ? `File: ${uploadedFileName}` : 'Attached Header Media'}
+                          </span>
+                          {broadcastImageUrl.startsWith('http') && (
+                            <span className="bg-emerald-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-xs">
+                              Cloud Ready
+                            </span>
+                          )}
+                        </div>
+                        <div className="absolute top-2 right-2 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={handleCopyImageToClipboard}
+                            className="bg-slate-900/80 hover:bg-slate-900 text-white px-2 py-1 rounded-lg text-[10px] font-semibold shadow-md transition-colors flex items-center gap-1"
+                            title="Copy image to paste into WhatsApp Web"
+                          >
+                            <Copy className="w-3 h-3" />
+                            {copiedImageNotice ? 'Copied!' : 'Copy Image'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleClearImage}
+                            className="bg-rose-600 hover:bg-rose-700 text-white p-1 rounded-full shadow-md transition-colors"
+                            title="Remove image"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleClearImage}
-                        className="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white p-1 rounded-full shadow-md transition-colors"
-                        title="Remove image"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+
+                      {/* Web Mode Helper Alert */}
+                      {config.mode !== 'api' && (
+                        <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div className="leading-tight">
+                            <span className="font-bold">WhatsApp Web Notice: </span>
+                            WhatsApp link clicks cannot automatically attach files. Click <strong className="underline cursor-pointer" onClick={handleCopyImageToClipboard}>Copy Image</strong> above and simply hit <kbd className="bg-white border border-amber-300 px-1 py-0.5 rounded text-[10px] font-bold">Ctrl+V</kbd> in WhatsApp Web to send the photo, or configure <strong>Meta WhatsApp Cloud API</strong> in the Settings tab for 100% automated image delivery!
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

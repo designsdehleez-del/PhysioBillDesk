@@ -4278,7 +4278,85 @@ const DEFAULT_EXPENSES: ClinicExpense[] = [
   },
 ]
 
+export async function uploadExpenseReceipt(file: File): Promise<string> {
+  const fileExt = file.name.split('.').pop() || 'png'
+  const fileName = `receipt-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`
+  const filePath = `receipts/${fileName}`
+
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase.storage.from('expense-receipts').upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+    })
+
+    if (!error && data) {
+      const { data: urlData } = supabase.storage.from('expense-receipts').getPublicUrl(filePath)
+      if (urlData?.publicUrl) {
+        return urlData.publicUrl
+      }
+    }
+  } catch (err) {
+    console.warn('Storage bucket upload failed, using DataURL fallback:', err)
+  }
+
+  // Fallback: convert file to Base64 DataURL so proof is NEVER lost
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = (e) => reject(e)
+    reader.readAsDataURL(file)
+  })
+}
+
+export async function uploadBroadcastMedia(file: File): Promise<string> {
+  const fileExt = file.name.split('.').pop() || 'png'
+  const fileName = `broadcast-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`
+  const filePath = `media/${fileName}`
+
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase.storage.from('broadcast-media').upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+    })
+
+    if (!error && data) {
+      const { data: urlData } = supabase.storage.from('broadcast-media').getPublicUrl(filePath)
+      if (urlData?.publicUrl) {
+        return urlData.publicUrl
+      }
+    }
+  } catch (err) {
+    console.warn('Broadcast media bucket upload failed:', err)
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = (e) => reject(e)
+    reader.readAsDataURL(file)
+  })
+}
+
 export async function getExpenses(): Promise<ClinicExpense[]> {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('clinic_expenses')
+      .select('*')
+      .order('expense_date', { ascending: false })
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(data))
+      }
+      return data as ClinicExpense[]
+    }
+  } catch (err) {
+    console.warn('Supabase getExpenses fallback to local cache:', err)
+  }
+
   if (typeof window === 'undefined') return DEFAULT_EXPENSES
   try {
     const cached = localStorage.getItem(EXPENSES_STORAGE_KEY)
@@ -4296,23 +4374,58 @@ export async function addExpense(expense: Omit<ClinicExpense, 'id' | 'created_at
     id: `exp-${Date.now()}`,
     created_at: new Date().toISOString(),
   }
+
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase.from('clinic_expenses').insert([{
+      id: newExp.id,
+      expense_date: newExp.expense_date,
+      category: newExp.category,
+      description: newExp.description,
+      amount: newExp.amount,
+      centre_id: newExp.centre_id || null,
+      centre_name: newExp.centre_name || null,
+      logged_by_name: newExp.logged_by_name || null,
+      payment_method: newExp.payment_method || 'UPI',
+      receipt_url: newExp.receipt_url || null,
+      created_at: newExp.created_at,
+    }]).select().single()
+
+    if (!error && data) {
+      newExp.id = data.id
+    }
+  } catch (err) {
+    console.warn('Supabase addExpense sync error, saving locally:', err)
+  }
+
   try {
     const current = await getExpenses()
-    const updated = [newExp, ...current]
-    localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(updated))
-    window.dispatchEvent(new CustomEvent('physio-expenses-updated', { detail: updated }))
+    const updated = [newExp, ...current.filter(e => e.id !== newExp.id)]
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(updated))
+      window.dispatchEvent(new CustomEvent('physio-expenses-updated', { detail: updated }))
+    }
   } catch (err) {
-    console.error('Failed to add expense:', err)
+    console.error('Failed to cache expense:', err)
   }
   return newExp
 }
 
 export async function deleteExpense(id: string): Promise<void> {
   try {
+    const supabase = createClient()
+    await supabase.from('clinic_expenses').delete().eq('id', id)
+  } catch (err) {
+    console.warn('Supabase deleteExpense sync warning:', err)
+  }
+
+  try {
     const current = await getExpenses()
     const updated = current.filter(e => e.id !== id)
-    localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(updated))
-    window.dispatchEvent(new CustomEvent('physio-expenses-updated', { detail: updated }))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(updated))
+      window.dispatchEvent(new CustomEvent('physio-expenses-updated', { detail: updated }))
+    }
   } catch (err) {
     console.error('Failed to delete expense:', err)
   }
@@ -4328,6 +4441,7 @@ export function exportExpensesToExcel(expenses: ClinicExpense[]): void {
     'Clinic Centre': e.centre_name || 'All Centres',
     'Payment Method': e.payment_method || 'Cash',
     'Logged By': e.logged_by_name || 'Staff',
+    'Receipt / Proof': e.receipt_url || 'No attachment',
   }))
   const ws = XLSX.utils.json_to_sheet(data)
   XLSX.utils.book_append_sheet(wb, ws, 'Operational_Expenses')

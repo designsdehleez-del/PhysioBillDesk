@@ -57,6 +57,12 @@ export interface Database {
         Update: Partial<UidCounter>
         Relationships: []
       }
+      clinic_expenses: {
+        Row: ClinicExpense
+        Insert: ClinicExpenseInsert
+        Update: Partial<ClinicExpenseInsert>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -345,5 +351,7 @@ export interface ClinicExpense {
   centre_name?: string | null
   logged_by_name?: string
   payment_method?: 'Cash' | 'Bank Transfer' | 'UPI' | 'Card'
+  receipt_url?: string | null
   created_at: string
 }
+export type ClinicExpenseInsert = Omit<ClinicExpense, 'id' | 'created_at'>

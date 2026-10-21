@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Plus, DollarSign, Wallet, Calendar, Building2, CreditCard, Tag, RefreshCw } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Plus, DollarSign, Wallet, Calendar, Building2, CreditCard, Tag, RefreshCw, UploadCloud, Image, X, CheckCircle2, FileImage } from 'lucide-react'
 import { 
   Dialog, DialogContent, DialogDescription, 
   DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/components/ui/use-toast'
-import { addExpense } from '@/lib/data-store'
+import { addExpense, uploadExpenseReceipt } from '@/lib/data-store'
 import type { ClinicExpense, ExpenseCategory, Centre } from '@/lib/supabase/types'
 
 interface ExpenseLoggingModalProps {
@@ -52,6 +52,9 @@ export function ExpenseLoggingModal({
   const [description, setDescription] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Bank Transfer' | 'UPI' | 'Card'>('UPI')
   const [selectedCentreId, setSelectedCentreId] = useState<string>(userCentreId || (centres[0]?.id ?? 'c1111111-1111-1111-1111-111111111111'))
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (userCentreId) {
@@ -60,6 +63,25 @@ export function ExpenseLoggingModal({
       setSelectedCentreId(prev => (prev ? prev : centres[0].id))
     }
   }, [userCentreId, centres])
+
+  const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Please select an image under 10MB', variant: 'destructive' })
+      return
+    }
+    setReceiptFile(file)
+    const previewUrl = URL.createObjectURL(file)
+    setReceiptPreview(previewUrl)
+  }
+
+  const handleClearReceipt = () => {
+    if (receiptPreview) URL.revokeObjectURL(receiptPreview)
+    setReceiptFile(null)
+    setReceiptPreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,6 +93,11 @@ export function ExpenseLoggingModal({
 
     setSaving(true)
     try {
+      let receiptUrl: string | null = null
+      if (receiptFile) {
+        receiptUrl = await uploadExpenseReceipt(receiptFile)
+      }
+
       const centreObj = centres.find(c => c.id === selectedCentreId)
       await addExpense({
         expense_date: date,
@@ -81,6 +108,7 @@ export function ExpenseLoggingModal({
         centre_name: centreObj ? centreObj.name : (userCentreName || 'Physionautics Multispecialty'),
         logged_by_name: userName || 'Clinic Staff',
         payment_method: paymentMethod,
+        receipt_url: receiptUrl,
       })
 
       toast({
@@ -91,6 +119,7 @@ export function ExpenseLoggingModal({
       setOpen(false)
       setAmount('')
       setDescription('')
+      handleClearReceipt()
       if (onExpenseAdded) onExpenseAdded()
     } catch (err) {
       console.error(err)
@@ -222,6 +251,80 @@ export function ExpenseLoggingModal({
               onChange={e => setDescription(e.target.value)}
               className="text-xs min-h-[60px] bg-slate-50 border-slate-200 rounded-xl"
             />
+          </div>
+
+          {/* UPI / Receipt Screenshot Upload */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <FileImage className="w-3.5 h-3.5 text-emerald-600" />
+                {paymentMethod === 'UPI' ? (
+                  <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                    UPI Payment Screenshot <span className="text-[10px] font-normal text-slate-500">(GPay/PhonePe/Paytm proof)</span>
+                  </span>
+                ) : (
+                  <span>Receipt / Bill Proof <span className="text-[10px] font-normal text-slate-500">(Optional)</span></span>
+                )}
+              </Label>
+              {receiptPreview && (
+                <button
+                  type="button"
+                  onClick={handleClearReceipt}
+                  className="text-[10px] text-red-600 hover:underline flex items-center gap-0.5 font-semibold"
+                >
+                  <X className="w-3 h-3" /> Remove
+                </button>
+              )}
+            </div>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleReceiptChange}
+              className="hidden"
+              id="expense-receipt-input"
+            />
+
+            {!receiptPreview ? (
+              <label
+                htmlFor="expense-receipt-input"
+                className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-3 cursor-pointer transition-all ${
+                  paymentMethod === 'UPI'
+                    ? 'border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800'
+                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100/70 text-slate-600'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${paymentMethod === 'UPI' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'}`}>
+                    <UploadCloud className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs font-bold">
+                      {paymentMethod === 'UPI' ? 'Click to upload UPI screenshot' : 'Click to attach receipt or photo'}
+                    </p>
+                    <p className="text-[10px] text-slate-400">PNG, JPG, or screenshot image up to 10MB</p>
+                  </div>
+                </div>
+              </label>
+            ) : (
+              <div className="flex items-center gap-3 p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60">
+                <img
+                  src={receiptPreview}
+                  alt="Receipt Preview"
+                  className="w-12 h-12 object-cover rounded-lg border border-emerald-300 shadow-2xs"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-emerald-950 truncate flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    {receiptFile?.name || 'UPI Screenshot Attached'}
+                  </p>
+                  <p className="text-[10px] text-emerald-700">
+                    Ready to upload to clinic records {receiptFile ? `(${(receiptFile.size / 1024).toFixed(0)} KB)` : ''}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">

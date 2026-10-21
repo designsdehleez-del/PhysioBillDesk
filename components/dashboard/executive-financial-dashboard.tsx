@@ -7,9 +7,11 @@ import {
   Building2, CreditCard, TrendingUp, Filter, Wallet, 
   ArrowUpRight, Star, HeartHandshake, Sparkles, MessageCircle,
   FileSpreadsheet, Award, Download, Layers, CheckCircle2, Ticket,
-  UserCog, Stethoscope, Clock, ChevronRight, X, Trash2, Plus, ArrowDownRight, Tag, Search
+  UserCog, Stethoscope, Clock, ChevronRight, X, Trash2, Plus, ArrowDownRight, Tag, Search,
+  FileImage, ExternalLink, Eye
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -61,6 +63,8 @@ export function ExecutiveFinancialDashboard() {
 
   // Selected doctor modal for deep financial & feedback drilldown
   const [selectedDoctorForModal, setSelectedDoctorForModal] = useState<Doctor | null>(null)
+  // Selected receipt screenshot for preview
+  const [viewingReceiptUrl, setViewingReceiptUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -799,8 +803,18 @@ export function ExecutiveFinancialDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {e.receipt_url && (
+                        <button
+                          type="button"
+                          onClick={() => setViewingReceiptUrl(e.receipt_url!)}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                          title="View UPI / Payment proof screenshot"
+                        >
+                          <FileImage className="w-3 h-3 text-emerald-600" /> UPI Proof
+                        </button>
+                      )}
                       <span className="font-extrabold text-rose-700">{formatCurrency(e.amount)}</span>
-                      <button onClick={() => handleDeleteExp(e.id)} className="text-slate-400 hover:text-red-600 transition-colors">
+                      <button onClick={() => handleDeleteExp(e.id)} className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer" title="Delete expense">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -926,6 +940,42 @@ export function ExecutiveFinancialDashboard() {
         feedbacks={feedbacks}
         centreName={selectedDoctorForModal ? (centres || []).find(c => c && c.id === selectedDoctorForModal.centre_id)?.name : undefined}
       />
+
+      {/* UPI / Expense Receipt Proof Modal */}
+      <Dialog open={!!viewingReceiptUrl} onOpenChange={(open) => { if (!open) setViewingReceiptUrl(null) }}>
+        <DialogContent className="sm:max-w-[540px] bg-white rounded-2xl border-slate-200 p-0 overflow-hidden">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <FileImage className="w-4 h-4" />
+              </div>
+              <div>
+                <DialogTitle className="text-sm font-bold text-slate-900">UPI Payment & Expense Proof</DialogTitle>
+                <p className="text-[11px] text-slate-500">Transaction screenshot verification</p>
+              </div>
+            </div>
+            {viewingReceiptUrl && (
+              <a
+                href={viewingReceiptUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-slate-200"
+              >
+                <ExternalLink className="w-3 h-3" /> Open Full
+              </a>
+            )}
+          </div>
+          <div className="p-4 bg-slate-900/5 flex items-center justify-center max-h-[70vh] overflow-auto">
+            {viewingReceiptUrl && (
+              <img
+                src={viewingReceiptUrl}
+                alt="Payment Proof Screenshot"
+                className="max-h-[60vh] w-auto max-w-full rounded-xl shadow-md object-contain border border-slate-200"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

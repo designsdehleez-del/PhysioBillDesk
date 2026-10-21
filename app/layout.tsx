@@ -17,13 +17,42 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Physionautics - Clinic Management System',
-  description: 'Specialized Physiotherapy & Clinical Management Desktop & Mobile Application',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://physionautics.vercel.app'),
+  title: 'Physionautics - Physiotherapy & Pain Rehabilitation Centre',
+  description: 'Specialized Physiotherapy, Pain Rehabilitation & Clinical Management Platform',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Physionautics',
+  },
+  openGraph: {
+    title: 'Physionautics - Physiotherapy & Pain Rehabilitation Centre',
+    description: 'Specialized Physiotherapy, Pain Rehabilitation & Clinical Management Platform',
+    url: 'https://physionautics.vercel.app',
+    siteName: 'Physionautics Clinic',
+    locale: 'en_IN',
+    type: 'website',
+    images: [
+      {
+        url: '/pn-logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'Physionautics Clinic Logo',
+      },
+      {
+        url: '/logo.png',
+        width: 800,
+        height: 400,
+        alt: 'Physionautics Physiotherapy Logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Physionautics - Physiotherapy & Pain Rehabilitation Centre',
+    description: 'Specialized Physiotherapy, Pain Rehabilitation & Clinical Management Platform',
+    images: ['/pn-logo.png'],
   },
   icons: {
     icon: [

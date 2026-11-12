@@ -122,10 +122,26 @@ export default function DoctorsPage() {
 
       const docRows: DoctorRow[] = dData.map(d => {
         const c = cData.find(centre => centre.id === d.centre_id)
-        const dVisits = vData.filter(v => v.doctor_id === d.id || (v.doctor_name && v.doctor_name.toLowerCase().includes(d.name.toLowerCase())))
+        const dNameClean = d.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+        const dVisits = vData.filter(v => {
+          if (v.doctor_id === d.id) return true
+          if (v.doctor_name) {
+            const vName = v.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+            if (vName.includes(dNameClean) || dNameClean.includes(vName)) return true
+          }
+          if (v.primary_doctor_name) {
+            const pName = v.primary_doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+            if (pName.includes(dNameClean) || dNameClean.includes(pName)) return true
+          }
+          return false
+        })
         const rev = dVisits.reduce((sum, v) => sum + (Number(v.total) || 0), 0)
         
-        const dFb = fbData.filter(f => f.doctor_name && f.doctor_name.toLowerCase().includes(d.name.toLowerCase()))
+        const dFb = fbData.filter(f => {
+          if (!f.doctor_name) return false
+          const fName = f.doctor_name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+          return fName.includes(dNameClean) || dNameClean.includes(fName)
+        })
         const avgR = dFb.length > 0 ? (dFb.reduce((s, f) => s + f.rating, 0) / dFb.length).toFixed(1) : '5.0'
 
         return {

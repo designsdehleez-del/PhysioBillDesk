@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { 
   MessageCircle, Send, Copy, Check, ExternalLink, 
-  Sparkles, Smartphone, CheckCircle2, Edit3 
+  Sparkles, Smartphone, CheckCircle2, Edit3, Download, FileText
 } from 'lucide-react'
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, 
@@ -17,6 +17,7 @@ import {
   sendViaWhatsAppAPI, 
   getWhatsAppConfig, 
   formatPhoneNumber,
+  getInvoicePdfUrl,
   type WhatsAppConfig 
 } from '@/lib/whatsapp'
 import type { StoredVisit } from '@/lib/data-store'
@@ -181,9 +182,19 @@ export function WhatsAppShareModal({ visit, open, onOpenChange }: WhatsAppShareM
 
         {/* Footer Actions */}
         <div className="p-3 bg-gray-50 border-t flex flex-wrap items-center justify-between gap-2">
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs border-slate-300 text-slate-700 hover:bg-slate-100 gap-1.5"
+              onClick={() => window.open(`${getInvoicePdfUrl(visit)}&print=true`, '_blank')}
+            >
+              <Download className="h-3.5 w-3.5 text-blue-600" /> Download PDF
+            </Button>
+          </div>
 
           <div className="flex items-center gap-2">
             {config?.mode === 'api' && config.accessToken && (

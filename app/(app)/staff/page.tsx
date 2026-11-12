@@ -329,7 +329,7 @@ export default function StaffManagementPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        {staff.password ? `•••••• (${staff.password})` : 'Encrypted'}
+                        ••••••••
                       </td>
                       <td className="px-4 py-3">
                         <Switch checked={staff.is_active} onCheckedChange={() => handleToggleActive(staff)} />

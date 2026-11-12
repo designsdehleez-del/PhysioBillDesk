@@ -17,7 +17,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://physionautics.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://physio-bill-desk.vercel.app'),
   title: 'Physionautics - Physiotherapy & Pain Rehabilitation Centre',
   description: 'Specialized Physiotherapy, Pain Rehabilitation & Clinical Management Platform',
   manifest: '/manifest.json',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Physionautics - Physiotherapy & Pain Rehabilitation Centre',
     description: 'Specialized Physiotherapy, Pain Rehabilitation & Clinical Management Platform',
-    url: 'https://physionautics.vercel.app',
+    url: 'https://physio-bill-desk.vercel.app',
     siteName: 'Physionautics Clinic',
     locale: 'en_IN',
     type: 'website',

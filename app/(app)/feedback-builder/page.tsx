@@ -42,6 +42,7 @@ import {
   getPatientFeedback,
   getDoctorSatisfactionMetrics,
 } from '@/lib/data-store'
+import { getAppBaseUrl } from '@/lib/whatsapp'
 import type { FeedbackFormTemplate, FormField, FormFieldType } from '@/lib/supabase/types'
 
 export default function FeedbackBuilderPage() {
@@ -617,7 +618,7 @@ export default function FeedbackBuilderPage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="bg-white border border-emerald-200 rounded-lg p-2.5 text-xs font-mono text-gray-700 break-all select-all">
-                      {typeof window !== 'undefined' ? `${window.location.origin}/feedback` : '/feedback'}
+                      {`${getAppBaseUrl()}/feedback`}
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -625,7 +626,7 @@ export default function FeedbackBuilderPage() {
                         size="sm"
                         className="flex-1 text-xs font-semibold border-emerald-300 text-emerald-700 hover:bg-emerald-100"
                         onClick={() => {
-                          const link = typeof window !== 'undefined' ? `${window.location.origin}/feedback` : '/feedback'
+                          const link = `${getAppBaseUrl()}/feedback`
                           navigator.clipboard.writeText(link)
                           toast.success('Feedback link copied to clipboard!')
                         }}
@@ -638,7 +639,7 @@ export default function FeedbackBuilderPage() {
                         size="sm"
                         className="flex-1 text-xs font-semibold border-emerald-300 text-emerald-700 hover:bg-emerald-100"
                         onClick={() => {
-                          const link = typeof window !== 'undefined' ? `${window.location.origin}/feedback` : '/feedback'
+                          const link = `${getAppBaseUrl()}/feedback`
                           const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(link)}`
                           window.open(qrUrl, '_blank')
                         }}
@@ -652,7 +653,7 @@ export default function FeedbackBuilderPage() {
                       size="sm"
                       className="w-full text-xs font-semibold border-green-400 text-green-700 hover:bg-green-50"
                       onClick={() => {
-                        const link = typeof window !== 'undefined' ? `${window.location.origin}/feedback` : '/feedback'
+                        const link = `${getAppBaseUrl()}/feedback`
                         const msg = `Hi! We'd love to hear your feedback about your recent visit. Please tap the link below:\n${link}\n\nThank you – PhysioNautics Team`
                         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
                       }}

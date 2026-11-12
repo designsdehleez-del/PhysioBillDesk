@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Physionautics - Patient Care Feedback & Review',
     description: 'Physiotherapy & Pain Rehabilitation Centre. Please review your session and treatment experience.',
-    url: 'https://physionautics.vercel.app/feedback',
+    url: 'https://physio-bill-desk.vercel.app/feedback',
     siteName: 'Physionautics Clinic',
     locale: 'en_IN',
     type: 'website',

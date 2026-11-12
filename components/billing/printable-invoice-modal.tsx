@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { StoredVisit, exportSingleBillToExcel } from '@/lib/data-store'
-import { openWhatsAppInvoice } from '@/lib/whatsapp'
+import { openWhatsAppInvoice, getFeedbackUrl } from '@/lib/whatsapp'
 import { useClinicBranding } from '@/lib/settings-store'
 
 interface PrintableInvoiceModalProps {
@@ -323,7 +323,7 @@ export function PrintableInvoiceModal({ visit, open, onOpenChange }: PrintableIn
 
           <div class="feedback-banner">
             ⭐ <strong>We value your recovery!</strong> Please share your session feedback at: 
-            <u>https://physionautics.vercel.app/feedback?bid=${visit.bill_number}&uid=${visit.patient_uid}&name=${encodeURIComponent(visit.patient_name)}</u>
+            <u>${getFeedbackUrl(visit)}</u>
           </div>
 
           <div class="footer" style="margin-top: 24px;">

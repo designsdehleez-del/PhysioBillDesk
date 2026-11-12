@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Printer, Receipt, User, FileText, Activity, Plus, Stethoscope } from 'lucide-react'
+import { ArrowLeft, Printer, Receipt, User, FileText, Activity, Plus, Stethoscope, Download } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -209,11 +209,11 @@ export default function PatientDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" className="border-blue-300 text-blue-700 bg-blue-50/50" onClick={() => router.push(`/patients/${patient.id}/assessment?type=physiotherapy`)}>
-            <Stethoscope className="h-4 w-4 mr-1.5 text-blue-600" /> Physio Assessment
+          <Button variant="outline" className="border-blue-300 text-blue-700 bg-blue-50/50 font-bold" onClick={() => router.push(`/patients/${patient.id}/assessment?mode=new&type=physiotherapy`)}>
+            <Stethoscope className="h-4 w-4 mr-1.5 text-blue-600" /> + New Physio Assessment
           </Button>
-          <Button variant="outline" className="border-purple-300 text-purple-700 bg-purple-50/50" onClick={() => router.push(`/patients/${patient.id}/assessment?type=neurotherapy`)}>
-            <Activity className="h-4 w-4 mr-1.5 text-purple-600" /> Neuro Assessment
+          <Button variant="outline" className="border-purple-300 text-purple-700 bg-purple-50/50 font-bold" onClick={() => router.push(`/patients/${patient.id}/assessment?mode=new&type=neurotherapy`)}>
+            <Activity className="h-4 w-4 mr-1.5 text-purple-600" /> + New Neuro Assessment
           </Button>
           <Button variant="outline" onClick={() => router.push(`/patients/${patient.id}/report`)}>
             <FileText className="h-4 w-4 mr-1.5 text-slate-600" /> View Report Card
@@ -239,33 +239,75 @@ export default function PatientDetailPage() {
 
         {/* Clinical Assessments & Diagnostic Reports Card */}
         <Card className="lg:col-span-1 border-blue-200/80 shadow-xs rounded-2xl bg-white overflow-hidden">
-          <CardHeader className="pb-3 border-b bg-blue-50/50 flex items-center justify-between">
-            <CardTitle className="text-sm font-bold text-blue-950 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-blue-600" />
-              Clinical Assessments & Reports ({clinicalAssessments.length})
-            </CardTitle>
+          <CardHeader className="pb-3 border-b bg-blue-50/50 flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold text-blue-950 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-blue-600" />
+                Assessment Journey ({clinicalAssessments.length})
+              </CardTitle>
+              <div className="flex gap-1">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="text-[10px] h-6 px-2 rounded-lg border-blue-300 text-blue-700 bg-white hover:bg-blue-50 font-bold"
+                  onClick={() => router.push(`/patients/${patient.id}/assessment?mode=new&type=physiotherapy`)}
+                >
+                  + Physio
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="text-[10px] h-6 px-2 rounded-lg border-purple-300 text-purple-700 bg-white hover:bg-purple-50 font-bold"
+                  onClick={() => router.push(`/patients/${patient.id}/assessment?mode=new&type=neurotherapy`)}
+                >
+                  + Neuro
+                </Button>
+              </div>
+            </div>
+
+            {/* Pain Recovery Journey Indicator */}
+            {clinicalAssessments.length > 1 && (
+              <div className="bg-white p-2 rounded-xl border border-blue-100 flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 font-medium">Pain Progress:</span>
+                <div className="flex items-center gap-1.5 font-bold">
+                  <span className="text-rose-600">Day 1: {clinicalAssessments[clinicalAssessments.length - 1].vas_score ?? 'N/A'}/10</span>
+                  <span className="text-slate-400">➔</span>
+                  <span className="text-emerald-600">Latest: {clinicalAssessments[0].vas_score ?? 'N/A'}/10</span>
+                  {clinicalAssessments[clinicalAssessments.length - 1].vas_score != null && clinicalAssessments[0].vas_score != null && clinicalAssessments[clinicalAssessments.length - 1].vas_score! > clinicalAssessments[0].vas_score! && (
+                    <Badge className="bg-emerald-100 text-emerald-800 border-none text-[9px] px-1 py-0 ml-0.5">
+                      Improving
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="p-4 space-y-3">
             {clinicalAssessments.length === 0 ? (
               <div className="text-center py-4 text-xs text-slate-500 space-y-2">
                 <p>No formal assessment logged yet.</p>
                 <div className="flex gap-2 justify-center">
-                  <Button size="sm" variant="outline" className="text-[11px] h-7 rounded-lg" onClick={() => router.push(`/patients/${patient.id}/assessment?type=physiotherapy`)}>
+                  <Button size="sm" variant="outline" className="text-[11px] h-7 rounded-lg" onClick={() => router.push(`/patients/${patient.id}/assessment?mode=new&type=physiotherapy`)}>
                     + Physio
                   </Button>
-                  <Button size="sm" variant="outline" className="text-[11px] h-7 rounded-lg" onClick={() => router.push(`/patients/${patient.id}/assessment?type=neurotherapy`)}>
+                  <Button size="sm" variant="outline" className="text-[11px] h-7 rounded-lg" onClick={() => router.push(`/patients/${patient.id}/assessment?mode=new&type=neurotherapy`)}>
                     + Neuro
                   </Button>
                 </div>
               </div>
             ) : (
-              clinicalAssessments.map(ass => (
+              clinicalAssessments.map((ass, idx) => (
                 <div key={ass.id} className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2 text-xs hover:border-blue-300 transition-colors">
                   <div className="flex items-center justify-between">
-                    <Badge className={ass.type === 'physiotherapy' ? 'bg-blue-100 text-blue-800 text-[10px]' : 'bg-purple-100 text-purple-800 text-[10px]'}>
-                      {ass.type === 'physiotherapy' ? '🩺 Physiotherapy' : '🧠 Neurotherapy'}
-                    </Badge>
-                    <span className="text-[10px] text-slate-500 font-mono">{ass.assessment_date}</span>
+                    <div className="flex items-center gap-1.5">
+                      <Badge className={ass.type === 'physiotherapy' ? 'bg-blue-100 text-blue-800 text-[10px]' : 'bg-purple-100 text-purple-800 text-[10px]'}>
+                        {ass.type === 'physiotherapy' ? '🩺 Physio' : '🧠 Neuro'}
+                      </Badge>
+                      <Badge variant="outline" className="text-[9px] font-bold text-slate-600 bg-white border-slate-300">
+                        {ass.data?.assessment_stage || (idx === clinicalAssessments.length - 1 ? 'Baseline' : `Session ${clinicalAssessments.length - idx}`)}
+                      </Badge>
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-mono font-semibold">{ass.assessment_date}</span>
                   </div>
 
                   <div>
@@ -273,26 +315,36 @@ export default function PatientDetailPage() {
                       {ass.data?.clinical_diagnosis || ass.data?.main_problem || 'Clinical Assessment Logged'}
                     </span>
                     <span className="text-[11px] text-slate-500">
-                      Dr. {ass.doctor_name || 'Clinical Specialist'} • VAS Pain: <span className="font-bold text-rose-600">{ass.vas_score || 'N/A'}/10</span>
+                      Dr. {ass.doctor_name || 'Clinical Specialist'} • VAS Pain: <span className="font-bold text-rose-600">{ass.vas_score ?? 'N/A'}/10</span>
                     </span>
                   </div>
 
                   {ass.data?.treatment_modalities?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-1">
+                    <div className="flex flex-wrap gap-1 pt-0.5">
                       {ass.data.treatment_modalities.slice(0, 3).map((m: string) => (
                         <Badge key={m} variant="secondary" className="bg-white text-slate-700 border text-[9px] px-1.5 py-0">{m}</Badge>
                       ))}
                     </div>
                   )}
 
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => router.push(`/patients/${patient.id}/assessment?type=${ass.type}`)}
-                    className="w-full h-7 text-[11px] font-bold text-blue-700 border-blue-200 hover:bg-blue-50 mt-1"
-                  >
-                    View Branded Assessment Report →
-                  </Button>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => window.open(`/assessment/view?aid=${ass.id}&uid=${patient.uid}&print=true`, '_blank')}
+                      className="h-7 px-2.5 text-[11px] font-bold text-slate-700 border-slate-300 hover:bg-slate-100"
+                    >
+                      <Download className="w-3 h-3 text-blue-600 mr-1" /> PDF
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => router.push(`/patients/${patient.id}/assessment?assessmentId=${ass.id}`)}
+                      className="flex-1 h-7 text-[11px] font-bold text-blue-700 border-blue-200 hover:bg-blue-50"
+                    >
+                      View Report ({ass.assessment_date}) →
+                    </Button>
+                  </div>
                 </div>
               ))
             )}

@@ -24,23 +24,20 @@ export interface BroadcastCampaign {
 
 export const DEFAULT_WHATSAPP_TEMPLATE = `🏥 *PHYSIONAUTICS CLINIC & PHYSIOTHERAPY*
 ━━━━━━━━━━━━━━━━━━━━
-📄 *INVOICE & RECEIPT*
+📄 *OFFICIAL INVOICE & RECEIPT*
 ━━━━━━━━━━━━━━━━━━━━
 🔢 *Bill No:* {bill_number}
 📅 *Date:* {bill_date}
 👤 *Patient:* {patient_name} ({patient_uid})
 👨‍⚕️ *Primary Doctor:* {primary_doctor}
-🩺 *Attending Physiotherapist:* {physiotherapist}
-📍 *Clinic Centre:* {centre_name}
+🩺 *Attending Physio:* {physiotherapist}
+📍 *Centre:* {centre_name}
 
-📋 *Services & Charges:*
-{services_breakdown}
-
-💵 *Subtotal:* {subtotal}
-💰 *Discount:* {discount}
-✨ *NET TOTAL PAID:* {total_amount}
-💳 *Payment Mode:* {payment_mode} (Paid)
+💵 *Amount Paid:* {total_amount} ({payment_mode})
 📝 *Care Remarks:* {notes}
+
+📄 *VIEW & DOWNLOAD OFFICIAL PDF INVOICE:*
+👉 {invoice_url}
 ━━━━━━━━━━━━━━━━━━━━
 ⭐ *WE VALUE YOUR RECOVERY & FEEDBACK!*
 Please take 30 seconds to rate your session experience:
@@ -53,25 +50,22 @@ export const PRESET_TEMPLATES = [
   {
     id: 'detailed',
     title: 'Detailed Itemized Invoice & Feedback (Default)',
-    description: 'Complete breakdown of procedures, payment info, clinic branch & feedback link.',
+    description: 'Executive invoice notification with official PDF download link & feedback.',
     template: DEFAULT_WHATSAPP_TEMPLATE,
   },
   {
     id: 'concise',
     title: 'Short & Concise Receipt',
-    description: 'Compact summary with invoice number, amount paid and feedback link.',
+    description: 'Compact summary with direct PDF invoice link and feedback.',
     template: `🏥 *PHYSIONAUTICS CLINIC*
 Receipt for {patient_name} ({patient_uid})
 ━━━━━━━━━━━━━━━━━━━━
 Invoice: {bill_number} | Date: {bill_date}
-Primary Doctor: {primary_doctor}
-Attending Physio: {physiotherapist}
-Branch: {centre_name}
+Doctor: {primary_doctor} | Physio: {physiotherapist}
+Paid: {total_amount} via {payment_mode}
 
-Services:
-{services_breakdown}
-
-Net Amount: {total_amount} ({payment_mode})
+📄 Download Official PDF Invoice:
+👉 {invoice_url}
 
 ⭐ Rate your session: {feedback_url}
 Get well soon! 🌿
@@ -80,15 +74,18 @@ Get well soon! 🌿
   {
     id: 'warm_care',
     title: 'Warm Patient Care & Follow-up',
-    description: 'Personalized tone focused on recovery guidance, care remarks, and feedback.',
+    description: 'Personalized tone focused on recovery guidance, care remarks, and official PDF.',
     template: `Dear {patient_name},
 
 Thank you for visiting *Physionautics ({centre_name})* today! 
 
-Your session with Dr. {doctor_name} has been recorded under Invoice #{bill_number}.
+Your session has been recorded under Invoice #{bill_number}.
 Primary Doctor: {primary_doctor}
 Attending Physiotherapist: {physiotherapist}
 ✨ *Total Amount Paid:* {total_amount} via {payment_mode}
+
+📄 *Download Your Official PDF Invoice:*
+👉 {invoice_url}
 
 💧 *Post-Treatment Care:*
 Please stay well hydrated and perform any prescribed mobility drills gently.
@@ -103,16 +100,15 @@ Physionautics Team 🌿`,
   {
     id: 'minimal',
     title: 'Minimal Payment Confirmation',
-    description: 'Quick payment receipt with minimal clutter.',
+    description: 'Quick payment receipt with official PDF link.',
     template: `*PHYSIONAUTICS INVOICE CONFIRMATION*
 Bill #{bill_number}
-Patient: {patient_name}
-Primary Doctor: {primary_doctor}
-Attending Physio: {physiotherapist}
+Patient: {patient_name} ({patient_uid})
 Amount Paid: {total_amount} via {payment_mode}
 Date: {bill_date}
 
-Feedback & Review: {feedback_url}
+📄 View Official PDF Invoice: {invoice_url}
+⭐ Feedback & Review: {feedback_url}
 Thank you!`,
   },
 ]
@@ -232,6 +228,20 @@ export function saveCustomBroadcast(imageUrl: string, template: string) {
   localStorage.setItem('physio_custom_broadcast_draft_v1', JSON.stringify({ imageUrl, template }))
 }
 
+export function getAppBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
+  }
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return 'https://physio-bill-desk.vercel.app'
+    }
+    return origin
+  }
+  return 'https://physio-bill-desk.vercel.app'
+}
+
 export const AVAILABLE_VARIABLES = [
   { tag: '{patient_name}', label: 'Patient Full Name', example: 'Rahul Verma' },
   { tag: '{patient_uid}', label: 'Patient UID', example: 'CLN-202609-0001' },
@@ -249,8 +259,27 @@ export const AVAILABLE_VARIABLES = [
   { tag: '{total_amount}', label: 'Net Total Paid', example: '₹1,700' },
   { tag: '{payment_mode}', label: 'Payment Method', example: 'UPI' },
   { tag: '{notes}', label: 'Clinical Care Remarks', example: 'Lower lumbar mobilization session completed.' },
-  { tag: '{feedback_url}', label: 'Patient Feedback Link', example: 'https://physionautics.vercel.app/feedback?...' },
+  { tag: '{invoice_url}', label: 'Official PDF Invoice Link', example: 'https://physio-bill-desk.vercel.app/invoice/view?bid=INV-202609-0001' },
+  { tag: '{feedback_url}', label: 'Patient Feedback Link', example: 'https://physio-bill-desk.vercel.app/feedback?...' },
 ]
+
+export function getInvoicePdfUrl(visit: StoredVisit): string {
+  const origin = getAppBaseUrl()
+  const params = new URLSearchParams({
+    bid: visit.bill_number,
+    uid: visit.patient_uid,
+  })
+  return `${origin}/invoice/view?${params.toString()}`
+}
+
+export function getAssessmentPdfUrl(assessmentId: string, patientUid: string): string {
+  const origin = getAppBaseUrl()
+  const params = new URLSearchParams({
+    aid: assessmentId,
+    uid: patientUid,
+  })
+  return `${origin}/assessment/view?${params.toString()}`
+}
 
 export function getWhatsAppConfig(): WhatsAppConfig {
   if (typeof window === 'undefined') {
@@ -303,7 +332,7 @@ export function saveWhatsAppConfig(config: Partial<WhatsAppConfig>): WhatsAppCon
 }
 
 export function getFeedbackUrl(visit: StoredVisit): string {
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://physionautics.vercel.app'
+  const origin = getAppBaseUrl()
   const servicesList = (visit.items || []).map(i => i.service_name).join(', ')
   const params = new URLSearchParams({
     bid: visit.bill_number,
@@ -319,6 +348,7 @@ export function getFeedbackUrl(visit: StoredVisit): string {
 
 export function renderWhatsAppMessage(template: string, visit: StoredVisit): string {
   const feedbackUrl = getFeedbackUrl(visit)
+  const invoicePdfUrl = getInvoicePdfUrl(visit)
   
   const itemsText = (visit.items || [])
     .map(i => `  • ${i.service_name} (x${i.quantity}) - ${formatCurrency(i.price * i.quantity)}`)
@@ -353,6 +383,7 @@ export function renderWhatsAppMessage(template: string, visit: StoredVisit): str
     .replace(/{total_amount}/g, formatCurrency(visit.total || 0))
     .replace(/{payment_mode}/g, visit.payment_mode || 'Cash')
     .replace(/{notes}/g, notesText)
+    .replace(/{invoice_url}/g, invoicePdfUrl)
     .replace(/{feedback_url}/g, feedbackUrl)
 
   return message

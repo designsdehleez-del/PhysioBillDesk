@@ -133,6 +133,7 @@ export default function BillingPage() {
     if (selectedPatient) {
       if (selectedPatient.primary_doctor_id) {
         setPrimaryDoctorId(selectedPatient.primary_doctor_id)
+        setSelectedDoctorId(selectedPatient.primary_doctor_id)
         const doc = doctors.find(d => d.id === selectedPatient.primary_doctor_id)
         setPrimaryDoctorName(doc ? doc.name : '')
       } else {
@@ -149,6 +150,7 @@ export default function BillingPage() {
         setPhysiotherapistName('')
       }
     } else {
+      setSelectedDoctorId('')
       setPrimaryDoctorId('')
       setPrimaryDoctorName('')
       setPhysiotherapistId('')

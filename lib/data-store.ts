@@ -2619,12 +2619,21 @@ export async function getDoctorSatisfactionMetrics(): Promise<{
     })
   })
 
-  // Map feedbacks
+  // Map feedbacks with normalized Dr. prefix matching
   feedbacks.forEach(fb => {
-    const docName = fb.doctor_name || 'Unassigned / General'
-    if (!map.has(docName)) {
-      map.set(docName, {
-        doctor_name: docName,
+    const rawFbDoc = (fb.doctor_name || '').trim()
+    const fbClean = rawFbDoc.replace(/^Dr\.\s*/i, '').toLowerCase()
+
+    // Find if matches an existing doctor in directory
+    const matchedDoc = fbClean ? doctors.find(d => {
+      const dClean = d.name.replace(/^Dr\.\s*/i, '').trim().toLowerCase()
+      return dClean.includes(fbClean) || fbClean.includes(dClean)
+    }) : undefined
+
+    const targetKey = matchedDoc ? matchedDoc.name : (rawFbDoc || 'Unassigned / General')
+    if (!map.has(targetKey)) {
+      map.set(targetKey, {
+        doctor_name: targetKey,
         ratings: [],
         hygiene: [],
         treatment: [],
@@ -2633,7 +2642,7 @@ export async function getDoctorSatisfactionMetrics(): Promise<{
         comments: [],
       })
     }
-    const entry = map.get(docName)!
+    const entry = map.get(targetKey)!
     if (fb.rating) entry.ratings.push(fb.rating)
     if (fb.hygiene_rating) entry.hygiene.push(fb.hygiene_rating)
     if (fb.treatment_rating) entry.treatment.push(fb.treatment_rating)
@@ -5004,10 +5013,21 @@ export async function getAssessments(patientId?: string): Promise<ClinicalAssess
     list = DEFAULT_CLINICAL_ASSESSMENTS
   }
 
+  const sorted = [...list].sort((a, b) => {
+    const timeA = new Date(a.assessment_date || a.created_at || 0).getTime()
+    const timeB = new Date(b.assessment_date || b.created_at || 0).getTime()
+    return timeB - timeA
+  })
+
   if (patientId) {
-    return list.filter(a => a.patient_id === patientId || a.patient_uid === patientId)
+    return sorted.filter(a => a.patient_id === patientId || a.patient_uid === patientId)
   }
-  return list
+  return sorted
+}
+
+export async function getAssessmentById(id: string): Promise<ClinicalAssessment | null> {
+  const all = await getAssessments()
+  return all.find(a => a.id === id) || null
 }
 
 export async function saveAssessment(assessment: Partial<ClinicalAssessment>): Promise<ClinicalAssessment> {
@@ -5022,7 +5042,7 @@ export async function saveAssessment(assessment: Partial<ClinicalAssessment>): P
     assessment_date: assessment.assessment_date || new Date().toISOString().split('T')[0],
     doctor_id: assessment.doctor_id || null,
     doctor_name: assessment.doctor_name || null,
-    vas_score: assessment.vas_score ?? null,
+    vas_score: assessment.vas_score !== undefined && assessment.vas_score !== null ? Number(assessment.vas_score) : null,
     data: assessment.data || {},
     created_at: assessment.created_at || new Date().toISOString(),
   }

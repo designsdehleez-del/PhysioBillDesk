@@ -39,7 +39,9 @@ export function formatDateTime(dateStr?: string | null): string {
 }
 
 export function isValidPhone(phone: string): boolean {
-  return /^[0-9]{10,15}$/.test(phone.replace(/\s/g, ''))
+  if (!phone) return false
+  const digits = phone.replace(/[^0-9]/g, '')
+  return digits.length >= 10 && digits.length <= 15
 }
 
 export function isValidEmail(email: string): boolean {

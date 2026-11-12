@@ -32,7 +32,9 @@ export function middleware(request: NextRequest) {
     pathname === '/manifest.webmanifest' ||
     pathname === '/logo.png' ||
     pathname === '/' ||
-    pathname.startsWith('/feedback') // Patient feedback public submission
+    pathname.startsWith('/feedback') || // Patient feedback public submission
+    pathname.startsWith('/invoice') ||  // Public invoice PDF view
+    pathname.startsWith('/assessment/view') // Public assessment PDF view
   ) {
     return NextResponse.next()
   }

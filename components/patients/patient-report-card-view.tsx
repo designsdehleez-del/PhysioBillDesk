@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { 
   FileText, Calendar, Activity, User, ArrowLeft,
   ChevronRight, Lightbulb, Stethoscope, Building, Phone,
-  CheckCircle2, Share2, Printer, Shield, ArrowUpRight, Award
+  CheckCircle2, Share2, Printer, Shield, ArrowUpRight, Award, Download
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +26,7 @@ export function PatientReportCardView({ patientId: propPatientId }: PatientRepor
   const [patientData, setPatientData] = useState<any>(null)
   const [patientVisits, setPatientVisits] = useState<any[]>([])
   const [assessments, setAssessments] = useState<ClinicalAssessment[]>([])
+  const [selectedAssIdx, setSelectedAssIdx] = useState<number>(0)
   const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
@@ -68,16 +69,16 @@ export function PatientReportCardView({ patientId: propPatientId }: PatientRepor
   const refHospital = patientData?.referral_clinic_name || patientData?.ref_hospital || ''
   const refContact = patientData?.referral_contact || patientData?.ref_contact || ''
 
-  // Latest clinical assessment
-  const latestAss = assessments[0]
-  const vasScore = latestAss?.vas_score ?? 5
-  const assType = latestAss?.type === 'neurotherapy' ? 'Neurotherapy' : 'Physiotherapy'
-  const evaluator = latestAss?.doctor_name || latestAss?.data?.physio_name || 'Dr. Sarah Jenkins'
-  const mainDiagnosis = latestAss?.data?.clinical_diagnosis || latestAss?.data?.main_problem || patientData?.initial_complaint || 'Musculoskeletal Rehabilitation'
-  const modalities = latestAss?.data?.treatment_modalities || ['Manual Therapy', 'Electrotherapy', 'Postural Training', 'Ergonomic Advice']
-  const shortGoals = latestAss?.data?.short_term_goals || 'Pain reduction & localized tissue recovery'
-  const longGoals = latestAss?.data?.long_term_goals || 'Full functional mobility & return to daily routine'
-  const assDate = latestAss?.assessment_date || new Date().toISOString().split('T')[0]
+  // Active clinical assessment based on selected date
+  const activeAss = assessments[selectedAssIdx] || assessments[0]
+  const vasScore = activeAss?.vas_score ?? 5
+  const assType = activeAss?.type === 'neurotherapy' ? 'Neurotherapy' : 'Physiotherapy'
+  const evaluator = activeAss?.doctor_name || activeAss?.data?.physio_name || 'Dr. Sarah Jenkins'
+  const mainDiagnosis = activeAss?.data?.clinical_diagnosis || activeAss?.data?.main_problem || patientData?.initial_complaint || 'Musculoskeletal Rehabilitation'
+  const modalities = activeAss?.data?.treatment_modalities || ['Manual Therapy', 'Electrotherapy', 'Postural Training', 'Ergonomic Advice']
+  const shortGoals = activeAss?.data?.short_term_goals || 'Pain reduction & localized tissue recovery'
+  const longGoals = activeAss?.data?.long_term_goals || 'Full functional mobility & return to daily routine'
+  const assDate = activeAss?.assessment_date || new Date().toISOString().split('T')[0]
 
   const getVasColor = (score: number) => {
     if (score <= 3) return 'text-emerald-600 bg-emerald-50 border-emerald-200'
@@ -118,9 +119,9 @@ export function PatientReportCardView({ patientId: propPatientId }: PatientRepor
         </div>
 
         <div className="flex items-center gap-2">
-          {latestAss && (
+          {activeAss && (
             <Button
-              onClick={() => router.push(`/patients/${patientData?.id || targetId}/assessment?type=${latestAss.type || 'physiotherapy'}`)}
+              onClick={() => router.push(`/patients/${patientData?.id || targetId}/assessment?assessmentId=${activeAss.id}`)}
               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-xs gap-1.5"
             >
               <FileText className="w-3.5 h-3.5" /> View Assessment Report
@@ -306,17 +307,52 @@ export function PatientReportCardView({ patientId: propPatientId }: PatientRepor
               </div>
 
               <div className="flex items-center gap-2">
-                {latestAss && (
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push(`/patients/${patientData?.id || targetId}/assessment?type=${latestAss.type}`)}
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50 text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 font-semibold"
-                  >
-                    View Branded Report <ChevronRight className="w-3.5 h-3.5" />
-                  </Button>
+                {activeAss && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => window.open(`/assessment/view?aid=${activeAss.id}&uid=${patientData?.uid || ''}&print=true`, '_blank')}
+                      className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 font-semibold"
+                    >
+                      <Download className="w-3.5 h-3.5 text-blue-600" /> Download PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => router.push(`/patients/${patientData?.id || targetId}/assessment?assessmentId=${activeAss.id}`)}
+                      className="border-blue-200 text-blue-600 hover:bg-blue-50 text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 font-semibold"
+                    >
+                      View Report <ChevronRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
+
+            {/* Assessment Date Selector (if multiple exist) */}
+            {assessments.length > 1 && (
+              <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mr-1">
+                  <Calendar className="w-3.5 h-3.5 text-blue-600" /> Historical Reports ({assessments.length}):
+                </span>
+                {assessments.map((a, idx) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setSelectedAssIdx(idx)}
+                    className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border ${
+                      selectedAssIdx === idx
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-blue-50'
+                    }`}
+                  >
+                    <span>{a.assessment_date}</span>
+                    <span className={`text-[10px] font-bold ${selectedAssIdx === idx ? 'text-blue-100' : 'text-rose-600'}`}>
+                      VAS {a.vas_score ?? 'N/A'}/10
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Prescribed Modalities & Treatment Plan */}
             <div className="space-y-3">
@@ -357,46 +393,46 @@ export function PatientReportCardView({ patientId: propPatientId }: PatientRepor
             </div>
 
             {/* Assessment Details Summary Box */}
-            {latestAss?.data && (
+            {activeAss?.data && (
               <div className="p-4 bg-slate-50/70 border border-slate-200/60 rounded-2xl space-y-3">
                 <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
                   ⚡ Clinical Notes & Physical Evaluation
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  {latestAss.data.main_problem && (
+                  {activeAss.data.main_problem && (
                     <div>
                       <span className="text-slate-400 font-medium">Main Problem: </span>
-                      <span className="text-slate-800 font-semibold">{latestAss.data.main_problem}</span>
+                      <span className="text-slate-800 font-semibold">{activeAss.data.main_problem}</span>
                     </div>
                   )}
-                  {latestAss.data.cause && (
+                  {activeAss.data.cause && (
                     <div>
                       <span className="text-slate-400 font-medium">Cause/Mechanism: </span>
-                      <span className="text-slate-800 font-semibold">{latestAss.data.cause}</span>
+                      <span className="text-slate-800 font-semibold">{activeAss.data.cause}</span>
                     </div>
                   )}
-                  {latestAss.data.pain_description && (
+                  {activeAss.data.pain_description && (
                     <div>
                       <span className="text-slate-400 font-medium">Pain Description: </span>
-                      <span className="text-slate-800 font-semibold">{latestAss.data.pain_description}</span>
+                      <span className="text-slate-800 font-semibold">{activeAss.data.pain_description}</span>
                     </div>
                   )}
-                  {latestAss.data.aggravating_factors && (
+                  {activeAss.data.aggravating_factors && (
                     <div>
                       <span className="text-slate-400 font-medium">Aggravating Factors: </span>
-                      <span className="text-slate-800 font-semibold">{latestAss.data.aggravating_factors}</span>
+                      <span className="text-slate-800 font-semibold">{activeAss.data.aggravating_factors}</span>
                     </div>
                   )}
-                  {latestAss.data.rom_findings && (
+                  {activeAss.data.rom_findings && (
                     <div>
                       <span className="text-slate-400 font-medium">Range of Motion (ROM): </span>
-                      <span className="text-slate-800 font-semibold">{latestAss.data.rom_findings}</span>
+                      <span className="text-slate-800 font-semibold">{activeAss.data.rom_findings}</span>
                     </div>
                   )}
-                  {latestAss.data.special_tests && (
+                  {activeAss.data.special_tests && (
                     <div>
                       <span className="text-slate-400 font-medium">Special Tests: </span>
-                      <span className="text-slate-800 font-semibold">{latestAss.data.special_tests}</span>
+                      <span className="text-slate-800 font-semibold">{activeAss.data.special_tests}</span>
                     </div>
                   )}
                 </div>

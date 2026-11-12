@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { 
   Stethoscope, Activity, CheckCircle2, ArrowLeft, Printer, Share2, 
-  MessageCircle, CreditCard, Sparkles, FileText, User, Calendar, Tag, Shield, Save
+  MessageCircle, CreditCard, Sparkles, FileText, User, Calendar, Tag, Shield, Save,
+  Plus, TrendingDown, Clock, History, ChevronRight, Download
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding } from '@/lib/settings-store'
 import { getPatients, saveAssessment, getAssessments } from '@/lib/data-store'
+import { getAssessmentPdfUrl } from '@/lib/whatsapp'
 import type { Patient, ClinicalAssessment } from '@/lib/supabase/types'
 
 export default function PatientAssessmentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -34,7 +36,13 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
   const [patient, setPatient] = useState<Patient | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [allAssessments, setAllAssessments] = useState<ClinicalAssessment[]>([])
   const [savedAssessment, setSavedAssessment] = useState<ClinicalAssessment | null>(null)
+  const [viewMode, setViewMode] = useState<'report' | 'form'>('report')
+
+  // Date-wise Assessment Meta
+  const [assessmentDate, setAssessmentDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [assessmentStage, setAssessmentStage] = useState<string>('Baseline / Initial Evaluation')
 
   // Form State
   const [vasScore, setVasScore] = useState<number>(6)
@@ -113,12 +121,38 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
         if (found) {
           setPatient(found)
           if (found.initial_complaint) {
-            setFormData(prev => ({ ...prev, main_problem: found.initial_complaint! }))
+            setFormData(prev => ({ ...prev, main_problem: prev.main_problem || found.initial_complaint! }))
           }
         }
+
         const existing = await getAssessments(patientId)
-        if (existing.length > 0) {
-          setSavedAssessment(existing[0])
+        setAllAssessments(existing)
+
+        const requestedId = searchParams.get('assessmentId')
+        const mode = searchParams.get('mode')
+
+        if (mode === 'new' || existing.length === 0) {
+          setViewMode('form')
+          setSavedAssessment(null)
+          setAssessmentDate(new Date().toISOString().split('T')[0])
+          setAssessmentStage(existing.length === 0 ? 'Baseline / Initial Evaluation' : `Re-assessment (Session ${existing.length + 1})`)
+        } else if (requestedId) {
+          const matched = existing.find(a => a.id === requestedId) || existing[0]
+          setSavedAssessment(matched)
+          setViewMode('report')
+          if (matched.data) setFormData(prev => ({ ...prev, ...matched.data }))
+          if (matched.vas_score !== undefined && matched.vas_score !== null) setVasScore(Number(matched.vas_score))
+          if (matched.type) setAssessmentType(matched.type)
+          if (matched.assessment_date) setAssessmentDate(matched.assessment_date)
+        } else {
+          // Default to viewing latest assessment report
+          const latest = existing[0]
+          setSavedAssessment(latest)
+          setViewMode('report')
+          if (latest.data) setFormData(prev => ({ ...prev, ...latest.data }))
+          if (latest.vas_score !== undefined && latest.vas_score !== null) setVasScore(Number(latest.vas_score))
+          if (latest.type) setAssessmentType(latest.type)
+          if (latest.assessment_date) setAssessmentDate(latest.assessment_date)
         }
       } catch (err) {
         console.error('Failed to load patient for assessment:', err)
@@ -127,7 +161,7 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
       }
     }
     loadData()
-  }, [patientId])
+  }, [patientId, searchParams])
 
   const setField = (key: string, val: any) => {
     setFormData(prev => ({ ...prev, [key]: val }))
@@ -142,27 +176,53 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
     }
   }
 
+  const handleStartNewAssessment = () => {
+    setViewMode('form')
+    setSavedAssessment(null)
+    setAssessmentDate(new Date().toISOString().split('T')[0])
+    setAssessmentStage(allAssessments.length === 0 ? 'Baseline / Initial Evaluation' : `Re-assessment (Session ${allAssessments.length + 1})`)
+    setVasScore(5)
+  }
+
+  const handleSelectHistoricalAssessment = (ass: ClinicalAssessment) => {
+    setSavedAssessment(ass)
+    setViewMode('report')
+    setVasScore(Number(ass.vas_score ?? 5))
+    setAssessmentType(ass.type)
+    if (ass.assessment_date) setAssessmentDate(ass.assessment_date)
+    if (ass.data) setFormData(prev => ({ ...prev, ...ass.data }))
+  }
+
   const handleSaveAssessment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!patient) return
 
     setSaving(true)
     try {
+      // NOTE: We deliberately do NOT pass an id so saveAssessment creates a fresh, immutable
+      // record for this assessment date without overwriting any prior assessment!
       const record = await saveAssessment({
         patient_id: patient.id,
         patient_uid: patient.uid,
         type: assessmentType,
-        assessment_date: new Date().toISOString().split('T')[0],
+        assessment_date: assessmentDate || new Date().toISOString().split('T')[0],
         doctor_id: profile?.id || null,
         doctor_name: profile?.name || formData.physio_name || 'Physiotherapist',
-        vas_score: vasScore,
-        data: formData,
+        vas_score: Number(vasScore),
+        data: {
+          ...formData,
+          assessment_stage: assessmentStage,
+        },
       })
 
+      const refreshed = await getAssessments(patientId)
+      setAllAssessments(refreshed)
       setSavedAssessment(record)
+      setViewMode('report')
+
       toast({
-        title: 'Clinical Assessment Saved!',
-        description: `Branded ${assessmentType === 'physiotherapy' ? 'Physiotherapy' : 'Neurotherapy'} assessment report is ready.`,
+        title: 'New Clinical Assessment Saved!',
+        description: `Assessment logged for ${record.assessment_date}. Total assessments: ${refreshed.length}.`,
       })
     } catch (err) {
       toast({
@@ -177,9 +237,33 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
 
   const handleWhatsAppShare = () => {
     if (!patient || !savedAssessment) return
-    const text = `*PHYSIONAUTICS CLINICAL ASSESSMENT REPORT*%0A*Patient:* ${patient.full_name} (${patient.uid})%0A*Type:* ${savedAssessment.type === 'physiotherapy' ? 'Physiotherapy Assessment' : 'Neurotherapy Assessment'}%0A*Date:* ${savedAssessment.assessment_date}%0A*VAS Pain Scale:* ${savedAssessment.vas_score || 'N/A'}/10%0A*Diagnosis:* ${formData.clinical_diagnosis || 'Under Evaluation'}%0A*Treating Doctor:* ${savedAssessment.doctor_name || 'Physionautics Specialist'}%0A%0A_Thank you for choosing Physionautics!_`
+    const stage = savedAssessment.data?.assessment_stage ? ` (${savedAssessment.data.assessment_stage})` : ''
+    const assessmentUrl = getAssessmentPdfUrl(savedAssessment.id, patient.uid)
+    const vasVal = savedAssessment.vas_score !== null && savedAssessment.vas_score !== undefined ? `${savedAssessment.vas_score}/10` : 'N/A'
+    const diagnosis = savedAssessment.data?.clinical_diagnosis || formData.clinical_diagnosis || 'Clinical evaluation recorded'
+    const doctor = savedAssessment.doctor_name || (patient as any).primary_doctor_name || 'Dr. Clinical Specialist'
+    const typeLabel = savedAssessment.type === 'physiotherapy' ? 'Physiotherapy Assessment' : 'Neurotherapy Assessment'
+
+    const message = `🏥 *PHYSIONAUTICS CLINIC - CLINICAL ASSESSMENT REPORT*
+━━━━━━━━━━━━━━━━━━━━
+👤 *Patient:* ${patient.full_name} (${patient.uid})
+📋 *Type:* ${typeLabel}${stage}
+📅 *Date:* ${savedAssessment.assessment_date}
+👨‍⚕️ *Treating Doctor:* ${doctor}
+
+📊 *CLINICAL SUMMARY:*
+• *VAS Pain Score:* ${vasVal}
+• *Diagnosis:* ${diagnosis}
+
+📄 *VIEW & DOWNLOAD OFFICIAL PDF REPORT:*
+👉 ${assessmentUrl}
+━━━━━━━━━━━━━━━━━━━━
+Thank you for choosing Physionautics! 🌿
+📞 Contact: 08383936905`
+
     const phone = patient.phone.replace(/[^0-9]/g, '')
-    window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+    const encoded = encodeURIComponent(message)
+    window.open(`https://wa.me/${phone}?text=${encoded}`, '_blank')
   }
 
   if (loading) {
@@ -241,8 +325,90 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
-      {/* If Report Saved: Show Branded Report Preview */}
-      {savedAssessment ? (
+      {/* Patient Assessment Journey & Date Selector */}
+      {allAssessments.length > 0 && (
+        <Card className="border-blue-200/80 bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-slate-50 rounded-2xl shadow-xs overflow-hidden">
+          <div className="p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-blue-100">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
+                {allAssessments.length}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                    Patient Assessment Journey
+                  </h3>
+                  <Badge variant="outline" className="text-[10px] bg-white text-blue-700 border-blue-300 font-bold">
+                    {allAssessments.length} Total Assessment{allAssessments.length > 1 ? 's' : ''} Logged
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {allAssessments.length > 1 ? (
+                    <>
+                      Pain Trajectory: Initial <span className="font-bold text-rose-600">{allAssessments[allAssessments.length - 1].vas_score ?? 'N/A'}/10</span> ➔ Current <span className="font-bold text-emerald-600">{allAssessments[0].vas_score ?? 'N/A'}/10</span>
+                      {allAssessments[allAssessments.length - 1].vas_score != null && allAssessments[0].vas_score != null && allAssessments[allAssessments.length - 1].vas_score! > allAssessments[0].vas_score! && (
+                        <span className="ml-1.5 font-bold text-emerald-700">
+                          ({Math.round(((allAssessments[allAssessments.length - 1].vas_score! - allAssessments[0].vas_score!) / allAssessments[allAssessments.length - 1].vas_score!) * 100)}% Pain Reduction)
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    `Baseline initial evaluation recorded on ${allAssessments[0].assessment_date}`
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-start md:self-center">
+              <Button
+                type="button"
+                onClick={handleStartNewAssessment}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" /> + Log New Assessment
+              </Button>
+            </div>
+          </div>
+
+          {/* Date-wise Assessment Switcher Pills */}
+          <div className="p-2.5 sm:px-4 flex items-center gap-2 overflow-x-auto scrollbar-none bg-white/70">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-blue-600" /> Date-Wise Reports:
+            </span>
+            {allAssessments.map((ass, idx) => {
+              const isSelected = viewMode === 'report' && savedAssessment?.id === ass.id
+              const stageLabel = ass.data?.assessment_stage || (idx === allAssessments.length - 1 ? 'Baseline' : `Session ${allAssessments.length - idx}`)
+              return (
+                <button
+                  key={ass.id}
+                  type="button"
+                  onClick={() => handleSelectHistoricalAssessment(ass)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all flex items-center gap-1.5 border ${
+                    isSelected
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs ring-2 ring-blue-500/30'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'
+                  }`}
+                >
+                  <span className="font-mono font-bold">{ass.assessment_date}</span>
+                  <Badge className={`text-[9px] px-1 py-0 h-4 border-none font-bold ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {stageLabel}
+                  </Badge>
+                  <span className={`text-[10px] font-bold ${
+                    isSelected ? 'text-amber-300' : 'text-rose-600'
+                  }`}>
+                    VAS {ass.vas_score ?? 'N/A'}/10
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* If In Report Mode: Show Branded Report Preview */}
+      {viewMode === 'report' && savedAssessment ? (
         <Card className="border-slate-200 shadow-xl rounded-3xl bg-white overflow-hidden print:shadow-none print:border-none">
           {/* Branded Print Header */}
           <div className="p-6 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-blue-800/80">
@@ -255,20 +421,31 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
                 </div>
               )}
               <div>
-                <Badge className="bg-blue-500/20 text-blue-200 border border-blue-400/30 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider mb-1">
-                  Official Clinical Assessment Report
-                </Badge>
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge className="bg-blue-500/20 text-blue-200 border border-blue-400/30 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
+                    Clinical Assessment Report
+                  </Badge>
+                  {savedAssessment.data?.assessment_stage && (
+                    <Badge className="bg-purple-500/30 text-purple-200 border border-purple-400/30 text-[10px] font-bold px-2 py-0.5">
+                      {savedAssessment.data.assessment_stage}
+                    </Badge>
+                  )}
+                </div>
                 <h2 className="text-xl font-black text-white">{branding.clinicName || 'PHYSIONAUTICS PAIN REHABILITATION'}</h2>
                 <p className="text-xs text-blue-200/80">{branding.tagline || 'Specialized Orthopedic, Spine & Neuro Rehabilitation'}</p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 print:hidden">
-              <Button onClick={() => window.print()} variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-xs font-bold gap-1.5 h-9 rounded-xl">
-                <Printer className="w-3.5 h-3.5" /> Print PDF
+              <Button 
+                onClick={() => window.open(`${getAssessmentPdfUrl(savedAssessment.id, patient.uid)}&print=true`, '_blank')} 
+                variant="outline" 
+                className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-xs font-bold gap-1.5 h-9 rounded-xl"
+              >
+                <Download className="w-3.5 h-3.5" /> Download PDF
               </Button>
               <Button onClick={handleWhatsAppShare} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 h-9 rounded-xl shadow-sm">
-                <MessageCircle className="w-3.5 h-3.5" /> Share WhatsApp
+                <MessageCircle className="w-3.5 h-3.5" /> Share PDF on WhatsApp
               </Button>
               <Button onClick={() => router.push(`/billing?patientId=${patient.id}`)} className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold gap-1.5 h-9 rounded-xl shadow-sm">
                 <CreditCard className="w-3.5 h-3.5" /> Proceed to Billing
@@ -291,13 +468,13 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
               </div>
               <div>
                 <span className="text-[10px] font-bold text-slate-500 uppercase block">Assessment Date & Type</span>
-                <span className="font-semibold text-slate-800">{savedAssessment.assessment_date}</span>
+                <span className="font-semibold text-slate-800 font-mono text-sm">{savedAssessment.assessment_date}</span>
                 <span className="block font-bold text-purple-700 capitalize">{savedAssessment.type}</span>
               </div>
               <div>
                 <span className="text-[10px] font-bold text-slate-500 uppercase block">Consulting Specialist</span>
                 <span className="font-bold text-slate-900">{savedAssessment.doctor_name || 'Dr. Clinical Specialist'}</span>
-                <span className="block text-[11px] text-emerald-700 font-semibold">VAS Score: {savedAssessment.vas_score || 'N/A'}/10</span>
+                <span className="block text-[11px] text-emerald-700 font-semibold">VAS Score: {savedAssessment.vas_score ?? 'N/A'}/10</span>
               </div>
             </div>
 
@@ -314,7 +491,7 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
                 </div>
                 <div>
                   <span className="font-bold text-slate-700">Pain Description & Intensity:</span>
-                  <p className="text-slate-800">{formData.pain_description || 'N/A'} (VAS Scale: {savedAssessment.vas_score || 'N/A'}/10)</p>
+                  <p className="text-slate-800">{formData.pain_description || 'N/A'} (VAS Scale: {savedAssessment.vas_score ?? 'N/A'}/10)</p>
                 </div>
                 {formData.medical_history_checks?.length > 0 && (
                   <div>
@@ -381,11 +558,23 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
               </div>
             </div>
 
-            <div className="flex justify-between items-center pt-4 print:hidden">
-              <Button onClick={() => setSavedAssessment(null)} variant="ghost" className="text-xs text-slate-500">
-                Edit Assessment Answers
-              </Button>
-              <Button onClick={() => router.push(`/billing?patientId=${patient.id}`)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 px-6 rounded-xl shadow-md gap-2">
+            <div className="flex flex-wrap justify-between items-center gap-3 pt-4 border-t print:hidden">
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={handleStartNewAssessment} 
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Log New Assessment
+                </Button>
+                <Button 
+                  onClick={() => setViewMode('form')} 
+                  variant="outline" 
+                  className="text-xs text-slate-700 h-9 rounded-xl border-slate-300"
+                >
+                  Edit Answers
+                </Button>
+              </div>
+              <Button onClick={() => router.push(`/billing?patientId=${patient.id}`)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-9 px-5 rounded-xl shadow-md gap-2">
                 <CreditCard className="w-4 h-4" /> Create Invoice / Bill Now
               </Button>
             </div>
@@ -413,6 +602,41 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
           <CardContent className="p-6">
             <form onSubmit={handleSaveAssessment} className="space-y-6 text-xs">
               
+              {/* Assessment Session Meta: Date & Stage */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl">
+                <div className="space-y-1">
+                  <Label className="font-bold text-blue-950 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-blue-600" /> Assessment Date *
+                  </Label>
+                  <Input 
+                    type="date" 
+                    value={assessmentDate} 
+                    onChange={e => setAssessmentDate(e.target.value)} 
+                    className="h-10 text-xs rounded-xl bg-white font-medium text-slate-900"
+                    required
+                  />
+                  <p className="text-[10px] text-slate-500">Every assessment is logged under this date into patient history.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="font-bold text-blue-950 flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5 text-blue-600" /> Assessment Stage / Purpose
+                  </Label>
+                  <select
+                    value={assessmentStage}
+                    onChange={e => setAssessmentStage(e.target.value)}
+                    className="w-full h-10 px-3 text-xs rounded-xl border border-input bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Baseline / Initial Evaluation">Baseline / Initial Evaluation (Day 1)</option>
+                    <option value="Interim Progress Check">Interim Progress Check (Session 3–5)</option>
+                    <option value="Mid-treatment Re-assessment">Mid-treatment Re-assessment (Session 6–10)</option>
+                    <option value="Discharge / Final Evaluation">Discharge / Final Evaluation</option>
+                    <option value="Routine Follow-up Review">Routine Follow-up Review</option>
+                  </select>
+                  <p className="text-[10px] text-slate-500">Categorizes this report in the patient recovery timeline.</p>
+                </div>
+              </div>
+
               {/* Section 1: Presenting Complaint & VAS Pain Scale */}
               <div className="space-y-3">
                 <h3 className="text-xs font-extrabold text-blue-900 uppercase tracking-wider">
@@ -620,13 +844,30 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => router.back()} className="h-11 rounded-xl text-xs">
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-11 px-6 rounded-xl shadow-md gap-2">
-                  <Save className="w-4 h-4" /> Save Clinical Assessment & Generate Report
-                </Button>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t">
+                {allAssessments.length > 0 ? (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    onClick={() => {
+                      setSavedAssessment(allAssessments[0])
+                      setViewMode('report')
+                    }} 
+                    className="h-10 rounded-xl text-xs text-slate-600 gap-1 w-full sm:w-auto"
+                  >
+                    ← Back to Existing Reports ({allAssessments.length})
+                  </Button>
+                ) : (
+                  <div />
+                )}
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <Button type="button" variant="outline" onClick={() => router.back()} className="h-11 rounded-xl text-xs">
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-11 px-6 rounded-xl shadow-md gap-2">
+                    <Save className="w-4 h-4" /> Save Clinical Assessment & Generate Report
+                  </Button>
+                </div>
               </div>
 
             </form>

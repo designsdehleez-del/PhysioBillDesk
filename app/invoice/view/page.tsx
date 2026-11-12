@@ -8,12 +8,13 @@ import { Badge } from '@/components/ui/badge'
 import { getVisits, StoredVisit } from '@/lib/data-store'
 import { useClinicBranding } from '@/lib/settings-store'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getFeedbackUrl } from '@/lib/whatsapp'
+import { getFeedbackUrl, decodeReportPayload, type InvoicePayload } from '@/lib/whatsapp'
 
-export default function PublicInvoiceViewPage({ searchParams }: { searchParams: Promise<{ bid?: string; uid?: string; print?: string }> }) {
+export default function PublicInvoiceViewPage({ searchParams }: { searchParams: Promise<{ bid?: string; uid?: string; d?: string; print?: string }> }) {
   const resolvedParams = use(searchParams)
   const bid = resolvedParams.bid
   const uid = resolvedParams.uid
+  const dataToken = resolvedParams.d
   const autoPrint = resolvedParams.print === 'true'
 
   const router = useRouter()
@@ -24,6 +25,47 @@ export default function PublicInvoiceViewPage({ searchParams }: { searchParams: 
   useEffect(() => {
     async function load() {
       try {
+        // 1. If self-contained data token is in URL, decode immediately
+        if (dataToken) {
+          const decoded = decodeReportPayload<InvoicePayload>(dataToken)
+          if (decoded) {
+            const reconstructedVisit: StoredVisit = {
+              id: decoded.bid || bid || 'inv-view',
+              bill_number: decoded.bid || bid || 'INV-DIGITAL',
+              patient_id: decoded.uid || uid || '',
+              patient_uid: decoded.uid || uid || 'CLN-PATIENT',
+              patient_name: decoded.name || 'Valued Patient',
+              patient_phone: decoded.phone || '',
+              patient_age: decoded.age ?? undefined,
+              patient_gender: decoded.gender ?? undefined,
+              doctor_name: decoded.doctor || 'Dr. Clinical Specialist',
+              primary_doctor_name: decoded.doctor || 'Dr. Clinical Specialist',
+              physiotherapist_name: decoded.physio || null,
+              centre_name: decoded.centre || 'New Friends Colony, New Delhi',
+              items: (decoded.items || []).map((it, idx) => ({
+                id: `item-${idx}`,
+                service_id: `svc-${idx}`,
+                service_name: it.name,
+                price: Number(it.price) || 0,
+                quantity: Number(it.qty) || 1,
+                total: (Number(it.price) || 0) * (Number(it.qty) || 1),
+              })),
+              subtotal: Number(decoded.subtotal) || 0,
+              discount: Number(decoded.discount) || 0,
+              total: Number(decoded.total) || 0,
+              payment_mode: (decoded.mode as any) || 'UPI',
+              payment_status: 'Paid',
+              visit_date: decoded.date || new Date().toISOString().split('T')[0],
+              created_at: decoded.date || new Date().toISOString(),
+              notes: decoded.notes || '',
+            }
+            setVisit(reconstructedVisit)
+            setLoading(false)
+            return
+          }
+        }
+
+        // 2. Fall back to local visits
         const all = await getVisits()
         const match = all.find(v => (bid && v.bill_number === bid) || (uid && v.patient_uid === uid))
         if (match) {
@@ -36,7 +78,7 @@ export default function PublicInvoiceViewPage({ searchParams }: { searchParams: 
       }
     }
     load()
-  }, [bid, uid])
+  }, [bid, uid, dataToken])
 
   useEffect(() => {
     if (!loading && visit && autoPrint) {

@@ -238,7 +238,7 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
   const handleWhatsAppShare = () => {
     if (!patient || !savedAssessment) return
     const stage = savedAssessment.data?.assessment_stage ? ` (${savedAssessment.data.assessment_stage})` : ''
-    const assessmentUrl = getAssessmentPdfUrl(savedAssessment.id, patient.uid)
+    const assessmentUrl = getAssessmentPdfUrl(savedAssessment, patient)
     const vasVal = savedAssessment.vas_score !== null && savedAssessment.vas_score !== undefined ? `${savedAssessment.vas_score}/10` : 'N/A'
     const diagnosis = savedAssessment.data?.clinical_diagnosis || formData.clinical_diagnosis || 'Clinical evaluation recorded'
     const doctor = savedAssessment.doctor_name || (patient as any).primary_doctor_name || 'Dr. Clinical Specialist'
@@ -438,7 +438,7 @@ Thank you for choosing Physionautics! 🌿
 
             <div className="flex flex-wrap items-center gap-2 print:hidden">
               <Button 
-                onClick={() => window.open(`${getAssessmentPdfUrl(savedAssessment.id, patient.uid)}&print=true`, '_blank')} 
+                onClick={() => window.open(`${getAssessmentPdfUrl(savedAssessment, patient)}&print=true`, '_blank')} 
                 variant="outline" 
                 className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-xs font-bold gap-1.5 h-9 rounded-xl"
               >

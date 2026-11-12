@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getPatients, getVisits, getAssessments } from '@/lib/data-store'
+import { getAssessmentPdfUrl } from '@/lib/whatsapp'
 import type { ClinicalAssessment } from '@/lib/supabase/types'
 
 interface PatientReportCardProps {
@@ -311,7 +312,7 @@ export function PatientReportCardView({ patientId: propPatientId }: PatientRepor
                   <>
                     <Button
                       variant="outline"
-                      onClick={() => window.open(`/assessment/view?aid=${activeAss.id}&uid=${patientData?.uid || ''}&print=true`, '_blank')}
+                      onClick={() => window.open(`${getAssessmentPdfUrl(activeAss, patientData)}&print=true`, '_blank')}
                       className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 font-semibold"
                     >
                       <Download className="w-3.5 h-3.5 text-blue-600" /> Download PDF

@@ -5,15 +5,17 @@ import { useRouter } from 'next/navigation'
 import { Printer, Download, ShieldCheck, HeartPulse, Activity, User, Calendar, Stethoscope, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { getAssessments, getAssessmentById, getPatients } from '@/lib/data-store'
+import { getAssessments, getAssessmentById, getPatients, saveAssessment } from '@/lib/data-store'
 import type { ClinicalAssessment, Patient } from '@/lib/supabase/types'
 import { useClinicBranding } from '@/lib/settings-store'
 import { formatDate } from '@/lib/utils'
+import { decodeReportPayload, type AssessmentPayload } from '@/lib/whatsapp'
 
-export default function PublicAssessmentViewPage({ searchParams }: { searchParams: Promise<{ aid?: string; uid?: string; print?: string }> }) {
+export default function PublicAssessmentViewPage({ searchParams }: { searchParams: Promise<{ aid?: string; uid?: string; d?: string; print?: string }> }) {
   const resolvedParams = use(searchParams)
   const aid = resolvedParams.aid
   const uid = resolvedParams.uid
+  const dataToken = resolvedParams.d
   const autoPrint = resolvedParams.print === 'true'
 
   const router = useRouter()
@@ -25,6 +27,48 @@ export default function PublicAssessmentViewPage({ searchParams }: { searchParam
   useEffect(() => {
     async function load() {
       try {
+        // 1. If self-contained data token is in URL, decode immediately
+        if (dataToken) {
+          const decoded = decodeReportPayload<AssessmentPayload>(dataToken)
+          if (decoded) {
+            const reconstructedAss: ClinicalAssessment = {
+              id: decoded.id || aid || 'ass-view',
+              patient_id: decoded.uid || uid || '',
+              patient_uid: decoded.uid || uid || 'CLN-PATIENT',
+              type: decoded.type || 'physiotherapy',
+              assessment_date: decoded.date || new Date().toISOString().split('T')[0],
+              doctor_name: decoded.doctor_name || 'Dr. Clinical Specialist',
+              vas_score: decoded.vas_score !== undefined && decoded.vas_score !== null ? Number(decoded.vas_score) : null,
+              data: decoded.data || {},
+              created_at: decoded.date || new Date().toISOString(),
+            }
+            const reconstructedPat: any = {
+              id: decoded.uid || uid || '',
+              uid: decoded.uid || uid || 'CLN-PATIENT',
+              full_name: decoded.patient_name || 'Valued Patient',
+              phone: decoded.patient_phone || '',
+              age: decoded.patient_age || 0,
+              gender: (decoded.patient_gender as any) || 'Other',
+              email: null,
+              address: null,
+              blood_group: null,
+              medical_notes: null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              centre_name: decoded.centre_name,
+              physiotherapist_name: decoded.physiotherapist_name,
+              primary_doctor_name: decoded.doctor_name,
+            }
+            setAssessment(reconstructedAss)
+            setPatient(reconstructedPat)
+            // Persist locally on this device as well
+            saveAssessment(reconstructedAss).catch(() => {})
+            setLoading(false)
+            return
+          }
+        }
+
+        // 2. Fall back to local and database lookup
         let match: ClinicalAssessment | null = null
         if (aid) {
           match = await getAssessmentById(aid)
@@ -49,7 +93,7 @@ export default function PublicAssessmentViewPage({ searchParams }: { searchParam
       }
     }
     load()
-  }, [aid, uid])
+  }, [aid, uid, dataToken])
 
   useEffect(() => {
     if (!loading && assessment && autoPrint) {
@@ -74,12 +118,22 @@ export default function PublicAssessmentViewPage({ searchParams }: { searchParam
         <div className="max-w-md bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
           <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
           <h2 className="text-lg font-bold text-slate-900 mb-1">Assessment Report Not Found</h2>
-          <p className="text-xs text-slate-500 mb-6">
-            The requested assessment report (Ref: {aid || uid || 'N/A'}) could not be located or may have been archived.
+          <p className="text-xs text-slate-500 mb-4">
+            The requested assessment report (Ref: {aid || uid || 'N/A'}) was not found in this browser's session.
           </p>
-          <Button onClick={() => router.push('/')} variant="outline" className="text-xs rounded-xl">
-            Go to Home
-          </Button>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-800 text-left mb-6 space-y-1">
+            <p className="font-semibold">💡 What to do:</p>
+            <p>• If you received this link via WhatsApp, please tap the newly generated <strong>Share PDF on WhatsApp</strong> link from the clinic desk.</p>
+            <p>• If you are clinic staff, you can view and export this report directly from the <strong className="text-slate-900">Patient Profile & Assessment Studio</strong>.</p>
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <Button onClick={() => router.push('/')} variant="outline" className="text-xs rounded-xl">
+              Go to Home
+            </Button>
+            <Button onClick={() => router.push('/patients')} className="bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-xl">
+              Patient Directory
+            </Button>
+          </div>
         </div>
       </div>
     )

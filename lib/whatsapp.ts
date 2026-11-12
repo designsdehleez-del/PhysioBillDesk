@@ -263,21 +263,169 @@ export const AVAILABLE_VARIABLES = [
   { tag: '{feedback_url}', label: 'Patient Feedback Link', example: 'https://physio-bill-desk.vercel.app/feedback?...' },
 ]
 
+export interface AssessmentPayload {
+  id: string
+  uid: string
+  type: 'physiotherapy' | 'neurotherapy'
+  date: string
+  doctor_name?: string | null
+  vas_score?: number | null
+  patient_name: string
+  patient_phone?: string | null
+  patient_age?: number | null
+  patient_gender?: string | null
+  centre_name?: string | null
+  physiotherapist_name?: string | null
+  data: Record<string, any>
+}
+
+export interface InvoicePayload {
+  bid: string
+  uid: string
+  name: string
+  phone?: string | null
+  age?: number | null
+  gender?: string | null
+  date: string
+  doctor: string
+  physio?: string | null
+  centre?: string | null
+  items: Array<{
+    name: string
+    price: number
+    qty: number
+  }>
+  subtotal: number
+  discount: number
+  total: number
+  mode: string
+  notes?: string | null
+}
+
+export function encodeReportPayload(data: any): string {
+  try {
+    const json = JSON.stringify(data)
+    if (typeof window !== 'undefined') {
+      const utf8 = encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, p1) =>
+        String.fromCharCode(parseInt(p1, 16))
+      )
+      return btoa(utf8)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '')
+    } else {
+      return Buffer.from(json).toString('base64url')
+    }
+  } catch (err) {
+    console.error('Failed to encode report payload:', err)
+    return ''
+  }
+}
+
+export function decodeReportPayload<T = any>(encoded: string): T | null {
+  try {
+    if (!encoded) return null
+    let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/')
+    while (base64.length % 4) base64 += '='
+    
+    let json = ''
+    if (typeof window !== 'undefined') {
+      const binary = atob(base64)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i)
+      }
+      json = decodeURIComponent(
+        Array.from(bytes, b => '%' + ('00' + b.toString(16)).slice(-2)).join('')
+      )
+    } else {
+      json = Buffer.from(base64, 'base64').toString('utf8')
+    }
+    return JSON.parse(json) as T
+  } catch (err) {
+    console.error('Failed to decode report payload:', err)
+    return null
+  }
+}
+
 export function getInvoicePdfUrl(visit: StoredVisit): string {
   const origin = getAppBaseUrl()
   const params = new URLSearchParams({
     bid: visit.bill_number,
     uid: visit.patient_uid,
   })
+
+  const payload: InvoicePayload = {
+    bid: visit.bill_number,
+    uid: visit.patient_uid,
+    name: visit.patient_name,
+    phone: visit.patient_phone,
+    age: visit.patient_age,
+    gender: visit.patient_gender,
+    date: visit.visit_date,
+    doctor: visit.primary_doctor_name || visit.doctor_name || 'Dr. Clinical Specialist',
+    physio: visit.physiotherapist_name || undefined,
+    centre: visit.centre_name,
+    items: (visit.items || []).map(i => ({
+      name: i.service_name,
+      price: i.price,
+      qty: i.quantity,
+    })),
+    subtotal: visit.subtotal || 0,
+    discount: visit.discount || 0,
+    total: visit.total || 0,
+    mode: visit.payment_mode || 'Cash',
+    notes: visit.notes,
+  }
+
+  const token = encodeReportPayload(payload)
+  if (token) {
+    params.set('d', token)
+  }
+
   return `${origin}/invoice/view?${params.toString()}`
 }
 
-export function getAssessmentPdfUrl(assessmentId: string, patientUid: string): string {
+export function getAssessmentPdfUrl(
+  assessment: string | any,
+  patient?: string | any | null,
+  additionalData?: Record<string, any>
+): string {
   const origin = getAppBaseUrl()
-  const params = new URLSearchParams({
-    aid: assessmentId,
-    uid: patientUid,
-  })
+  const params = new URLSearchParams()
+
+  if (typeof assessment === 'string') {
+    params.set('aid', assessment)
+    if (typeof patient === 'string') {
+      params.set('uid', patient)
+    }
+  } else if (assessment) {
+    params.set('aid', assessment.id || '')
+    params.set('uid', assessment.patient_uid || (typeof patient === 'object' ? patient?.uid : '') || '')
+    
+    const pObj = typeof patient === 'object' && patient !== null ? patient : null
+    const payload: AssessmentPayload = {
+      id: assessment.id,
+      uid: assessment.patient_uid || pObj?.uid || '',
+      type: assessment.type || 'physiotherapy',
+      date: assessment.assessment_date,
+      doctor_name: assessment.doctor_name || pObj?.primary_doctor_name || null,
+      vas_score: assessment.vas_score,
+      patient_name: pObj?.full_name || assessment.patient_uid || 'Valued Patient',
+      patient_phone: pObj?.phone,
+      patient_age: pObj?.age,
+      patient_gender: pObj?.gender,
+      centre_name: pObj?.centre_name,
+      physiotherapist_name: pObj?.physiotherapist_name,
+      data: assessment.data || {},
+      ...additionalData,
+    }
+    const token = encodeReportPayload(payload)
+    if (token) {
+      params.set('d', token)
+    }
+  }
+
   return `${origin}/assessment/view?${params.toString()}`
 }
 

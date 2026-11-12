@@ -15,6 +15,7 @@ import type { Patient, VisitWithServices, ClinicalAssessment } from '@/lib/supab
 
 import { PrintableInvoiceModal } from '@/components/billing/printable-invoice-modal'
 import { StoredVisit, getPatients, getVisits, getPatientAssessments, addPatientAssessment, getAssessments, type PatientAssessment } from '@/lib/data-store'
+import { getAssessmentPdfUrl } from '@/lib/whatsapp'
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -331,7 +332,7 @@ export default function PatientDetailPage() {
                     <Button 
                       size="sm" 
                       variant="outline" 
-                      onClick={() => window.open(`/assessment/view?aid=${ass.id}&uid=${patient.uid}&print=true`, '_blank')}
+                      onClick={() => window.open(`${getAssessmentPdfUrl(ass, patient)}&print=true`, '_blank')}
                       className="h-7 px-2.5 text-[11px] font-bold text-slate-700 border-slate-300 hover:bg-slate-100"
                     >
                       <Download className="w-3 h-3 text-blue-600 mr-1" /> PDF

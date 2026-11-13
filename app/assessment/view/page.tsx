@@ -78,12 +78,49 @@ export default function PublicAssessmentViewPage({ searchParams }: { searchParam
           if (list.length > 0) match = list[0]
         }
 
+        // 3. Fall back to /api/assessment direct fetch
+        if (!match && (aid || uid)) {
+          try {
+            const apiRes = await fetch(`/api/assessment?${new URLSearchParams({ ...(aid ? { aid } : {}), ...(uid ? { uid } : {}) }).toString()}`, { cache: 'no-store' })
+            if (apiRes.ok) {
+              const json = await apiRes.json()
+              if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+                match = json.data[0]
+              }
+            }
+          } catch (_) {}
+        }
+
         if (match) {
           setAssessment(match)
-          const allPatients = await getPatients()
-          const matchedPatient = allPatients.find(p => p.id === match?.patient_id || p.uid === match?.patient_uid)
+          let matchedPatient: any = null
+          try {
+            const allPatients = await getPatients()
+            matchedPatient = allPatients.find(p => p.id === match?.patient_id || p.uid === match?.patient_uid)
+          } catch (_) {}
+
           if (matchedPatient) {
             setPatient(matchedPatient)
+          } else {
+            // Reconstruct patient details from assessment metadata
+            const assData = match.data || {}
+            setPatient({
+              id: match.patient_id || uid || 'CLN-PATIENT',
+              uid: match.patient_uid || uid || 'CLN-PATIENT',
+              full_name: assData.patient_name || assData.full_name || 'Valued Patient',
+              phone: assData.patient_phone || assData.phone || '',
+              age: assData.patient_age || assData.age || 0,
+              gender: assData.patient_gender || assData.gender || 'Other',
+              email: null,
+              address: null,
+              blood_group: null,
+              medical_notes: null,
+              created_at: match.created_at || new Date().toISOString(),
+              updated_at: match.created_at || new Date().toISOString(),
+              centre_name: assData.centre_name || 'New Friends Colony, New Delhi',
+              physiotherapist_name: assData.physiotherapist_name || null,
+              primary_doctor_name: match.doctor_name || assData.doctor_name || 'Dr. Clinical Specialist',
+            } as any)
           }
         }
       } catch (err) {

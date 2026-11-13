@@ -66,8 +66,28 @@ export default function PublicInvoiceViewPage({ searchParams }: { searchParams: 
         }
 
         // 2. Fall back to local visits
-        const all = await getVisits()
-        const match = all.find(v => (bid && v.bill_number === bid) || (uid && v.patient_uid === uid))
+        let match: StoredVisit | null = null
+        try {
+          const all = await getVisits()
+          const localMatch = all.find(v => (bid && v.bill_number === bid) || (uid && v.patient_uid === uid))
+          if (localMatch) match = localMatch
+        } catch (_) {}
+
+        // 3. Fall back to cloud /api/invoice fetch
+        if (!match && (bid || uid)) {
+          try {
+            const apiRes = await fetch(`/api/invoice?${new URLSearchParams({ ...(bid ? { bid } : {}), ...(uid ? { uid } : {}) }).toString()}`, { cache: 'no-store' })
+            if (apiRes.ok) {
+              const json = await apiRes.json()
+              if (json.success && json.data) {
+                match = json.data
+              }
+            }
+          } catch (apiErr) {
+            console.warn('Failed to fetch from /api/invoice:', apiErr)
+          }
+        }
+
         if (match) {
           setVisit(match)
         }

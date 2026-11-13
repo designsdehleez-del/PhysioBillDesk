@@ -5229,6 +5229,7 @@ export async function getAssessments(patientId?: string): Promise<ClinicalAssess
   const CACHE_KEY = 'physio_clinical_assessments_v1'
   let list: ClinicalAssessment[] = []
 
+  // 1. Read from local cache first
   if (typeof window !== 'undefined') {
     const cached = localStorage.getItem(CACHE_KEY)
     if (cached) {
@@ -5237,13 +5238,35 @@ export async function getAssessments(patientId?: string): Promise<ClinicalAssess
         if (Array.isArray(parsed) && parsed.length > 0) list = parsed
       } catch (_) {}
     }
-    
-    if (list.length === 0) {
-      list = DEFAULT_CLINICAL_ASSESSMENTS
+  }
+
+  // 2. Fetch from Supabase cloud via /api/assessment
+  try {
+    const query = patientId ? `?patientId=${encodeURIComponent(patientId)}` : ''
+    const res = await fetch(`/api/assessment${query}`, { cache: 'no-store' })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        // Merge cloud assessments with local cache
+        const cloudList: ClinicalAssessment[] = json.data
+        const map = new Map<string, ClinicalAssessment>()
+        list.forEach(a => map.set(a.id, a))
+        cloudList.forEach(a => map.set(a.id, a))
+        list = Array.from(map.values())
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(list))
+        }
+      }
+    }
+  } catch (err) {
+    // Offline or SSR fallback
+  }
+
+  if (list.length === 0) {
+    list = DEFAULT_CLINICAL_ASSESSMENTS
+    if (typeof window !== 'undefined') {
       localStorage.setItem(CACHE_KEY, JSON.stringify(DEFAULT_CLINICAL_ASSESSMENTS))
     }
-  } else {
-    list = DEFAULT_CLINICAL_ASSESSMENTS
   }
 
   const sorted = [...list].sort((a, b) => {
@@ -5260,7 +5283,21 @@ export async function getAssessments(patientId?: string): Promise<ClinicalAssess
 
 export async function getAssessmentById(id: string): Promise<ClinicalAssessment | null> {
   const all = await getAssessments()
-  return all.find(a => a.id === id) || null
+  const found = all.find(a => a.id === id)
+  if (found) return found
+
+  // Fetch directly from API by ID
+  try {
+    const res = await fetch(`/api/assessment?aid=${encodeURIComponent(id)}`, { cache: 'no-store' })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        return json.data[0]
+      }
+    }
+  } catch (_) {}
+
+  return null
 }
 
 export async function saveAssessment(assessment: Partial<ClinicalAssessment>): Promise<ClinicalAssessment> {
@@ -5285,6 +5322,17 @@ export async function saveAssessment(assessment: Partial<ClinicalAssessment>): P
   if (typeof window !== 'undefined') {
     localStorage.setItem(CACHE_KEY, JSON.stringify(updated))
   }
+
+  // Persist to Supabase cloud in background
+  try {
+    fetch('/api/assessment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newRecord),
+    }).catch(err => {
+      console.warn('Background Supabase assessment sync error:', err)
+    })
+  } catch (_) {}
 
   return newRecord
 }

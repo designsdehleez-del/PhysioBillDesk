@@ -212,6 +212,11 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
         data: {
           ...formData,
           assessment_stage: assessmentStage,
+          patient_name: patient.full_name,
+          patient_phone: patient.phone,
+          patient_age: patient.age,
+          patient_gender: patient.gender,
+          centre_name: (patient as any).centre_name || 'New Friends Colony, New Delhi',
         },
       })
 

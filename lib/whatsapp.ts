@@ -404,6 +404,16 @@ export function getAssessmentPdfUrl(
     params.set('uid', assessment.patient_uid || (typeof patient === 'object' ? patient?.uid : '') || '')
     
     const pObj = typeof patient === 'object' && patient !== null ? patient : null
+    const assData = assessment.data || {}
+    // Keep data token compact to ensure WhatsApp url length stays safely within 2000 char mobile limits
+    const compactData: Record<string, any> = {
+      clinical_diagnosis: assData.clinical_diagnosis || assData.main_problem || null,
+      assessment_stage: assData.assessment_stage || null,
+      chief_complaint: assData.chief_complaint || null,
+      treatment_modalities: assData.treatment_modalities || null,
+      rehab_plan: assData.rehab_plan || assData.home_exercise_plan || null,
+    }
+
     const payload: AssessmentPayload = {
       id: assessment.id,
       uid: assessment.patient_uid || pObj?.uid || '',
@@ -417,7 +427,7 @@ export function getAssessmentPdfUrl(
       patient_gender: pObj?.gender,
       centre_name: pObj?.centre_name,
       physiotherapist_name: pObj?.physiotherapist_name,
-      data: assessment.data || {},
+      data: compactData,
       ...additionalData,
     }
     const token = encodeReportPayload(payload)

@@ -44,15 +44,15 @@ export function WhatsAppShareModal({ visit, open, onOpenChange }: WhatsAppShareM
       const primaryDoc = visit.primary_doctor_name || visit.doctor_name || 'N/A'
       const physio = visit.physiotherapist_name || 'N/A'
       if (!rendered.includes('Primary Doctor:') && !rendered.includes('*Primary Doctor:*')) {
-        if (rendered.includes('👨‍⚕️ *Consulting Doctor:*')) {
+        if (rendered.includes('*Consulting Doctor:*')) {
           rendered = rendered.replace(
-            /👨‍⚕️ \*Consulting Doctor:\*.*$/m,
-            `👨‍⚕️ *Primary Doctor:* ${primaryDoc}\n🩺 *Attending Physiotherapist:* ${physio}`
+            /\*Consulting Doctor:\*.*$/m,
+            `*Primary Doctor:* ${primaryDoc}\n*Attending Physio:* ${physio}`
           )
         } else if (rendered.includes('Doctor:')) {
           rendered = rendered.replace(
             /Doctor:.*$/m,
-            `Primary Doctor: ${primaryDoc}\nAttending Physiotherapist: ${physio}`
+            `*Primary Doctor:* ${primaryDoc}\n*Attending Physio:* ${physio}`
           )
         }
       }

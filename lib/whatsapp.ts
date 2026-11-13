@@ -22,29 +22,28 @@ export interface BroadcastCampaign {
   template: string
 }
 
-export const DEFAULT_WHATSAPP_TEMPLATE = `🏥 *PHYSIONAUTICS CLINIC & PHYSIOTHERAPY*
-━━━━━━━━━━━━━━━━━━━━
-📄 *OFFICIAL INVOICE & RECEIPT*
-━━━━━━━━━━━━━━━━━━━━
-🔢 *Bill No:* {bill_number}
-📅 *Date:* {bill_date}
-👤 *Patient:* {patient_name} ({patient_uid})
-👨‍⚕️ *Primary Doctor:* {primary_doctor}
-🩺 *Attending Physio:* {physiotherapist}
-📍 *Centre:* {centre_name}
+export const DEFAULT_WHATSAPP_TEMPLATE = `*PHYSIONAUTICS CLINIC & PHYSIOTHERAPY*
+*OFFICIAL INVOICE & RECEIPT*
+----------------------------------------
+*Bill No:* {bill_number}
+*Date:* {bill_date}
+*Patient:* {patient_name} ({patient_uid})
+*Primary Doctor:* {primary_doctor}
+*Attending Physio:* {physiotherapist}
+*Centre:* {centre_name}
 
-💵 *Amount Paid:* {total_amount} ({payment_mode})
-📝 *Care Remarks:* {notes}
+*Amount Paid:* {total_amount} ({payment_mode})
+*Care Remarks:* {notes}
 
-📄 *VIEW & DOWNLOAD OFFICIAL PDF INVOICE:*
-👉 {invoice_url}
-━━━━━━━━━━━━━━━━━━━━
-⭐ *WE VALUE YOUR RECOVERY & FEEDBACK!*
+*VIEW & DOWNLOAD OFFICIAL PDF INVOICE:*
+{invoice_url}
+----------------------------------------
+*WE VALUE YOUR RECOVERY & FEEDBACK!*
 Please take 30 seconds to rate your session experience:
-👉 {feedback_url}
-━━━━━━━━━━━━━━━━━━━━
-Thank you for trusting Physionautics with your wellness! 🌿
-📞 Contact us: {centre_phone}`
+{feedback_url}
+----------------------------------------
+Thank you for trusting Physionautics!
+Contact: {centre_phone}`
 
 export const PRESET_TEMPLATES = [
   {
@@ -57,19 +56,19 @@ export const PRESET_TEMPLATES = [
     id: 'concise',
     title: 'Short & Concise Receipt',
     description: 'Compact summary with direct PDF invoice link and feedback.',
-    template: `🏥 *PHYSIONAUTICS CLINIC*
+    template: `*PHYSIONAUTICS CLINIC*
 Receipt for {patient_name} ({patient_uid})
-━━━━━━━━━━━━━━━━━━━━
+----------------------------------------
 Invoice: {bill_number} | Date: {bill_date}
 Doctor: {primary_doctor} | Physio: {physiotherapist}
 Paid: {total_amount} via {payment_mode}
 
-📄 Download Official PDF Invoice:
-👉 {invoice_url}
+Download Official PDF Invoice:
+{invoice_url}
 
-⭐ Rate your session: {feedback_url}
-Get well soon! 🌿
-📞 Helpline: {centre_phone}`,
+Rate your session: {feedback_url}
+Thank you!
+Helpline: {centre_phone}`,
   },
   {
     id: 'warm_care',
@@ -82,20 +81,21 @@ Thank you for visiting *Physionautics ({centre_name})* today!
 Your session has been recorded under Invoice #{bill_number}.
 Primary Doctor: {primary_doctor}
 Attending Physiotherapist: {physiotherapist}
-✨ *Total Amount Paid:* {total_amount} via {payment_mode}
+*Total Amount Paid:* {total_amount} via {payment_mode}
 
-📄 *Download Your Official PDF Invoice:*
-👉 {invoice_url}
+*Download Your Official PDF Invoice:*
+{invoice_url}
 
-💧 *Post-Treatment Care:*
+*Post-Treatment Care:*
 Please stay well hydrated and perform any prescribed mobility drills gently.
 {notes}
 
 We would love to know how you felt during your session today. Please share your rating:
-👉 {feedback_url}
+{feedback_url}
 
-Wishing you a speedy recovery! 🌟
-Physionautics Team 🌿`,
+Wishing you a speedy recovery!
+Physionautics Team
+Helpline: {centre_phone}`,
   },
   {
     id: 'minimal',
@@ -107,8 +107,11 @@ Patient: {patient_name} ({patient_uid})
 Amount Paid: {total_amount} via {payment_mode}
 Date: {bill_date}
 
-📄 View Official PDF Invoice: {invoice_url}
-⭐ Feedback & Review: {feedback_url}
+View Official PDF Invoice:
+{invoice_url}
+
+Feedback & Review:
+{feedback_url}
 Thank you!`,
   },
 ]
@@ -448,21 +451,23 @@ export function getWhatsAppConfig(): WhatsAppConfig {
     }
   }
 
-  const cached = localStorage.getItem('physio_whatsapp_config_v1')
+  const cached = localStorage.getItem('physio_whatsapp_config_v2')
   if (cached) {
     try {
       const parsed = JSON.parse(cached)
-      return {
-        mode: parsed.mode || 'deeplink',
-        apiProvider: parsed.apiProvider || 'meta',
-        apiUrl: parsed.apiUrl || '',
-        phoneNumberId: parsed.phoneNumberId || '',
-        accessToken: parsed.accessToken || '',
-        apiKey: parsed.apiKey || '',
-        customSenderPhone: parsed.customSenderPhone || '',
-        messageTemplate: parsed.messageTemplate || DEFAULT_WHATSAPP_TEMPLATE,
-        autoShareOnBilling: !!parsed.autoShareOnBilling,
-        includeFeedbackLink: parsed.includeFeedbackLink !== false,
+      if (parsed.messageTemplate && !parsed.messageTemplate.includes('━') && !parsed.messageTemplate.includes('🏥')) {
+        return {
+          mode: parsed.mode || 'deeplink',
+          apiProvider: parsed.apiProvider || 'meta',
+          apiUrl: parsed.apiUrl || '',
+          phoneNumberId: parsed.phoneNumberId || '',
+          accessToken: parsed.accessToken || '',
+          apiKey: parsed.apiKey || '',
+          customSenderPhone: parsed.customSenderPhone || '',
+          messageTemplate: parsed.messageTemplate || DEFAULT_WHATSAPP_TEMPLATE,
+          autoShareOnBilling: !!parsed.autoShareOnBilling,
+          includeFeedbackLink: parsed.includeFeedbackLink !== false,
+        }
       }
     } catch (_) {}
   }
@@ -473,7 +478,7 @@ export function getWhatsAppConfig(): WhatsAppConfig {
     messageTemplate: DEFAULT_WHATSAPP_TEMPLATE,
     includeFeedbackLink: true,
   }
-  localStorage.setItem('physio_whatsapp_config_v1', JSON.stringify(initial))
+  localStorage.setItem('physio_whatsapp_config_v2', JSON.stringify(initial))
   return initial
 }
 
@@ -484,7 +489,7 @@ export function saveWhatsAppConfig(config: Partial<WhatsAppConfig>): WhatsAppCon
     ...config,
   }
   if (typeof window !== 'undefined') {
-    localStorage.setItem('physio_whatsapp_config_v1', JSON.stringify(updated))
+    localStorage.setItem('physio_whatsapp_config_v2', JSON.stringify(updated))
   }
   return updated
 }
@@ -509,7 +514,7 @@ export function renderWhatsAppMessage(template: string, visit: StoredVisit): str
   const invoicePdfUrl = getInvoicePdfUrl(visit)
   
   const itemsText = (visit.items || [])
-    .map(i => `  • ${i.service_name} (x${i.quantity}) - ${formatCurrency(i.price * i.quantity)}`)
+    .map(i => `  * ${i.service_name} (x${i.quantity}) - ${formatCurrency(i.price * i.quantity)}`)
     .join('\n')
 
   let discountText = '₹0'

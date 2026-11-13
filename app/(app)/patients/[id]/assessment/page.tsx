@@ -249,22 +249,22 @@ export default function PatientAssessmentPage({ params }: { params: Promise<{ id
     const doctor = savedAssessment.doctor_name || (patient as any).primary_doctor_name || 'Dr. Clinical Specialist'
     const typeLabel = savedAssessment.type === 'physiotherapy' ? 'Physiotherapy Assessment' : 'Neurotherapy Assessment'
 
-    const message = `🏥 *PHYSIONAUTICS CLINIC - CLINICAL ASSESSMENT REPORT*
-━━━━━━━━━━━━━━━━━━━━
-👤 *Patient:* ${patient.full_name} (${patient.uid})
-📋 *Type:* ${typeLabel}${stage}
-📅 *Date:* ${savedAssessment.assessment_date}
-👨‍⚕️ *Treating Doctor:* ${doctor}
+    const message = `*PHYSIONAUTICS CLINIC - CLINICAL ASSESSMENT REPORT*
+----------------------------------------
+*Patient:* ${patient.full_name} (${patient.uid})
+*Type:* ${typeLabel}${stage}
+*Date:* ${savedAssessment.assessment_date}
+*Treating Doctor:* ${doctor}
 
-📊 *CLINICAL SUMMARY:*
-• *VAS Pain Score:* ${vasVal}
-• *Diagnosis:* ${diagnosis}
+*CLINICAL SUMMARY:*
+* VAS Pain Score: ${vasVal}
+* Diagnosis: ${diagnosis}
 
-📄 *VIEW & DOWNLOAD OFFICIAL PDF REPORT:*
-👉 ${assessmentUrl}
-━━━━━━━━━━━━━━━━━━━━
-Thank you for choosing Physionautics! 🌿
-📞 Contact: 08383936905`
+*VIEW & DOWNLOAD OFFICIAL PDF REPORT:*
+${assessmentUrl}
+----------------------------------------
+Thank you for choosing Physionautics!
+Contact: 08383936905`
 
     const phone = patient.phone.replace(/[^0-9]/g, '')
     const encoded = encodeURIComponent(message)

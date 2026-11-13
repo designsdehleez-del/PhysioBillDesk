@@ -119,58 +119,58 @@ Thank you!`,
 export const PRESET_BROADCAST_CAMPAIGNS: BroadcastCampaign[] = [
   {
     id: 'camp_custom',
-    title: '✏️ Custom Message & Announcement',
+    title: 'Custom Message & Announcement',
     description: 'Compose your own custom broadcast message from scratch or edit your saved draft.',
     imageUrl: '',
-    template: `🏥 *PHYSIONAUTICS CLINIC ANNOUNCEMENT* 🌿
-━━━━━━━━━━━━━━━━━━━━
+    template: `*PHYSIONAUTICS CLINIC ANNOUNCEMENT*
+----------------------------------------
 Dear *{patient_name}*,
 
 [Write your custom message or clinic announcement here...]
 
 Warm regards,
 *Physionautics Team ({centre_name})*
-📞 Contact: {centre_phone}`,
+Contact: {centre_phone}`,
   },
   {
     id: 'camp_spine_health',
-    title: '🌿 Free Spine & Posture Health Camp',
+    title: 'Free Spine & Posture Health Camp',
     description: 'Promotional announcement for special consultation camp with banner.',
     imageUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=800',
-    template: `🏥 *PHYSIONAUTICS CLINIC - FREE SPINE & POSTURE CAMP* 🌿
-━━━━━━━━━━━━━━━━━━━━
+    template: `*PHYSIONAUTICS CLINIC - FREE SPINE & POSTURE CAMP*
+----------------------------------------
 Dear *{patient_name}*,
 
 We are excited to announce a special *Free Spine & Posture Assessment Camp* at our *{centre_name}* clinic!
 
-🗓️ *Event Dates:* 1st - 5th Next Month
-👨‍⚕️ *Lead Specialist:* Dr. Sarah Jenkins & Care Team
-📍 *Location:* {centre_name}
+*Event Dates:* 1st - 5th Next Month
+*Lead Specialist:* Dr. Sheeba Tabasum, Dr. Kevin & Care Team
+*Location:* {centre_name}
 
-✨ *What's Included:*
-• Digital Posture Analysis
-• 1-on-1 Ergonomic Consultation
-• Free VAS Mobility Assessment
+*What's Included:*
+* Digital Posture Analysis
+* 1-on-1 Ergonomic Consultation
+* Free VAS Mobility Assessment
 
 Book your priority slot today by replying to this message or calling us at {centre_phone}.
 
-Wishing you active & healthy living! 🌿
+Wishing you active & healthy living!
 *Physionautics Physiotherapy Team*`,
   },
   {
     id: 'camp_festival_greetings',
-    title: '✨ Festival & Wellness Greetings',
+    title: 'Festival & Wellness Greetings',
     description: 'Warm seasonal greeting with clinic wellness tips and banner.',
     imageUrl: 'https://images.unsplash.com/photo-1519824145371-296894a0daa9?auto=format&fit=crop&q=80&w=800',
-    template: `✨ *HAPPY FESTIVE SEASON FROM PHYSIONAUTICS!* ✨
-━━━━━━━━━━━━━━━━━━━━
+    template: `*SEASON'S GREETINGS FROM PHYSIONAUTICS!*
+----------------------------------------
 Dear *{patient_name}*,
 
-Wishing you and your family immense health, joy, and vitality this festive season! 🎉
+Wishing you and your family immense health, joy, and vitality this season!
 
-As a valued member of the Physionautics family, we remind you to take short movement breaks during festive celebrations to keep your spine & joints pain-free.
+As a valued member of the Physionautics family, we remind you to take short movement breaks during festivities to keep your spine & joints pain-free.
 
-🌿 *Clinic Hours Notice:*
+*Clinic Hours Notice:*
 Our clinic branches will remain open for scheduled therapy sessions.
 
 For appointments or emergency care, reach out at {centre_phone}.
@@ -180,39 +180,39 @@ Warm regards,
   },
   {
     id: 'camp_rehab_followup',
-    title: '🩺 Post-Treatment Recovery Check-in',
+    title: 'Post-Treatment Recovery Check-in',
     description: 'Bulk check-in reminder for existing patients with posture guidance image.',
     imageUrl: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=800',
-    template: `🩺 *PHYSIONAUTICS PATIENT RECOVERY CHECK-IN*
-━━━━━━━━━━━━━━━━━━━━
+    template: `*PHYSIONAUTICS PATIENT RECOVERY CHECK-IN*
+----------------------------------------
 Hello *{patient_name}*!
 
 We are checking in on your rehabilitation progress at Physionautics.
 
 Are you experiencing any stiffness or discomfort? Keeping up with your daily home exercises is essential for long-term recovery.
 
-📞 *Need a Follow-up Consultation?*
+*Need a Follow-up Consultation?*
 If you wish to review your treatment plan with Dr. {doctor_name}, call us at {centre_phone} or reply directly to this WhatsApp.
 
-Stay strong and keep moving! 🌿
+Stay strong and keep moving!
 *Physionautics Care Desk*`,
   },
   {
     id: 'camp_neuro_offer',
-    title: '⚡ Advanced Neuro & Sports Rehab Launch',
+    title: 'Advanced Neuro & Sports Rehab Launch',
     description: 'Announce new services like dry needling, laser therapy & neuro rehabilitation.',
     imageUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=800',
-    template: `⚡ *NEW ADVANCED THERAPY SERVICES AT PHYSIONAUTICS!*
-━━━━━━━━━━━━━━━━━━━━
+    template: `*NEW ADVANCED THERAPY SERVICES AT PHYSIONAUTICS!*
+----------------------------------------
 Dear *{patient_name}*,
 
 We are thrilled to introduce state-of-the-art *Advanced Neuro Rehab, High-Intensity Laser Therapy & Sports Decompression* at our {centre_name} branch!
 
-🎯 Special introductory 20% discount on 5-Session Rehab Packages for existing patients!
+Special introductory 20% discount on 5-Session Rehab Packages for existing patients!
 
-📞 Call {centre_phone} to claim your package or consult with our lead specialists.
+Call {centre_phone} to claim your package or consult with our lead specialists.
 
-To a healthier, pain-free life! 🌿
+To a healthier, pain-free life!
 *Physionautics Clinic*`,
   },
 ]

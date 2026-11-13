@@ -294,7 +294,7 @@ export default function WhatsAppSettingsPage() {
         // Queue Deep Link Mode - Open window per patient or open formatted web link
         const cleanPhone = (pPhone || '').replace(/[^0-9]/g, '')
         const fullMsg = (broadcastImageUrl && !broadcastImageUrl.startsWith('data:'))
-          ? `${renderedText}\n\n🖼️ Campaign Image: ${broadcastImageUrl}`
+          ? `${renderedText}\n\nCampaign Banner: ${broadcastImageUrl}`
           : renderedText
         const encoded = encodeURIComponent(fullMsg)
         const waUrl = cleanPhone ? `https://wa.me/91${cleanPhone}?text=${encoded}` : `https://wa.me/?text=${encoded}`

@@ -63,6 +63,12 @@ export interface Database {
         Update: Partial<ClinicExpenseInsert>
         Relationships: []
       }
+      patient_feedback: {
+        Row: PatientFeedback
+        Insert: Partial<PatientFeedback>
+        Update: Partial<PatientFeedback>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {

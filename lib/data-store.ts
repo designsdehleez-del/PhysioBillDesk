@@ -2522,16 +2522,32 @@ export async function deleteFeedbackTemplate(id: string): Promise<void> {
 }
 
 export async function getPatientFeedback(): Promise<PatientFeedback[]> {
-  const supabase = createClient()
-  try {
-    const { data, error } = await supabase
-      .from('patient_feedback')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (!error && data && data.length > 0) {
-      return data as PatientFeedback[]
-    }
-  } catch (_) {}
+  // 1. Try server API route backed by Supabase admin client
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/feedback', { cache: 'no-store' })
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          localStorage.setItem('physio_feedback_cache_v6', JSON.stringify(json.data))
+          return json.data as PatientFeedback[]
+        }
+      }
+    } catch (_) {}
+  } else {
+    // Server-side direct admin query if invoked in server environment
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const supabase = createAdminClient()
+      const { data, error } = await supabase
+        .from('patient_feedback')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (!error && data && data.length > 0) {
+        return data as PatientFeedback[]
+      }
+    } catch (_) {}
+  }
 
   const CACHE_KEY = 'physio_feedback_cache_v6'
   if (typeof window !== 'undefined') {
@@ -2539,7 +2555,7 @@ export async function getPatientFeedback(): Promise<PatientFeedback[]> {
     if (cached) {
       try {
         const parsed = JSON.parse(cached)
-        if (Array.isArray(parsed) && parsed.length >= 6) return parsed
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
       } catch (_) {}
     }
     localStorage.setItem(CACHE_KEY, JSON.stringify(DEMO_FEEDBACK))
@@ -2548,36 +2564,37 @@ export async function getPatientFeedback(): Promise<PatientFeedback[]> {
 }
 
 export async function savePatientFeedback(fb: Omit<PatientFeedback, 'id' | 'created_at'>): Promise<PatientFeedback> {
-  const newFb: PatientFeedback = {
+  let createdRecord: PatientFeedback | null = null
+
+  // 1. Submit to server API route backed by Supabase admin client (bypasses RLS)
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fb),
+      })
+      if (res.ok) {
+        const json = await res.json()
+        if (json.success && json.data) {
+          createdRecord = json.data as PatientFeedback
+        }
+      }
+    } catch (err) {
+      console.warn('API feedback submission error, falling back locally:', err)
+    }
+  }
+
+  const newFb: PatientFeedback = createdRecord || {
     id: `fb-${Date.now()}`,
     ...fb,
     created_at: new Date().toISOString(),
   }
 
-  // Write to Supabase table
-  try {
-    const supabase = createClient()
-    await supabase.from('patient_feedback').insert([{
-      bill_number: fb.bill_number,
-      patient_uid: fb.patient_uid,
-      patient_name: fb.patient_name,
-      patient_phone: fb.patient_phone,
-      doctor_name: fb.doctor_name,
-      centre_name: fb.centre_name,
-      rating: fb.rating || 5,
-      hygiene_rating: fb.hygiene_rating || 5,
-      treatment_rating: fb.treatment_rating || 5,
-      staff_rating: fb.staff_rating || 5,
-      comments: fb.comments || (fb.custom_answers ? JSON.stringify(fb.custom_answers) : null),
-    }])
-  } catch (err) {
-    console.warn('Could not save feedback to Supabase, saving locally:', err)
-  }
-
   // Update local cache
   if (typeof window !== 'undefined') {
     const current = await getPatientFeedback()
-    const updated = [newFb, ...current]
+    const updated = [newFb, ...current.filter(f => f.id !== newFb.id)]
     localStorage.setItem('physio_feedback_cache_v6', JSON.stringify(updated))
   }
   return newFb

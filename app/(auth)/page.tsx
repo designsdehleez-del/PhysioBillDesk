@@ -118,7 +118,24 @@ export default function AuthPage() {
         else setSuccessMsg('Account created! Check your email to confirm, then sign in.')
       } else {
         const { error } = await signIn(email, password)
-        if (error) setError(error.message)
+        if (error) {
+          setError(error.message)
+        } else {
+          const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+          const redirectParam = params?.get('redirect')
+          if (redirectParam) {
+            router.push(redirectParam)
+          } else {
+            const lower = email.toLowerCase().trim()
+            if (lower === 'admin' || lower.startsWith('admin')) {
+              router.push('/dashboard')
+            } else if (lower.includes('sarah') || lower.includes('rajesh') || lower.includes('sheeba') || lower.includes('deepanker') || lower.includes('kaleem') || lower.includes('kevin') || lower.includes('aakansha') || lower.includes('megha') || lower.includes('sweta')) {
+              router.push('/patients')
+            } else {
+              router.push('/billing')
+            }
+          }
+        }
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unexpected error')

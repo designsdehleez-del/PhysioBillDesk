@@ -161,9 +161,8 @@ export default function StaffManagementPage() {
   const loadData = async () => {
     setLoading(true)
     const supabase = createClient()
-    const [{ data: cData }, { data: sData }, docList] = await Promise.all([
+    const [{ data: cData }, docList] = await Promise.all([
       supabase.from('centres').select('*').order('name'),
-      supabase.from('staff_users').select('*').order('created_at'),
       getDoctors(),
     ])
 
@@ -171,20 +170,27 @@ export default function StaffManagementPage() {
     setCentres(centreList)
     setDoctorsList(docList)
 
-    // Load from local storage or fallback to defaults
+    try {
+      const res = await fetch('/api/staff')
+      const json = await res.json()
+      if (json.success && Array.isArray(json.staff) && json.staff.length > 0) {
+        setStaffList(json.staff)
+        localStorage.setItem('physio_custom_staff_users', JSON.stringify(json.staff))
+        setLoading(false)
+        return
+      }
+    } catch (err) {
+      console.warn('API staff fetch error, falling back to local cache:', err)
+    }
+
+    // Fallback: local storage or defaults
     const localSaved = localStorage.getItem('physio_custom_staff_users')
     let currentStaff: StaffUser[] = DEFAULT_STAFF
-
     if (localSaved) {
       try {
         currentStaff = JSON.parse(localSaved)
       } catch (_) {}
     }
-
-    if (sData && sData.length > 0) {
-      currentStaff = sData as unknown as StaffUser[]
-    }
-
     setStaffList(currentStaff)
     setLoading(false)
   }
@@ -192,39 +198,6 @@ export default function StaffManagementPage() {
   useEffect(() => {
     loadData()
   }, [])
-
-  const saveStaffList = async (updated: StaffUser[]) => {
-    setStaffList(updated)
-    localStorage.setItem('physio_custom_staff_users', JSON.stringify(updated))
-    try {
-      const supabase = createClient()
-      const selectedDoc = doctorsList.find(d => d.id === doctorId)
-      if (editingStaff) {
-        await supabase.from('staff_users').update({
-          full_name: fullName.trim(),
-          email: email.trim().toLowerCase(),
-          password: password.trim(),
-          centre_id: role === 'admin' ? null : centreId || null,
-          centre_name: centres.find(c => c.id === centreId)?.name || null,
-          role,
-          doctor_id: role === 'doctor' ? doctorId || null : null,
-          doctor_name: role === 'doctor' ? selectedDoc?.name || null : null,
-        }).eq('id', editingStaff.id)
-      } else {
-        await supabase.from('staff_users').insert({
-          full_name: fullName.trim(),
-          email: email.trim().toLowerCase(),
-          password: password.trim(),
-          centre_id: role === 'admin' ? null : centreId || null,
-          centre_name: centres.find(c => c.id === centreId)?.name || null,
-          role,
-          doctor_id: role === 'doctor' ? doctorId || null : null,
-          doctor_name: role === 'doctor' ? selectedDoc?.name || null : null,
-          is_active: true,
-        })
-      }
-    } catch (_) {}
-  }
 
   const handleOpenAdd = () => {
     setEditingStaff(null)
@@ -259,53 +232,93 @@ export default function StaffManagementPage() {
     const selectedDoc = doctorsList.find(d => d.id === doctorId)
     const centreName = role === 'admin' ? 'All Centres (Global)' : (selectedCentre?.name || 'Clinic Branch')
 
-    if (editingStaff) {
-      const updated = staffList.map(s => s.id === editingStaff.id ? {
-        ...s,
-        full_name: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        password: password.trim(),
-        centre_id: role === 'admin' ? null : (centreId || null),
-        centre_name: centreName,
-        role,
-        doctor_id: role === 'doctor' ? (doctorId || null) : null,
-        doctor_name: role === 'doctor' ? (selectedDoc?.name || null) : null,
-      } : s)
-      await saveStaffList(updated)
-      toast({ title: 'Staff login updated successfully' })
-    } else {
-      const newStaff: StaffUser = {
-        id: `usr-custom-${Date.now()}`,
-        full_name: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        password: password.trim(),
-        centre_id: role === 'admin' ? null : (centreId || null),
-        centre_name: centreName,
-        role,
-        doctor_id: role === 'doctor' ? (doctorId || null) : null,
-        doctor_name: role === 'doctor' ? (selectedDoc?.name || null) : null,
-        is_active: true,
+    const staffPayload = {
+      id: editingStaff?.id,
+      full_name: fullName.trim(),
+      email: email.trim().toLowerCase(),
+      password: password.trim(),
+      centre_id: role === 'admin' ? null : (centreId || null),
+      centre_name: centreName,
+      role,
+      doctor_id: role === 'doctor' ? (doctorId || null) : null,
+      doctor_name: role === 'doctor' ? (selectedDoc?.name || null) : null,
+      is_active: editingStaff ? editingStaff.is_active : true,
+    }
+
+    try {
+      const res = await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(staffPayload),
+      })
+      const data = await res.json()
+      if (data.success && data.staff) {
+        const saved: StaffUser = data.staff
+        let updated: StaffUser[]
+        if (editingStaff) {
+          updated = staffList.map(s => s.id === editingStaff.id ? { ...s, ...saved } : s)
+        } else {
+          updated = [...staffList, saved]
+        }
+        setStaffList(updated)
+        localStorage.setItem('physio_custom_staff_users', JSON.stringify(updated))
+        toast({ title: editingStaff ? 'Staff login updated in cloud database' : 'New clinic staff login saved to cloud database' })
+      } else {
+        throw new Error(data.error || 'Failed to save staff login.')
       }
-      await saveStaffList([...staffList, newStaff])
-      toast({ title: 'New clinic staff login created' })
+    } catch (err: any) {
+      console.error('Error saving staff to cloud API:', err)
+      const fallbackStaff: StaffUser = {
+        ...staffPayload,
+        id: editingStaff?.id || `usr-custom-${Date.now()}`,
+        is_active: staffPayload.is_active,
+      } as StaffUser
+      const updated = editingStaff
+        ? staffList.map(s => s.id === editingStaff.id ? fallbackStaff : s)
+        : [...staffList, fallbackStaff]
+      setStaffList(updated)
+      localStorage.setItem('physio_custom_staff_users', JSON.stringify(updated))
+      toast({ title: 'Saved locally. Could not sync with database: ' + err.message, variant: 'destructive' })
     }
 
     setSaving(false)
     setDialogOpen(false)
   }
 
-  const handleToggleActive = (staff: StaffUser) => {
-    const updated = staffList.map(s => s.id === staff.id ? { ...s, is_active: !s.is_active } : s)
-    saveStaffList(updated)
-    toast({ title: `Login for ${staff.full_name} ${!staff.is_active ? 'enabled' : 'disabled'}` })
+  const handleToggleActive = async (staff: StaffUser) => {
+    const newStatus = !staff.is_active
+    const updated = staffList.map(s => s.id === staff.id ? { ...s, is_active: newStatus } : s)
+    setStaffList(updated)
+    localStorage.setItem('physio_custom_staff_users', JSON.stringify(updated))
+
+    try {
+      await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...staff, is_active: newStatus }),
+      })
+      toast({ title: `Login for ${staff.full_name} ${newStatus ? 'enabled' : 'disabled'} in cloud database` })
+    } catch (_) {
+      toast({ title: `Login status updated locally` })
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteId) return
-    const updated = staffList.filter(s => s.id !== deleteId)
-    saveStaffList(updated)
-    toast({ title: 'Staff login removed', variant: 'destructive' })
+    const idToDelete = deleteId
+    const updated = staffList.filter(s => s.id !== idToDelete)
+    setStaffList(updated)
+    localStorage.setItem('physio_custom_staff_users', JSON.stringify(updated))
     setDeleteId(null)
+
+    try {
+      await fetch(`/api/staff?id=${encodeURIComponent(idToDelete)}`, {
+        method: 'DELETE',
+      })
+      toast({ title: 'Staff login removed from cloud database' })
+    } catch (_) {
+      toast({ title: 'Staff login removed locally', variant: 'destructive' })
+    }
   }
 
   const filteredStaff = staffList.filter(s => 

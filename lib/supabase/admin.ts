@@ -11,7 +11,9 @@ export function createAdminClient() {
     cleanKey = cleanKey.split(' ')[0].trim()
   }
 
-  const finalKey = cleanKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  // Ensure key is a valid token format, not a placeholder name like "SUPABASE_SERVICE_ROLE_KEY"
+  const isValid = cleanKey.startsWith('sb_') || cleanKey.startsWith('eyJ')
+  const finalKey = isValid ? cleanKey : (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '')
 
   return createClient<Database>(url, finalKey, {
     auth: {

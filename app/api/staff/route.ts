@@ -23,9 +23,6 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       staff: mapped,
-      isServiceKeyPresent: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
-      serviceKeyPrefix: (process.env.SUPABASE_SERVICE_ROLE_KEY || '').substring(0, 3),
-      keyLen: (process.env.SUPABASE_SERVICE_ROLE_KEY || '').length,
     })
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })

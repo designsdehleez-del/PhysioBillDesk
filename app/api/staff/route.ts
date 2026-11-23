@@ -11,17 +11,8 @@ export async function GET() {
       .order('created_at', { ascending: true })
 
     if (error) {
-      const raw = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
       console.error('Failed to fetch staff from Supabase:', error)
-      return NextResponse.json({
-        success: false,
-        error: error.message,
-        debug: {
-          rawLength: raw.length,
-          rawPrefix: raw.substring(0, 10),
-          rawSuffix: raw.substring(Math.max(0, raw.length - 10)),
-        }
-      }, { status: 500 })
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 
     const mapped = (data || []).map((item: any) => ({

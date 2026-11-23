@@ -44,37 +44,14 @@ const PRESET_ACCOUNTS: Record<string, UserProfile> = {
     role: 'admin',
     roleTitle: 'Master Administrator (Financials & Governance)',
   },
-  'nfc@physionautics.com': {
-    id: 'usr-centre1-01',
-    email: 'nfc@physionautics.com',
-    name: 'New Friends Colony Reception',
+  'ggn@physionautics.com': {
+    id: 'usr-centre3-01',
+    email: 'ggn@physionautics.com',
+    name: 'Gurugram Reception',
     role: 'clinic_reception',
-    centreId: 'c1111111-1111-1111-1111-111111111111',
-    centreName: 'New Friends Colony, New Delhi',
-  },
-  'centre1@physionautics.com': {
-    id: 'usr-centre1-01',
-    email: 'centre1@physionautics.com',
-    name: 'New Friends Colony Reception',
-    role: 'clinic_reception',
-    centreId: 'c1111111-1111-1111-1111-111111111111',
-    centreName: 'New Friends Colony, New Delhi',
-  },
-  'vasantvihar@physionautics.com': {
-    id: 'usr-centre2-01',
-    email: 'vasantvihar@physionautics.com',
-    name: 'Vasant Vihar Reception',
-    role: 'clinic_reception',
-    centreId: 'c2222222-2222-2222-2222-222222222222',
-    centreName: 'Vasant Vihar, New Delhi',
-  },
-  'centre2@physionautics.com': {
-    id: 'usr-centre2-01',
-    email: 'centre2@physionautics.com',
-    name: 'Vasant Vihar Reception',
-    role: 'clinic_reception',
-    centreId: 'c2222222-2222-2222-2222-222222222222',
-    centreName: 'Vasant Vihar, New Delhi',
+    centreId: 'c3333333-3333-3333-3333-333333333333',
+    centreName: 'Gurugram – DLF Phase 1',
+    roleTitle: 'Clinic Receptionist',
   },
   'gurugram@physionautics.com': {
     id: 'usr-centre3-01',
@@ -83,6 +60,7 @@ const PRESET_ACCOUNTS: Record<string, UserProfile> = {
     role: 'clinic_reception',
     centreId: 'c3333333-3333-3333-3333-333333333333',
     centreName: 'Gurugram – DLF Phase 1',
+    roleTitle: 'Clinic Receptionist',
   },
   'centre3@physionautics.com': {
     id: 'usr-centre3-01',
@@ -91,6 +69,129 @@ const PRESET_ACCOUNTS: Record<string, UserProfile> = {
     role: 'clinic_reception',
     centreId: 'c3333333-3333-3333-3333-333333333333',
     centreName: 'Gurugram – DLF Phase 1',
+    roleTitle: 'Clinic Receptionist',
+  },
+  'vv@physionautics.com': {
+    id: 'usr-centre2-01',
+    email: 'vv@physionautics.com',
+    name: 'Vasant Vihar Reception',
+    role: 'clinic_reception',
+    centreId: 'c2222222-2222-2222-2222-222222222222',
+    centreName: 'Vasant Vihar, New Delhi',
+    roleTitle: 'Clinic Receptionist',
+  },
+  'vasantvihar@physionautics.com': {
+    id: 'usr-centre2-01',
+    email: 'vasantvihar@physionautics.com',
+    name: 'Vasant Vihar Reception',
+    role: 'clinic_reception',
+    centreId: 'c2222222-2222-2222-2222-222222222222',
+    centreName: 'Vasant Vihar, New Delhi',
+    roleTitle: 'Clinic Receptionist',
+  },
+  'centre2@physionautics.com': {
+    id: 'usr-centre2-01',
+    email: 'centre2@physionautics.com',
+    name: 'Vasant Vihar Reception',
+    role: 'clinic_reception',
+    centreId: 'c2222222-2222-2222-2222-222222222222',
+    centreName: 'Vasant Vihar, New Delhi',
+    roleTitle: 'Clinic Receptionist',
+  },
+  'nfc@physionautics.com': {
+    id: 'usr-centre1-01',
+    email: 'nfc@physionautics.com',
+    name: 'New Friends Colony Reception',
+    role: 'clinic_reception',
+    centreId: 'c1111111-1111-1111-1111-111111111111',
+    centreName: 'New Friends Colony, New Delhi',
+    roleTitle: 'Clinic Receptionist',
+  },
+  'centre1@physionautics.com': {
+    id: 'usr-centre1-01',
+    email: 'centre1@physionautics.com',
+    name: 'New Friends Colony Reception',
+    role: 'clinic_reception',
+    centreId: 'c1111111-1111-1111-1111-111111111111',
+    centreName: 'New Friends Colony, New Delhi',
+    roleTitle: 'Clinic Receptionist',
+  },
+  'kaleem@physionautics.com': {
+    id: 'usr-doc-ggn-01',
+    email: 'kaleem@physionautics.com',
+    name: 'Dr. Kaleem Ahmad',
+    role: 'doctor',
+    doctorId: 'd3333333-0010-0000-0000-000000000010',
+    doctorName: 'Dr. Kaleem Ahmad',
+    centreId: 'c3333333-3333-3333-3333-333333333333',
+    centreName: 'Gurugram – DLF Phase 1',
+    roleTitle: 'OPD Incharge',
+  },
+  'sheeba@physionautics.com': {
+    id: 'usr-doc-nfc-01',
+    email: 'sheeba@physionautics.com',
+    name: 'Dr. Sheeba Tabasum',
+    role: 'doctor',
+    doctorId: 'd1111111-0005-0000-0000-000000000005',
+    doctorName: 'Dr. Sheeba Tabasum',
+    centreId: 'c1111111-1111-1111-1111-111111111111',
+    centreName: 'New Friends Colony, New Delhi',
+    roleTitle: 'Associate Director / HOD',
+  },
+  'deepanker@physionautics.com': {
+    id: 'usr-doc-nfc-02',
+    email: 'deepanker@physionautics.com',
+    name: 'Dr. Deepanker Nagarkoti',
+    role: 'doctor',
+    doctorId: 'd1111111-0008-0000-0000-000000000008',
+    doctorName: 'Dr. Deepanker Nagarkoti',
+    centreId: 'c1111111-1111-1111-1111-111111111111',
+    centreName: 'New Friends Colony, New Delhi',
+    roleTitle: 'OPD Incharge',
+  },
+  'kevin@physionautics.com': {
+    id: 'usr-doc-vv-01',
+    email: 'kevin@physionautics.com',
+    name: 'Dr. Kevin',
+    role: 'doctor',
+    doctorId: 'd2222222-0028-0000-0000-000000000028',
+    doctorName: 'Dr. Kevin',
+    centreId: 'c2222222-2222-2222-2222-222222222222',
+    centreName: 'Vasant Vihar, New Delhi',
+    roleTitle: 'OPD In-charge',
+  },
+  'aakansha@physionautics.com': {
+    id: 'usr-doc-vv-02',
+    email: 'aakansha@physionautics.com',
+    name: 'Dr. Aakansha',
+    role: 'doctor',
+    doctorId: 'd2222222-0009-0000-0000-000000000009',
+    doctorName: 'Dr. Aakansha',
+    centreId: 'c2222222-2222-2222-2222-222222222222',
+    centreName: 'Vasant Vihar, New Delhi',
+    roleTitle: 'Senior Physiotherapist',
+  },
+  'megha@physionautics.com': {
+    id: 'usr-doc-vv-03',
+    email: 'megha@physionautics.com',
+    name: 'Dr. Megha',
+    role: 'doctor',
+    doctorId: 'd2222222-0024-0000-0000-000000000024',
+    doctorName: 'Dr. Megha',
+    centreId: 'c2222222-2222-2222-2222-222222222222',
+    centreName: 'Vasant Vihar, New Delhi',
+    roleTitle: 'Senior Physiotherapist',
+  },
+  'sweta@physionautics.com': {
+    id: 'usr-doc-vv-04',
+    email: 'sweta@physionautics.com',
+    name: 'Dr. Sweta',
+    role: 'doctor',
+    doctorId: 'd2222222-0041-0000-0000-000000000041',
+    doctorName: 'Dr. Sweta',
+    centreId: 'c2222222-2222-2222-2222-222222222222',
+    centreName: 'Vasant Vihar, New Delhi',
+    roleTitle: 'Senior Physiotherapist',
   },
   'dr.sarah@physionautics.com': {
     id: 'usr-doc-101',
@@ -178,7 +279,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (_) {}
 
-    return { id: 'staff-auto', email, name: 'Clinic Staff', role: 'clinic_reception', centreName: 'New Friends Colony, New Delhi' }
+    if (lower.includes('ggn') || lower.includes('guru') || lower.includes('dlf') || lower.includes('gurgaon')) {
+      return { id: 'staff-ggn', email, name: 'Gurugram Reception', role: 'clinic_reception', centreId: 'c3333333-3333-3333-3333-333333333333', centreName: 'Gurugram – DLF Phase 1' }
+    }
+    if (lower.includes('vv') || lower.includes('vasant')) {
+      return { id: 'staff-vv', email, name: 'Vasant Vihar Reception', role: 'clinic_reception', centreId: 'c2222222-2222-2222-2222-222222222222', centreName: 'Vasant Vihar, New Delhi' }
+    }
+
+    return { id: 'staff-auto', email, name: 'Clinic Staff', role: 'clinic_reception', centreId: 'c1111111-1111-1111-1111-111111111111', centreName: 'New Friends Colony, New Delhi' }
   }
 
   useEffect(() => {
@@ -276,20 +384,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Auto-normalize username / email
-    if (!lower.includes('@')) {
-      if (lower === 'admin' || lower === 'administrator') lower = 'admin@physionautics.com'
-      else if (lower === 'nfc' || lower.includes('friends')) lower = 'nfc@physionautics.com'
-      else if (lower.includes('vasant')) lower = 'vasantvihar@physionautics.com'
-      else if (lower.includes('guru') || lower.includes('dlf')) lower = 'gurugram@physionautics.com'
-      else if (lower === 'centre1') lower = 'nfc@physionautics.com'
-      else if (lower === 'centre2') lower = 'vasantvihar@physionautics.com'
-      else if (lower === 'centre3') lower = 'gurugram@physionautics.com'
-      else if (lower.includes('sarah')) lower = 'dr.sarah@physionautics.com'
+    if (lower === 'admin' || lower === 'administrator' || lower.startsWith('admin@')) {
+      lower = 'admin@physionautics.com'
+    } else if (lower === 'ggn' || lower.startsWith('ggn@') || lower.includes('guru') || lower.includes('dlf') || lower.includes('gurgaon') || lower === 'centre3') {
+      lower = 'ggn@physionautics.com'
+    } else if (lower === 'vv' || lower.startsWith('vv@') || lower.includes('vasant') || lower === 'centre2') {
+      lower = 'vv@physionautics.com'
+    } else if (lower === 'nfc' || lower.startsWith('nfc@') || lower.includes('friends') || lower === 'centre1') {
+      lower = 'nfc@physionautics.com'
+    } else if (!lower.includes('@')) {
+      if (lower.includes('sarah')) lower = 'dr.sarah@physionautics.com'
       else if (lower.includes('rajesh')) lower = 'dr.rajesh@physionautics.com'
+      else if (lower.includes('kaleem')) lower = 'kaleem@physionautics.com'
+      else if (lower.includes('sheeba')) lower = 'sheeba@physionautics.com'
+      else if (lower.includes('deepanker')) lower = 'deepanker@physionautics.com'
+      else if (lower.includes('kevin')) lower = 'kevin@physionautics.com'
+      else if (lower.includes('aakansha')) lower = 'aakansha@physionautics.com'
+      else if (lower.includes('megha')) lower = 'megha@physionautics.com'
+      else if (lower.includes('sweta')) lower = 'sweta@physionautics.com'
       else lower = `${lower}@physionautics.com`
     }
 
-    // 0. Check admin password specifically
+    // 0. Primary: Call secure server-side login API route (verifies against Admin client Supabase & server presets)
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: lower, password: enteredPassword }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success && data.profile) {
+        const p: UserProfile = data.profile
+        setProfile(p)
+        setSessionCookies(p)
+        setUser({ id: p.id, email: p.email } as unknown as User)
+        try {
+          localStorage.setItem('physio_active_profile', JSON.stringify(p))
+        } catch (_) {}
+        logAuditEvent({
+          event_type: 'AUTH_LOGIN',
+          category: 'AUTH',
+          severity: 'INFO',
+          actor_name: p.name,
+          actor_email: p.email,
+          actor_role: p.role,
+          centre_name: p.centreName || 'All Centres',
+          details: `User signed in successfully as ${p.name}.`,
+        })
+        return { error: null }
+      } else if (data?.error && (res.status === 401 || res.status === 403)) {
+        return { error: { message: data.error } as AuthError }
+      }
+    } catch (apiErr) {
+      console.warn('API login call failed, falling back to client-side verification:', apiErr)
+    }
+
+    // 1. Check admin password specifically (local fallback)
     if (lower === 'admin@physionautics.com' || lower.startsWith('admin')) {
       if (!verifyAdminPassword(enteredPassword)) {
         return { error: { message: 'Invalid Admin password. Please check your credentials.' } as AuthError }
@@ -298,11 +448,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(p)
       setSessionCookies(p)
       setUser({ id: p.id, email: p.email } as unknown as User)
-      localStorage.setItem('physio_active_profile', JSON.stringify(p))
+      try {
+        localStorage.setItem('physio_active_profile', JSON.stringify(p))
+      } catch (_) {}
       return { error: null }
     }
 
-    // 1. Check custom staff users configured in Admin Panel (localStorage)
+    // 2. Check custom staff users configured in Admin Panel (localStorage)
     try {
       const localCustom = localStorage.getItem('physio_custom_staff_users')
       if (localCustom) {
@@ -328,23 +480,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(p)
           setSessionCookies(p)
           setUser({ id: p.id, email: p.email } as unknown as User)
-          localStorage.setItem('physio_active_profile', JSON.stringify(p))
+          try {
+            localStorage.setItem('physio_active_profile', JSON.stringify(p))
+          } catch (_) {}
           return { error: null }
         }
       }
     } catch (_) {}
 
-    // 2. Preset Accounts with flexible password verification
+    // 3. Preset Accounts with flexible password verification (offline fallback)
     if (PRESET_ACCOUNTS[lower]) {
       const p = PRESET_ACCOUNTS[lower]
-      setProfile(p)
-      setSessionCookies(p)
-      setUser({ id: p.id, email: p.email } as unknown as User)
-      localStorage.setItem('physio_active_profile', JSON.stringify(p))
-      return { error: null }
+      const validPresets: Record<string, string[]> = {
+        'ggn@physionautics.com': ['ggn123', 'centre123', 'gurugram123', 'physio123'],
+        'gurugram@physionautics.com': ['ggn123', 'centre123', 'gurugram123', 'physio123'],
+        'centre3@physionautics.com': ['ggn123', 'centre123', 'gurugram123', 'physio123'],
+        'vv@physionautics.com': ['vv123', 'centre123', 'vasant123', 'physio123'],
+        'vasantvihar@physionautics.com': ['vv123', 'centre123', 'vasant123', 'physio123'],
+        'centre2@physionautics.com': ['vv123', 'centre123', 'vasant123', 'physio123'],
+        'nfc@physionautics.com': ['nfc123', 'centre123', 'physio123'],
+        'centre1@physionautics.com': ['nfc123', 'centre123', 'physio123'],
+      }
+      const allowed = validPresets[lower] || ['centre123', 'doctor123', 'physio123']
+      if (allowed.some(pass => pass.toLowerCase() === enteredPassword.toLowerCase())) {
+        setProfile(p)
+        setSessionCookies(p)
+        setUser({ id: p.id, email: p.email } as unknown as User)
+        try {
+          localStorage.setItem('physio_active_profile', JSON.stringify(p))
+        } catch (_) {}
+        return { error: null }
+      } else {
+        return { error: { message: 'Invalid password. Please check your credentials.' } as AuthError }
+      }
     }
 
-    // 3. Supabase backend authentication fallback if connected
+    // 4. Supabase backend GoTrue authentication fallback if connected
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') && process.env.NEXT_PUBLIC_SUPABASE_URL !== 'your_supabase_project_url') {
       try {
         const supabase = createClient()
@@ -354,7 +525,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(p)
         setSessionCookies(p)
         setUser(data.user)
-        localStorage.setItem('physio_active_profile', JSON.stringify(p))
+        try {
+          localStorage.setItem('physio_active_profile', JSON.stringify(p))
+        } catch (_) {}
         return { error: null }
       } catch (err: any) {
         return { error: { message: err.message || 'Authentication failed' } as AuthError }
@@ -365,7 +538,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(fallbackProfile)
     setSessionCookies(fallbackProfile)
     setUser({ id: fallbackProfile.id, email: fallbackProfile.email } as unknown as User)
-    localStorage.setItem('physio_active_profile', JSON.stringify(fallbackProfile))
+    try {
+      localStorage.setItem('physio_active_profile', JSON.stringify(fallbackProfile))
+    } catch (_) {}
     return { error: null }
   }
 
@@ -377,8 +552,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const emailMap: Record<string, string> = {
       admin: 'admin@physionautics.com',
       reception_nfc: 'nfc@physionautics.com',
-      reception_vasant: 'vasantvihar@physionautics.com',
-      reception_gurugram: 'gurugram@physionautics.com',
+      reception_vasant: 'vv@physionautics.com',
+      reception_gurugram: 'ggn@physionautics.com',
       doctor_sarah: 'dr.sarah@physionautics.com',
       doctor_rajesh: 'dr.rajesh@physionautics.com',
     }

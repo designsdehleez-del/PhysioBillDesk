@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice - Dehleez Designs - PhysioNautics Clinical ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #090d16;
+      --primary-accent: #0284c7;
+      --primary-dark: #0369a1;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --bg-subtle: #f8fafc;
+      --card-bg: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--text-main);
+      padding: 40px 20px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .invoice-wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 48px;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.07);
+      border: 1px solid var(--border-color);
+    }
+
+    .top-actions {
+      max-width: 900px;
+      margin: 0 auto 20px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: #0284c7;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+    }
+
+    .btn-primary:hover {
+      background: #0369a1;
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-subtle);
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 24px;
+      margin-bottom: 28px;
+    }
+
+    .brand-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .brand-subtitle {
+      font-size: 13px;
+      color: var(--primary-accent);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .invoice-badge-block {
+      text-align: right;
+    }
+
+    .invoice-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: 0.5px;
+    }
+
+    .invoice-meta-row {
+      font-size: 13px;
+      margin-top: 4px;
+      color: var(--text-muted);
+    }
+
+    .invoice-meta-row strong {
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Parties Section */
+    .parties-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 30px;
+      background: var(--bg-subtle);
+      padding: 22px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .party-card h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .party-card .name {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .party-card .details {
+      font-size: 12.5px;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    /* Table */
+    .table-section {
+      margin-bottom: 28px;
+    }
+
+    .section-heading {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--primary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-heading::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8fafc;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    td {
+      padding: 12px 14px;
+      font-size: 12.5px;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: top;
+    }
+
+    .service-title {
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 2px;
+    }
+
+    .service-desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .amount-col {
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* Totals */
+    .totals-area {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 30px;
+    }
+
+    .totals-box {
+      width: 360px;
+    }
+
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+      border-bottom: 1px dashed var(--border-color);
+    }
+
+    .totals-row.grand-total {
+      border-bottom: none;
+      border-top: 2px solid var(--primary);
+      padding-top: 10px;
+      margin-top: 6px;
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .totals-row .num {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Recurring Schedule Card */
+    .recurring-card {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+
+    .recurring-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .recurring-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #166534;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .recurring-tag {
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .recurring-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      font-size: 12px;
+    }
+
+    .recurring-item {
+      background: #ffffff;
+      padding: 14px;
+      border-radius: 6px;
+      border: 1px solid #dcfce7;
+    }
+
+    .recurring-item strong {
+      display: block;
+      color: var(--primary);
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .recurring-item p {
+      color: #374151;
+      line-height: 1.5;
+      font-size: 11.5px;
+    }
+
+    .recurring-item .rate {
+      margin-top: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: #15803d;
+      font-size: 12.5px;
+    }
+
+    /* Footer & Notes */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-color);
+      font-size: 12px;
+    }
+
+    .info-card h4 {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .info-card p, .info-card li {
+      color: var(--text-muted);
+      line-height: 1.6;
+      font-size: 11.5px;
+    }
+
+    .bank-details-box {
+      background: var(--bg-subtle);
+      padding: 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      color: var(--text-main);
+      line-height: 1.7;
+    }
+
+    .sign-area {
+      margin-top: 36px;
+      text-align: right;
+    }
+
+    .sign-line {
+      display: inline-block;
+      width: 180px;
+      border-top: 1px solid var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .sign-name {
+      font-weight: 700;
+      font-size: 12.5px;
+    }
+
+    .sign-title {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background: transparent;
+        padding: 0;
+      }
+      .top-actions {
+        display: none !important;
+      }
+      .invoice-wrapper {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .recurring-card {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+      }
+      .recurring-title {
+        color: #0f172a;
+      }
+      .recurring-tag {
+        background: #e2e8f0;
+        color: #334155;
+      }
+      .recurring-item .rate {
+        color: #0f172a;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-actions">
+    <div>
+      <span style="font-weight: 600; font-size: 14px; color: var(--text-muted);">Dehleez Designs &bull; Invoice for PhysioNautics</span>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-secondary" onclick="window.history.back()">Back</button>
+      <button class="btn btn-primary" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"></path></svg>
+        Print / Save as PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="invoice-wrapper">
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <div class="brand-title">DEHLEEZ DESIGNS</div>
+        <div class="brand-subtitle">Product Design, Web Architecture & Custom Clinical Software</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+          New Delhi, India &bull; Email: contact@dehleezdesigns.com
+        </div>
+      </div>
+      <div class="invoice-badge-block">
+        <div class="invoice-title">INVOICE</div>
+        <div class="invoice-meta-row">Invoice No: <strong>INV-2026-PHYSIO-001</strong></div>
+        <div class="invoice-meta-row">Issue Date: <strong>23 Nov 2026</strong></div>
+        <div class="invoice-meta-row">Due Date: <strong>07 Dec 2026</strong></div>
+        <div class="invoice-meta-row">Project: <strong>PhysioBillDesk</strong></div>
+      </div>
+    </div>
+
+    <!-- Parties Grid -->
+    <div class="parties-grid">
+      <div class="party-card">
+        <h3>Billed To (Client):</h3>
+        <div class="name">PhysioNautics</div>
+        <div class="details">
+          Physiotherapy & Pain Rehabilitation Centres<br />
+          <strong>Regd. Office:</strong> D-819, Ground Floor, CV Raman Marg, New Friends Colony, New Delhi – 110025<br />
+          <strong>Clinics Covered:</strong> NFC (Delhi) &bull; Vasant Vihar (Delhi) &bull; Gurugram (DLF Phase 1)<br />
+          <strong>GSTIN:</strong> 07AAAAA0000A1Z5 | <strong>Phone:</strong> +91 83839 36905
+        </div>
+      </div>
+
+      <div class="party-card">
+        <h3>Engagement Overview:</h3>
+        <div class="details">
+          <strong>Project:</strong> PhysioNautics Multi-Centre Clinical Management & Billing System<br />
+          <strong>Production URL:</strong> <a href="https://physio-bill-desk.vercel.app" style="color: #0284c7; text-decoration: none;" target="_blank">physio-bill-desk.vercel.app</a><br />
+          <strong>Tech Stack:</strong> Next.js 16, Supabase PostgreSQL, Tailwind CSS v4, Vercel Serverless<br />
+          <strong>Status:</strong> Completed & Operational Across All 3 Centres
+        </div>
+      </div>
+    </div>
+
+    <!-- Deliverables Table -->
+    <div class="table-section">
+      <div class="section-heading">Delivered Engineering Milestones (Initial Build)</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 5%;">#</th>
+            <th style="width: 75%;">Service Module & Scope</th>
+            <th style="width: 20%;" class="amount-col">Amount (INR)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>
+              <div class="service-title">Multi-Centre Architecture & Cloud Database Setup</div>
+              <div class="service-desc">
+                High-performance Supabase PostgreSQL database design, Row-Level Security (RLS) isolation across 3 clinical branches (NFC, Vasant Vihar, Gurugram), connection pooling, real-time sync, and Vercel serverless integration.
+              </div>
+            </td>
+            <td class="amount-col">&#8377;10,000.00</td>
+          </tr>
+
+          <tr>
+            <td>2</td>
+            <td>
+              <div class="service-title">Role-Based Access Control (RBAC) & Clinic Security</div>
+              <div class="service-desc">
+                3-tier authenticated login architecture (Super Admin, Clinic Reception, Doctor/Physiotherapist), branch-scoped routing (/billing vs /dashboard), centralized Admin Login Management portal (/staff) with live database sync, and session security.
+              </div>
+            </td>
+            <td class="amount-col">&#8377;8,000.00</td>
+          </tr>
+
+          <tr>
+            <td>3</td>
+            <td>
+              <div class="service-title">Electronic Health Records (EHR) & Patient Directory</div>
+              <div class="service-desc">
+                Unified patient database with automated Clinical UID generation, multi-visit clinical records, cross-clinic medical history access, and Excel bulk import/export pipeline for high-volume patient/doctor migration.
+              </div>
+            </td>
+            <td class="amount-col">&#8377;7,000.00</td>
+          </tr>
+
+          <tr>
+            <td>4</td>
+            <td>
+              <div class="service-title">Clinical Assessment Studio & Patient Recovery Journey</div>
+              <div class="service-desc">
+                Interactive Physiotherapy and Neurotherapy assessment modules, dynamic Visual Analogue Scale (VAS) pain scoring, baseline vs. re-assessment timeline tracker, and branded digital Patient Report Card.
+              </div>
+            </td>
+            <td class="amount-col">&#8377;10,000.00</td>
+          </tr>
+
+          <tr>
+            <td>5</td>
+            <td>
+              <div class="service-title">Itemized Billing Counter, Package Wallet & Receipt Engine</div>
+              <div class="service-desc">
+                18+ itemized physiotherapy service catalog, multi-session package checkout logic, discount matrix, multi-mode payment support (Cash, Card, UPI with screenshot upload), computerized insurance-valid receipts, and public tokenized invoice URLs.
+              </div>
+            </td>
+            <td class="amount-col">&#8377;10,000.00</td>
+          </tr>
+
+          <tr>
+            <td>6</td>
+            <td>
+              <div class="service-title">Executive Financial Analytics & Expense Ledger</div>
+              <div class="service-desc">
+                Master KPI Financial Dashboard for executive management (daily/monthly collections, centre-wise revenue breakdown, doctor-wise attribution), and full Expense Ledger (/expenses) with category tagging, edit modals, and Excel export.
+              </div>
+            </td>
+            <td class="amount-col">&#8377;7,000.00</td>
+          </tr>
+
+          <tr>
+            <td>7</td>
+            <td>
+              <div class="service-title">WhatsApp Business Automation & Digital Feedback Hub</div>
+              <div class="service-desc">
+                Automated WhatsApp invoice delivery with verified document viewer links, clinical assessment sharing via WhatsApp, Bulk Broadcast Studio with picture + custom text creator, and interactive feedback engine with doctor ratings.
+              </div>
+            </td>
+            <td class="amount-col">&#8377;8,000.00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totals Area -->
+    <div class="totals-area">
+      <div class="totals-box">
+        <div class="totals-row">
+          <span>Initial Build Subtotal:</span>
+          <span class="num">&#8377;60,000.00</span>
+        </div>
+        <div class="totals-row">
+          <span>Taxes / Adjustments:</span>
+          <span class="num">&#8377;0.00</span>
+        </div>
+        <div class="totals-row grand-total">
+          <span>Total Amount Payable:</span>
+          <span class="num">&#8377;60,000.00</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 4px;">
+          (INR Sixty Thousand Only)
+        </div>
+      </div>
+    </div>
+
+    <!-- Recurring Services Schedule -->
+    <div class="recurring-card">
+      <div class="recurring-header">
+        <div class="recurring-title">&#128260; Recurring Services & Ongoing Development Schedule</div>
+        <div class="recurring-tag">Monthly / As-Per-Development</div>
+      </div>
+      <div class="recurring-grid">
+        <div class="recurring-item">
+          <strong>1. Monthly Cloud Maintenance & SLA Support</strong>
+          <p>
+            Continuous 24/7 cloud database & server monitoring (Supabase & Vercel), automated daily database backups, WhatsApp Business template monitoring, rapid technical support for reception desks, and new staff/doctor onboarding.
+          </p>
+          <div class="rate">&#8377;10,000 / month (or &#8377;25,000 / quarter)</div>
+        </div>
+
+        <div class="recurring-item">
+          <strong>2. Ongoing Feature Development & Enhancements</strong>
+          <p>
+            Addition of new custom modules (e.g., In-clinic consumables/inventory tracking, Patient WhatsApp automated appointment bot, Tally/Zoho accounting integrations, biometric attendance sync).
+          </p>
+          <div class="rate">Billed as per development scope (&#8377;12,000 - &#8377;18,000 / sprint)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment & Terms -->
+    <div class="info-grid">
+      <div class="info-card">
+        <h4>Remittance & Bank Details</h4>
+        <div class="bank-details-box">
+          <strong>Beneficiary:</strong> Dehleez Designs<br />
+          <strong>Bank:</strong> [Your Bank, e.g. HDFC Bank Ltd.]<br />
+          <strong>Account No.:</strong> [Your Account Number]<br />
+          <strong>IFSC Code:</strong> [Your Bank IFSC Code]<br />
+          <strong>Account Type:</strong> Current / Savings<br />
+          <strong>UPI ID:</strong> [yourname@okhdfcbank / yourname@upi]
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h4>Terms of Engagement</h4>
+        <ul style="padding-left: 16px; margin-top: 4px;">
+          <li>Initial build payment is due within 14 calendar days from date of invoice.</li>
+          <li>Includes 30 days of complimentary post-launch bug fixing and stabilization.</li>
+          <li>Third-party cloud usage costs (Supabase, Vercel, WhatsApp Cloud API) billed directly to PhysioNautics.</li>
+        </ul>
+
+        <div class="sign-area">
+          <div class="sign-line"></div>
+          <div class="sign-name">Authorized Signatory</div>
+          <div class="sign-title">Dehleez Designs &bull; Systems Architect</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

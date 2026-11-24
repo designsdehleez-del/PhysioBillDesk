@@ -949,13 +949,25 @@ export async function getPatients(query?: string): Promise<Patient[]> {
 
   let dbPatients: Patient[] = []
   try {
-    const supabase = createClient()
-    let q = supabase.from('patients').select('*').order('created_at', { ascending: false })
-    const { data } = await q.limit(300)
-    if (data && data.length > 0) {
-      dbPatients = data as unknown as Patient[]
+    const res = await fetch('/api/patients', { cache: 'no-store' })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        dbPatients = json.data as unknown as Patient[]
+      }
     }
   } catch (_) {}
+
+  if (dbPatients.length === 0) {
+    try {
+      const supabase = createClient()
+      let q = supabase.from('patients').select('*').order('created_at', { ascending: false })
+      const { data } = await q.limit(300)
+      if (data && data.length > 0) {
+        dbPatients = data as unknown as Patient[]
+      }
+    } catch (_) {}
+  }
 
   // Merge DB patients with cached patients (deduplicating by ID and UID, preferring newest)
   const map = new Map<string, Patient>()
@@ -1169,33 +1181,50 @@ export async function registerPatient(input: {
   let finalUid = fallbackUid
 
   try {
-    const supabase = createClient()
-    const { data: generatedUid, error: uidErr } = await supabase.rpc('generate_patient_uid')
-    const uidToUse = (!uidErr && generatedUid) ? generatedUid : fallbackUid
-
-    const isDocUuid = input.primary_doctor_id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.primary_doctor_id) : false
-    const isPhysioUuid = input.physiotherapist_id ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.physiotherapist_id) : false
-
-    const { data, error } = await supabase.from('patients').insert({
-      uid: uidToUse,
-      full_name: input.full_name.trim(),
-      age: Number(input.age),
-      gender: input.gender,
-      phone: input.phone.trim(),
-      email: input.email || null,
-      address: input.address || null,
-      blood_group: input.blood_group || null,
-      medical_notes: input.medical_notes || null,
-      primary_doctor_id: isDocUuid ? input.primary_doctor_id : null,
-      physiotherapist_id: isPhysioUuid ? input.physiotherapist_id : null,
-    }).select('id, uid').single()
-
-    if (!error && data) {
-      finalId = data.id
-      finalUid = data.uid
+    const res = await fetch('/api/patients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        full_name: input.full_name.trim(),
+        age: Number(input.age),
+        gender: input.gender,
+        phone: input.phone.trim(),
+        email: input.email || null,
+        address: input.address || null,
+        blood_group: input.blood_group || null,
+        medical_notes: input.medical_notes || null,
+        primary_doctor_id: input.primary_doctor_id || null,
+        physiotherapist_id: input.physiotherapist_id || null,
+      }),
+    })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.success && json.patient) {
+        finalId = json.patient.id
+        finalUid = json.patient.uid
+      }
     }
   } catch (err) {
-    console.warn('Supabase patient insert failed, using resilient local storage fallback:', err)
+    console.warn('API /api/patients insert failed, attempting client fallback:', err)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.from('patients').insert({
+        uid: fallbackUid,
+        full_name: input.full_name.trim(),
+        age: Number(input.age),
+        gender: input.gender,
+        phone: input.phone.trim(),
+        email: input.email || null,
+        address: input.address || null,
+        blood_group: input.blood_group || null,
+        medical_notes: input.medical_notes || null,
+      }).select('id, uid').single()
+
+      if (!error && data) {
+        finalId = data.id
+        finalUid = data.uid
+      }
+    } catch (_) {}
   }
 
   const newPatient: Patient = {
@@ -1303,6 +1332,19 @@ export async function updatePatient(
     localStorage.setItem('physio_patients_cache_v5', JSON.stringify(updatedList))
     localStorage.setItem('physio_patients_cache', JSON.stringify(updatedList))
   } catch (_) {}
+
+  try {
+    await fetch('/api/patients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        ...data,
+      }),
+    })
+  } catch (err) {
+    console.warn('API /api/patients update fallback:', err)
+  }
 
   try {
     const supabase = createClient()
@@ -2048,52 +2090,65 @@ export async function getVisits(centreId?: string, query?: string): Promise<Stor
 
   let dbVisits: StoredVisit[] = []
   try {
-    const supabase = createClient()
-    let q = supabase.from('visits').select('*, visit_services(*), patients(*)').order('created_at', { ascending: false })
-    if (centreId && centreId !== 'all') {
-      q = q.eq('centre_id', centreId)
-    }
-    const { data } = await q
-    if (data && data.length > 0) {
-      dbVisits = data.map((v: any) => ({
-        id: v.id,
-        bill_number: v.bill_number,
-        patient_id: v.patient_id,
-        patient_uid: v.patients?.uid || 'CLN-PATIENT',
-        patient_name: v.patients?.full_name || 'Patient',
-        patient_phone: v.patients?.phone || '',
-        patient_age: v.patients?.age,
-        patient_gender: v.patients?.gender,
-        patient_address: v.patients?.address || '',
-        doctor_id: v.doctor_id,
-        doctor_name: v.doctor_name,
-        doctor_specialization: '',
-        primary_doctor_id: v.primary_doctor_id || null,
-        primary_doctor_name: v.primary_doctor_name || null,
-        physiotherapist_id: v.physiotherapist_id || null,
-        physiotherapist_name: v.physiotherapist_name || null,
-        centre_id: v.centre_id,
-        centre_name: v.centre_name,
-        centre_address: '',
-        centre_phone: '',
-        items: (v.visit_services || []).map((s: any) => ({
-          id: s.id,
-          service_id: s.service_id,
-          service_name: s.service_name,
-          price: Number(s.price) || 0,
-          quantity: Number(s.quantity) || 1,
-          total: (Number(s.price) || 0) * (Number(s.quantity) || 1),
-        })),
-        subtotal: Number(v.subtotal) || 0,
-        discount: Number(v.discount) || 0,
-        total: Number(v.total) || 0,
-        payment_mode: (v.payment_mode as any) || 'Cash',
-        payment_status: 'Paid',
-        visit_date: v.visit_date,
-        created_at: v.created_at,
-      }))
+    const qParam = centreId && centreId !== 'all' ? `?centreId=${encodeURIComponent(centreId)}` : ''
+    const res = await fetch(`/api/visits${qParam}`, { cache: 'no-store' })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        dbVisits = json.data
+      }
     }
   } catch (_) {}
+
+  if (dbVisits.length === 0) {
+    try {
+      const supabase = createClient()
+      let q = supabase.from('visits').select('*, visit_services(*), patients(*)').order('created_at', { ascending: false })
+      if (centreId && centreId !== 'all') {
+        q = q.eq('centre_id', centreId)
+      }
+      const { data } = await q
+      if (data && data.length > 0) {
+        dbVisits = data.map((v: any) => ({
+          id: v.id,
+          bill_number: v.bill_number,
+          patient_id: v.patient_id,
+          patient_uid: v.patients?.uid || 'CLN-PATIENT',
+          patient_name: v.patients?.full_name || 'Patient',
+          patient_phone: v.patients?.phone || '',
+          patient_age: v.patients?.age,
+          patient_gender: v.patients?.gender,
+          patient_address: v.patients?.address || '',
+          doctor_id: v.doctor_id,
+          doctor_name: v.doctor_name,
+          doctor_specialization: '',
+          primary_doctor_id: v.primary_doctor_id || null,
+          primary_doctor_name: v.primary_doctor_name || null,
+          physiotherapist_id: v.physiotherapist_id || null,
+          physiotherapist_name: v.physiotherapist_name || null,
+          centre_id: v.centre_id,
+          centre_name: v.centre_name,
+          centre_address: '',
+          centre_phone: '',
+          items: (v.visit_services || []).map((s: any) => ({
+            id: s.id,
+            service_id: s.service_id,
+            service_name: s.service_name,
+            price: Number(s.price) || 0,
+            quantity: Number(s.quantity) || 1,
+            total: (Number(s.price) || 0) * (Number(s.quantity) || 1),
+          })),
+          subtotal: Number(v.subtotal) || 0,
+          discount: Number(v.discount) || 0,
+          total: Number(v.total) || 0,
+          payment_mode: (v.payment_mode as any) || 'Cash',
+          payment_status: 'Paid',
+          visit_date: v.visit_date,
+          created_at: v.created_at,
+        }))
+      }
+    } catch (_) {}
+  }
 
   // Merge DB visits with cached visits (deduplicating by ID and bill_number)
   const map = new Map<string, StoredVisit>()
@@ -2226,6 +2281,26 @@ export async function saveVisit(
     localStorage.setItem('physio_visits_cache_v7', JSON.stringify(updated))
     localStorage.setItem('physio_visits_cache', JSON.stringify(updated))
   } catch (_) {}
+
+  try {
+    const res = await fetch('/api/visits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...newVisit,
+        patient: visitData.patient,
+        items: newVisit.items,
+      }),
+    })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.success && json.visit?.id) {
+        newVisit.id = json.visit.id
+      }
+    }
+  } catch (err) {
+    console.warn('API /api/visits POST error:', err)
+  }
 
   try {
     const supabase = createClient()
@@ -4632,6 +4707,19 @@ export async function uploadBroadcastMedia(file: File): Promise<string> {
 
 export async function getExpenses(): Promise<ClinicExpense[]> {
   try {
+    const res = await fetch('/api/expenses', { cache: 'no-store' })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(json.data))
+        }
+        return json.data as ClinicExpense[]
+      }
+    }
+  } catch (_) {}
+
+  try {
     const supabase = createClient()
     const { data, error } = await supabase
       .from('clinic_expenses')
@@ -4667,26 +4755,19 @@ export async function addExpense(expense: Omit<ClinicExpense, 'id' | 'created_at
   }
 
   try {
-    const supabase = createClient()
-    const { data, error } = await supabase.from('clinic_expenses').insert([{
-      id: newExp.id,
-      expense_date: newExp.expense_date,
-      category: newExp.category,
-      description: newExp.description,
-      amount: newExp.amount,
-      centre_id: newExp.centre_id || null,
-      centre_name: newExp.centre_name || null,
-      logged_by_name: newExp.logged_by_name || null,
-      payment_method: newExp.payment_method || 'UPI',
-      receipt_url: newExp.receipt_url || null,
-      created_at: newExp.created_at,
-    }]).select().single()
-
-    if (!error && data) {
-      newExp.id = data.id
+    const res = await fetch('/api/expenses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newExp),
+    })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.success && json.expense?.id) {
+        newExp.id = json.expense.id
+      }
     }
   } catch (err) {
-    console.warn('Supabase addExpense sync error, saving locally:', err)
+    console.warn('API /api/expenses POST error:', err)
   }
 
   try {
@@ -4704,10 +4785,13 @@ export async function addExpense(expense: Omit<ClinicExpense, 'id' | 'created_at
 
 export async function updateExpense(id: string, updates: Partial<ClinicExpense>): Promise<ClinicExpense | null> {
   try {
-    const supabase = createClient()
-    await supabase.from('clinic_expenses').update(updates).eq('id', id)
+    await fetch('/api/expenses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...updates }),
+    })
   } catch (err) {
-    console.warn('Supabase updateExpense sync warning:', err)
+    console.warn('API /api/expenses update error:', err)
   }
 
   try {
@@ -4733,10 +4817,11 @@ export async function updateExpense(id: string, updates: Partial<ClinicExpense>)
 
 export async function deleteExpense(id: string): Promise<void> {
   try {
-    const supabase = createClient()
-    await supabase.from('clinic_expenses').delete().eq('id', id)
+    await fetch(`/api/expenses?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    })
   } catch (err) {
-    console.warn('Supabase deleteExpense sync warning:', err)
+    console.warn('API /api/expenses delete error:', err)
   }
 
   try {
@@ -5372,16 +5457,19 @@ export async function saveAssessment(assessment: Partial<ClinicalAssessment>): P
     localStorage.setItem(CACHE_KEY, JSON.stringify(updated))
   }
 
-  // Persist to Supabase cloud in background
+  // Persist directly to Supabase cloud
   try {
-    fetch('/api/assessment', {
+    const res = await fetch('/api/assessment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newRecord),
-    }).catch(err => {
-      console.warn('Background Supabase assessment sync error:', err)
     })
-  } catch (_) {}
+    if (!res.ok) {
+      console.warn('Supabase assessment sync warning, status:', res.status)
+    }
+  } catch (err) {
+    console.warn('Background Supabase assessment sync error:', err)
+  }
 
   return newRecord
 }

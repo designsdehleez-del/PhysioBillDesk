@@ -353,40 +353,11 @@ export function decodeReportPayload<T = any>(encoded: string): T | null {
 
 export function getInvoicePdfUrl(visit: StoredVisit): string {
   const origin = getAppBaseUrl()
-  const params = new URLSearchParams({
-    bid: visit.bill_number,
-    uid: visit.patient_uid,
-  })
-
-  const payload: InvoicePayload = {
-    bid: visit.bill_number,
-    uid: visit.patient_uid,
-    name: visit.patient_name,
-    phone: visit.patient_phone,
-    age: visit.patient_age,
-    gender: visit.patient_gender,
-    date: visit.visit_date,
-    doctor: visit.primary_doctor_name || visit.doctor_name || 'Dr. Clinical Specialist',
-    physio: visit.physiotherapist_name || undefined,
-    centre: visit.centre_name,
-    items: (visit.items || []).map(i => ({
-      name: i.service_name,
-      price: i.price,
-      qty: i.quantity,
-    })),
-    subtotal: visit.subtotal || 0,
-    discount: visit.discount || 0,
-    total: visit.total || 0,
-    mode: visit.payment_mode || 'Cash',
-    notes: visit.notes,
+  // Clean branded short URL (e.g. https://physio-bill-desk.vercel.app/i/INV-202609-0001)
+  if (visit.bill_number) {
+    return `${origin}/i/${encodeURIComponent(visit.bill_number)}`
   }
-
-  const token = encodeReportPayload(payload)
-  if (token) {
-    params.set('d', token)
-  }
-
-  return `${origin}/invoice/view?${params.toString()}`
+  return `${origin}/invoice/view?bid=${encodeURIComponent(visit.id || 'INV-DIGITAL')}`
 }
 
 export function getAssessmentPdfUrl(
@@ -395,51 +366,18 @@ export function getAssessmentPdfUrl(
   additionalData?: Record<string, any>
 ): string {
   const origin = getAppBaseUrl()
-  const params = new URLSearchParams()
-
-  if (typeof assessment === 'string') {
-    params.set('aid', assessment)
-    if (typeof patient === 'string') {
-      params.set('uid', patient)
-    }
-  } else if (assessment) {
-    params.set('aid', assessment.id || '')
-    params.set('uid', assessment.patient_uid || (typeof patient === 'object' ? patient?.uid : '') || '')
-    
-    const pObj = typeof patient === 'object' && patient !== null ? patient : null
-    const assData = assessment.data || {}
-    // Keep data token compact to ensure WhatsApp url length stays safely within 2000 char mobile limits
-    const compactData: Record<string, any> = {
-      clinical_diagnosis: assData.clinical_diagnosis || assData.main_problem || null,
-      assessment_stage: assData.assessment_stage || null,
-      chief_complaint: assData.chief_complaint || null,
-      treatment_modalities: assData.treatment_modalities || null,
-      rehab_plan: assData.rehab_plan || assData.home_exercise_plan || null,
-    }
-
-    const payload: AssessmentPayload = {
-      id: assessment.id,
-      uid: assessment.patient_uid || pObj?.uid || '',
-      type: assessment.type || 'physiotherapy',
-      date: assessment.assessment_date,
-      doctor_name: assessment.doctor_name || pObj?.primary_doctor_name || null,
-      vas_score: assessment.vas_score,
-      patient_name: pObj?.full_name || assessment.patient_uid || 'Valued Patient',
-      patient_phone: pObj?.phone,
-      patient_age: pObj?.age,
-      patient_gender: pObj?.gender,
-      centre_name: pObj?.centre_name,
-      physiotherapist_name: pObj?.physiotherapist_name,
-      data: compactData,
-      ...additionalData,
-    }
-    const token = encodeReportPayload(payload)
-    if (token) {
-      params.set('d', token)
-    }
+  const aid = typeof assessment === 'string' ? assessment : assessment?.id
+  const uid = typeof patient === 'string' ? patient : (assessment?.patient_uid || patient?.uid)
+  
+  // Clean branded short URL (e.g. https://physio-bill-desk.vercel.app/a/CLN-202609-0001)
+  if (aid) {
+    return `${origin}/a/${encodeURIComponent(aid)}`
+  }
+  if (uid) {
+    return `${origin}/a/${encodeURIComponent(uid)}`
   }
 
-  return `${origin}/assessment/view?${params.toString()}`
+  return `${origin}/assessment/view`
 }
 
 export function getWhatsAppConfig(): WhatsAppConfig {

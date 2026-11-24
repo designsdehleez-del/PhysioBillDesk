@@ -4,6 +4,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/auth-context'
 import { Toaster } from '@/components/ui/sonner'
 import { PwaRegister } from '@/components/pwa/pwa-installer'
+import { OfflineSyncWatcher } from '@/components/pwa/offline-sync-watcher'
 import { AmbientPhysioBackground } from '@/components/layout/ambient-physio-background'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -87,6 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
           <Toaster richColors />
           <PwaRegister />
+          <OfflineSyncWatcher />
         </AuthProvider>
       </body>
     </html>

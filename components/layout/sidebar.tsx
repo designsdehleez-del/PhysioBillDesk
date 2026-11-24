@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert, MessageCircle, Database, Settings, Sparkles, Lock, FileText, Wallet, TrendingUp } from 'lucide-react'
+import { LayoutDashboard, UserPlus, Users, Receipt, Stethoscope, Building2, UserCog, Tag, LogOut, DollarSign, ShieldAlert, ShieldCheck, MessageCircle, Database, Settings, Sparkles, Lock, FileText, Wallet, TrendingUp } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { useClinicBranding } from '@/lib/settings-store'
 import { Button } from '@/components/ui/button'
@@ -39,6 +39,7 @@ export function Sidebar() {
     { label: 'Doctors & Physios', href: '/doctors', icon: UserCog },
     { label: 'Centres Management', href: '/centres', icon: Building2 },
     { label: 'Staff & Logins', href: '/staff', icon: ShieldAlert },
+    { label: 'Audit Trail & Logs', href: '/audit', icon: ShieldCheck },
     { label: 'Services & Pricing', href: '/services', icon: Stethoscope },
     { label: 'Discount Rules', href: '/discounts', icon: Tag },
     { label: 'Settings', href: '/settings', icon: Settings },

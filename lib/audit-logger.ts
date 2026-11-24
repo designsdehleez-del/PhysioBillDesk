@@ -124,27 +124,16 @@ export function logAuditEvent(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): A
       console.error('Local audit log failed:', err)
     }
 
-    // Non-blocking async push to Supabase if table exists
+    // Non-blocking async push to Supabase API (server-side admin route)
     setTimeout(async () => {
       try {
-        const supabase = createClient()
-        await supabase.from('audit_logs').insert([{
-          id: newLog.id,
-          timestamp: newLog.timestamp,
-          event_type: newLog.event_type,
-          category: newLog.category,
-          severity: newLog.severity,
-          actor_name: newLog.actor_name,
-          actor_email: newLog.actor_email,
-          actor_role: newLog.actor_role,
-          centre_name: newLog.centre_name,
-          resource_id: newLog.resource_id,
-          resource_name: newLog.resource_name,
-          details: newLog.details,
-          metadata: newLog.metadata,
-        }])
+        await fetch('/api/audit-logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newLog),
+        })
       } catch (_) {}
-    }, 100)
+    }, 50)
   }
 
   return newLog
